@@ -8,8 +8,6 @@ class MyRobot extends BCAbstractRobot {
         step++;
 
         if (this.me.unit === SPECS.CRUSADER) {
-            this.log("START TURN " + step)
-            this.log("Crusader health: " + this.me.health)
 
             var visible = this.getVisibleRobots()
             
@@ -29,7 +27,6 @@ class MyRobot extends BCAbstractRobot {
                 }
                 return false
             })
-            this.log(attackable)
 
             if (attackable.length>0){
                 // attack first robot
@@ -47,7 +44,7 @@ class MyRobot extends BCAbstractRobot {
 
         else if (this.me.unit === SPECS.CASTLE) {
             if (step % 10 === 0) {
-                this.log("Building a crusader at " + (this.me.x+1) + ", " + (this.me.y+1));
+                this.log("START TURN " + step)
                 return this.buildUnit(SPECS.CRUSADER, 1, 1);
             } else {
                 return // this.log("Castle health: " + this.me.health);
