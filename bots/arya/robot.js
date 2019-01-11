@@ -260,9 +260,11 @@ class MyRobot extends BCAbstractRobot {
             for (const r of self.getVisibleRobots()) {
                 if (r.team !== undefined && r.team != self.me.team) { // enemy sighting!
                     let dist = (r.x - self.me.x)**2 + (r.y - self.me.y)**2;
-                    if (dist >= SPECS.UNITS[r.unit].ATTACK_RADIUS[0] && 
-                        dist <= SPECS.UNITS[r.unit].ATTACK_RADIUS[1]) {
-                        enemySighting = [r, dist];
+                    if (SPECS.UNITS[r.unit].ATTACK_RADIUS != null) { // not castle/church
+                        if (dist >= SPECS.UNITS[r.unit].ATTACK_RADIUS[0] && 
+                            dist <= SPECS.UNITS[r.unit].ATTACK_RADIUS[1]) {
+                            enemySighting = [r, dist];
+                        }
                     }
                 }
             }
@@ -284,21 +286,21 @@ class MyRobot extends BCAbstractRobot {
                 (self.me.x != p_target[0] || self.me.y != p_target[1])) {
                 needToMove = true;
                 for (const dir of CIRCLES[2]) {
-                    if (self.me.x + dir[0] == p_target[0] && self.me.y + dir[1] == p_target[0]) {
-                        if (self.getVisibleRobotMap()[p_target[1]][p_target[0]] < 1) {
+                    if (self.me.x + dir[0] == p_target[1][0] && self.me.y + dir[1] == p_target[1][1]) {
+                        if (self.getVisibleRobotMap()[p_target[1][1]][p_target[1][0]] < 1) {
                             self.castleTalk(COMM8.PILGRIM_REACHED)
                         }
                     }
                 }
             } else if ((p_target[0] == CONSTANTS.BUILD || p_target[0] == CONSTANTS.DEPOSIT) &&
-                (self.me.x - p_target[0])**2 + (self.me.y - p_target[1])**2 > 2) {
+                (self.me.x - p_target[1][0])**2 + (self.me.y - p_target[1][1])**2 > 2) {
                 needToMove = true;
             } else if (p_target[0] == CONSTANTS.FLEE &&
-                (self.me.x - p_target[0])**2 + (self.me.y - p_target[1])**2 > 9) {
+                (self.me.x - p_target[1][0])**2 + (self.me.y - p_target[1][1])**2 > 9) {
                 needToMove = true;
                 for (const dir of CIRCLES[2]) {
-                    if (self.me.x + dir[0] == p_target[0] && self.me.y + dir[1] == p_target[0]) {
-                        if (self.getVisibleRobotMap()[p_target[1]][p_target[0]] < 1) {
+                    if (self.me.x + dir[0] == p_target[1][0] && self.me.y + dir[1] == p_target[1][0]) {
+                        if (self.getVisibleRobotMap()[p_target[1][1]][p_target[1][0]] < 1) {
                             self.castleTalk(COMM8.PILGRIM_REACHED)
                         }
                     }
@@ -306,10 +308,17 @@ class MyRobot extends BCAbstractRobot {
             }
 
             if (needToMove) {
-                move_towards(); // TODO: MOVE TOWARDS DESTINATION
+                let move = move_towards(self, p_target[1]); // TODO: MOVE TOWARDS DESTINATION
+                if (move !== null) {
+                    self.log("MOVING")
+                    return self.move(move.x-self.me.x, move.y-self.me.y)
+                } else { // can't move towards goal
+                    self.log("CAN'T MOVE")
+                    return;
+                }
             } else {
                 if (p_target[0] == CONSTANTS.MINE) {
-                    self.mine()
+                    return self.mine()
                 } else if (p_target[0] == CONSTANTS.FLEE) {
                     p_target = [null];
                 } else if (p_target[0] == CONSTANTS.DEPOSIT) {
@@ -318,13 +327,13 @@ class MyRobot extends BCAbstractRobot {
                     } else {
                         p_target = [null];
                     }
-                    self.give(p_target[0]-self.me.x, p_target[1]-self.me.y, self.karbonite, self.fuel)
+                    return self.give(p_target[1][0]-self.me.x, p_target[1][1]-self.me.y, self.karbonite, self.fuel)
                 } else if (p_target[0] == CONSTANTS.BUILD) {
-                    if (self.getVisibleRobotMap()[p_target[1]][p_target[0]] < 1) { // location is free
+                    if (self.getVisibleRobotMap()[p_target[1][1]][p_target[1][0]] < 1) { // location is free
                         if (self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE &&
                             self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL) { // we have the resources
                             p_target = [CONSTANTS.DEPOSIT, p_target[1]];
-                            self.buildUnit(SPECS.CHURCH, p_target[0]-self.me.x, p_target[1]-self.me.y);
+                            return self.buildUnit(SPECS.CHURCH, p_target[1][0]-self.me.x, p_target[1][1]-self.me.y);
                         }
                     }
                 }

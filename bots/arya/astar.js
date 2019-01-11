@@ -118,8 +118,8 @@ function GridNode(x, y, isWall) {
 }
 
 GridNode.prototype.getCost = function(nbr) {
-  let dx = abs(this.x - nbr.x);
-  let dy = abs(this.y - nbr.y);
+  let dx = Math.abs(this.x - nbr.x);
+  let dy = Math.abs(this.y - nbr.y);
   if (dx == 2 && dy == 0) {
     return 2;
   } else if (dx == 1 && dy == 0) {
@@ -133,14 +133,14 @@ GridNode.prototype.getCost = function(nbr) {
   }
 };
 
-function Graph(pass_map, vis_map) {
+export function Graph(pass_map, vis_map) {
   this.nodes = [];
   this.grid = [];
   for (var y = 0; y < pass_map.length; y++) {
     this.grid[y] = [];
     for (var x = 0; x < pass_map.length; x++) {
-      var node = new GridNode(x, y, (pass_map[y][x] || vis_map[y][x] > 0));
-      this.grid[x][y] = node;
+      var node = new GridNode(x, y, (!pass_map[y][x] || vis_map[y][x] > 0));
+      this.grid[y][x] = node;
       this.nodes.push(node);
     }
   }
@@ -170,8 +170,7 @@ Graph.prototype.neighbors = function(node) {
   return ret;
 };
 
-export function astar(pass_map, vis_map, start, end) {
-  let graph = Graph(pass_map, vis_map)
+export function astar(graph, start, end, self) {
   var openHeap = getHeap();
 
   start.h = heuristic(start, end);

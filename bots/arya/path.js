@@ -1,5 +1,5 @@
 import {CONSTANTS, CIRCLES} from './constants.js'
-import {astar} from './astar.js';
+import {astar, Graph} from './astar.js';
 import {SPECS} from 'battlecode';
 
 function Point(x, y) {
@@ -70,6 +70,12 @@ export function get_viable_church_loc(x, y, pass_map, fuel_map, karbonite_map, v
     }
 }
 
-export function move_towards(){
-    return
+export function move_towards(self, target){
+    let g = new Graph(self.getPassableMap(), self.getVisibleRobotMap())
+    let ret = astar(g, g.grid[self.me.y][self.me.x], g.grid[target[1]][target[1]], self)
+    if (ret.length > 0) {
+        return ret[0];
+    } else {
+        return null;
+    }
 }
