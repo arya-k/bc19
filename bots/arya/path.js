@@ -1,4 +1,5 @@
 import {CONSTANTS, CIRCLES} from './constants.js'
+import {astar} from './astar.js';
 import {SPECS} from 'battlecode';
 
 function Point(x, y) {
@@ -41,7 +42,7 @@ export function create_resource_map(x, y, pass_map, fuel_map, karbonite_map) {
     return resource_map;
 }
 
-export function get_viable_castle_loc(x, y, pass_map, fuel_map, karbonite_map, visible_map){
+export function get_viable_church_loc(x, y, pass_map, fuel_map, karbonite_map, visible_map){
     let visited = new Set()
     let queue = [new Point(x,y)]
 
@@ -69,4 +70,6 @@ export function get_viable_castle_loc(x, y, pass_map, fuel_map, karbonite_map, v
     }
 }
 
-export function move_towards(){return}
+export function move_towards(){
+    return
+}

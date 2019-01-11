@@ -1,5 +1,5 @@
 import {BCAbstractRobot, SPECS} from 'battlecode';
-import {create_resource_map, get_viable_castle_loc, move_towards} from './path.js';
+import {create_resource_map, get_viable_church_loc, move_towards} from './path.js';
 import {CONSTANTS, CIRCLES, COMM8, COMM16} from './constants.js'
 
 // Turtling
@@ -9,7 +9,7 @@ var step = -1;
 
 /* CASTLE VARIABLES */
 var resourceMap = null;
-var unitStatus = {};
+var pilgrimStatus = {};
 
 var status;
 var target_x = null;
@@ -54,7 +54,7 @@ class MyRobot extends BCAbstractRobot {
                             break;
                         }
                     }
-                    unitStatus[r.id] = CONSTANTS.FLEEING
+                    pilgrimStatus[r.id] = CONSTANTS.FLEEING
                 } else if (r.castle_talk == COMM8.PREACHER_DISTRESS) {
                     status = CONSTANTS.DEFEND; // Same thing: we have to defend.
 
@@ -71,9 +71,9 @@ class MyRobot extends BCAbstractRobot {
                             break;
                         }
                     }
-                    unitStatus[r.id] = CONSTANTS.IDLE;
+                    pilgrimStatus[r.id] = CONSTANTS.IDLE;
                 } else if (r.castle_talk == COMM8.NEWPILGRIM) {
-                    unitStatus[r.id] = CONSTANTS.IDLE; // new unit, not doing anything.
+                    pilgrimStatus[r.id] = CONSTANTS.IDLE; // new unit, not doing anything.
                 }
             }
 
@@ -95,9 +95,12 @@ class MyRobot extends BCAbstractRobot {
                 }
             }
 
+            let vis_map = self.getVisibleRobotMap()
+            let pass_map = self.getPassableMap()
+
             if (status == CONSTANTS.GATHER) { // send a pilgrim to a resource deposit.
                 for (const r of self.getVisibleRobots()) { // Search for nearby, unassigned pilgrims:
-                    if (r.x !== undefined && unitStatus[r.id] == CONSTANTS.IDLE) { // found a pilgrim in range, doing nothing.
+                    if (r.x !== undefined && pilgrimStatus[r.id] == CONSTANTS.IDLE) { // found a pilgrim in range, doing nothing.
                         let resource = null; // find a resource for the pilgrim
                         for (let i = 0; i < resourceMap.fuel.length; i++){
                             if(resourceMap.fuel[i][3] == CONSTANTS.NO_ROBOT_ASSIGNED && step - resourceMap.fuel[i][4] > enemyCooldown){
@@ -115,7 +118,7 @@ class MyRobot extends BCAbstractRobot {
                                 break;
                             }
                         }
-                        unitStatus[r.id] = CONSTANTS.EN_ROUTE;
+                        pilgrimStatus[r.id] = CONSTANTS.EN_ROUTE;
                         self.log("ASSIGNING PILGRIM @ " + r.x + ", " + r.y + " to " + resource);
                         self.signal(COMM16.GOTO(resource[0], resource[1]), (r.x-self.me.x)**2 + (r.y-self.me.y)**2);
                         return;
@@ -125,8 +128,12 @@ class MyRobot extends BCAbstractRobot {
                 if (self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE &&
                     self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL) {
                     for (const dir of CIRCLES[2]) {
-                        if (self.getVisibleRobotMap()[self.me.y + dir[1]][self.me.x + dir[0]] == 0) {
-                            if (self.getPassableMap()[self.me.y + dir[1]][self.me.x + dir[0]]) {
+                        if (self.me.x + dir[0] >= vis_map.length || self.me.x + dir[0] < 0 ||
+                            self.me.y + dir[1] >= vis_map.length || self.me.y + dir[1] < 0) {
+                            continue; // out of bounds
+                        }
+                        if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] == 0) {
+                            if (pass_map[self.me.y + dir[1]][self.me.x + dir[0]]) {
                                 self.log(self.me.x + ", " + self.me.y + " - BUILDING PILGRIM @ " + dir[0] + ", " + dir[1])
                                 return self.buildUnit(SPECS.PILGRIM, dir[0], dir[1]);
                             }
@@ -137,8 +144,12 @@ class MyRobot extends BCAbstractRobot {
                 if (self.karbonite > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_KARBONITE &&
                     self.fuel > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_FUEL) {
                     for (const dir of CIRCLES[2]) {
-                        if (self.getVisibleRobotMap()[self.me.y + dir[1]][self.me.x + dir[0]] == 0) {
-                            if (self.getPassableMap()[self.me.y + dir[1]][self.me.x + dir[0]]) {
+                        if (self.me.x + dir[0] >= vis_map.length || self.me.x + dir[0] < 0 ||
+                            self.me.y + dir[1] >= vis_map.length || self.me.y + dir[1] < 0) {
+                            continue; // out of bounds
+                        }
+                        if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] == 0) {
+                            if (pass_map[self.me.y + dir[1]][self.me.x + dir[0]]) {
                                 self.log(self.me.x + ", " + self.me.y + " - BUILDING PREACHER @ " + dir[0] + ", " + dir[1])
                                 return self.buildUnit(SPECS.PREACHER, dir[0], dir[1]);
                             }
@@ -264,7 +275,7 @@ class MyRobot extends BCAbstractRobot {
                 if ((self.me.x - p_castleloc[0])**2 + (self.me.y - p_castleloc[1])**2 < 25) {
                     p_target = [CONSTANTS.DEPOSIT, p_castleloc];
                 } else {
-                    p_target = [CONSTANTS.BUILD, get_viable_castle_loc(self.me.x, self.me.y, self.map, self.fuel_map, self.karbonite_map, self.getVisibleRobotMap())];
+                    p_target = [CONSTANTS.BUILD, get_viable_church_loc(self.me.x, self.me.y, self.map, self.fuel_map, self.karbonite_map, self.getVisibleRobotMap())];
                 }
             }
 
@@ -275,7 +286,7 @@ class MyRobot extends BCAbstractRobot {
                 for (const dir of CIRCLES[2]) {
                     if (self.me.x + dir[0] == p_target[0] && self.me.y + dir[1] == p_target[0]) {
                         if (self.getVisibleRobotMap()[p_target[1]][p_target[0]] < 1) {
-                            self.castleTalk(COMM8.PREACHER_REACHED)
+                            self.castleTalk(COMM8.PILGRIM_REACHED)
                         }
                     }
                 }
@@ -288,7 +299,7 @@ class MyRobot extends BCAbstractRobot {
                 for (const dir of CIRCLES[2]) {
                     if (self.me.x + dir[0] == p_target[0] && self.me.y + dir[1] == p_target[0]) {
                         if (self.getVisibleRobotMap()[p_target[1]][p_target[0]] < 1) {
-                            self.castleTalk(COMM8.PREACHER_REACHED)
+                            self.castleTalk(COMM8.PILGRIM_REACHED)
                         }
                     }
                 }
