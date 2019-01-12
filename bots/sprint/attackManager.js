@@ -1,8 +1,20 @@
 import {SPECS} from 'battlecode';
+import {CONSTANTS,COMM8,COMM16,CIRCLES}
+
 
 // crusader, prophet, preacher
 // CONSIDERATIONS FOR FUTURE (not now)
 // Tell the castle if you're about to die. (potential death message/jk)
+
+// NOTES FOR AJITH:
+// Before you code this, read through Arya's code once.
+// He had to handle a lot of these problems, and he has a similar structure, so
+// reading his code will give you a feel for how to code this up.
+// CIRCLES[r] gives you all relative directions within r range.
+// So when I say find the move that minimizes the r^2 between something,
+// All valid moves can be found with CIRCLES[SPECS.UNITS[self.unit].SPEED]
+// if you want to make no move, you MUST return null.
+// If you want just the 8 points around a given spot, use CIRCLES[2]
 
 // PSEUDOCODE
 function defensiveBehavior(self, mode_location, base_location) {
@@ -21,7 +33,7 @@ function defensiveBehavior(self, mode_location, base_location) {
   }
   
   if (mode_location === null) {
-    if (not adjacent to casle) {
+    if (not adjacent to base_location) {
       A* towards base_location
     } else if (have resources) {
       deposit resources
@@ -37,11 +49,11 @@ function offensiveBehavior(self, mode_location) {
   // A* toward target
   visibleRobots = self.visibleRobots()
   if (enemy in attack_range)
-    return this.attack(enemy)
+    return self.attack(enemy)
   else if (enemy in visibleRobots)
-    return this.move(A* in enemydirection)
+    return self.move(A* in enemydirection)
   else if (cant see mode_location) {
-    return this.move(A* toward mode_location)
+    return self.move(A* toward mode_location)
   } else {
     return CONSTANTS.ELIMINATED_ENEMY;
   }
@@ -51,7 +63,8 @@ function escortBehavior(self, pilgrim_id) {
     return CONSTANTS.ABANDON_ESCORT
   }
   else
-    return this.move(smallest step that minimizes r^2 between me and my pilgrim)
+    // you don't need A* for this one, just for loop through all possible moves.
+    return self.move(smallest step that minimizes r^2 between me and my pilgrim)
 }
 
 function randomMoveBehavior() {
@@ -78,16 +91,16 @@ class CrusaderManager() {
       this.base_location = the church OR castle immediately next to you
     }
 
-    if (escort_signal) {
+    if (signal | COMM16.HEADER_MASK == COMM16.ESCORT_HEADER) { // this is how you figure out the signal type.
       this.mode = CONSTANTS.ESCORT
       this.mode_location = null;
-      this.base_location = CONSTANTS.COMM16.DECODE_ESCORT(escort_signal) // base_location is the pilgrim id
+      this.base_location = COMM16.DECODE_ESCORT(escort_signal) // base_location is the pilgrim id
     } else if (attack_signal) {
       this.mode = CONSTANTS.ATTACK
-      this.mode_location = CONSTANTS.COMM16.DECODE_ATTACK(attack_signal)
+      this.mode_location = COMM16.DECODE_ATTACK(attack_signal)
     } else if (distress_signal) {
       this.mode = CONSTANTS.DEFENSE
-      this.mode_location = CONSTANTS.COMM16.DECODE_DISTRESS(distress_signal)
+      this.mode_location = COMM16.DECODE_DISTRESS(distress_signal)
     }
 
     if (mode is ESCORT) {
@@ -125,15 +138,49 @@ class CrusaderManager() {
 class ProphetManager() {
   function init() {
   }
-  function turn() {
+  function turn(step, self) {
   }
 }
 
-// IF IT's A PREACHER, WE'RE JUST GONNA GIVE IT A CRUSADERMANAGER,
-// SINCE THERE's NO DIFFERENCE IN BEHAVIOR.
+// PREACHER BEHAVIOR is just CRUSADER - the escort stuff
 class PreacherManager() {
   function init() {
+    this.pass_map = getPassableLocations();
+    this.mode = CONSTANTS.DEFENSE
+    this.mode_location = [];
+    this.base_location == null;
   }
-  function turn() {
+  function turn(step, self) {
+    if (first move) {
+      this.base_location = the church OR castle immediately next to you
+    }
+
+    if (attack_signal) {
+      this.mode = CONSTANTS.ATTACK
+      this.mode_location = COMM16.DECODE_ATTACK(attack_signal)
+    } else if (distress_signal) {
+      this.mode = CONSTANTS.DEFENSE
+      this.mode_location = COMM16.DECODE_DISTRESS(distress_signal)
+    }
+
+    if (mode is DEFENSE) {
+      action = defensiveBehavior(self, mode_location, base_location)
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        this.modeLocation == null;
+        return null;
+      } else {
+        return action;
+      }
+    } else if (mode is ATTACK && this.modeLocation !== null){
+      action = offensiveBehavior(self, mode_location)
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        this.modeLocation == null;
+        return null;
+      } else {
+        return action;
+      }
+    } else {
+      return randomMoveBehavior(self);
+    }
   }
 }
