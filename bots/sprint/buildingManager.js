@@ -52,9 +52,11 @@ class ChurchManager(){
       }
       return null;
     } else if (this.stage == CONSTANTS.ATTACK) {
+      if (crusader adjacent to me) {
+        self.signal(COMM16.ATTACK(this.enemy_loc[0], this.enemy_loc[1]), r^2 of the crusader (1 or 2)) // That way the crusader will attack the enemy
+      }
       if (have resources to build crusader) {
         if (have room to build a crusader) {
-          self.signal(COMM16.ATTACK(this.enemy_loc[0], this.enemy_loc[1])) // That way the crusader will attack the enemy
           return build crusader;
         }
       }
