@@ -63,9 +63,13 @@ function escortBehavior(self, pilgrim_id) {
   if (church is next to pilgrim_id) {
     return CONSTANTS.ABANDON_ESCORT
   }
-  else
+  else if (enemies in attack_range) {
+    attack the enemy
+  } else {
     // you don't need A* for this one, just for loop through all possible moves.
     return self.move(smallest step that minimizes r^2 between me and my pilgrim)
+  }
+
 }
 
 function randomMoveBehavior() {
