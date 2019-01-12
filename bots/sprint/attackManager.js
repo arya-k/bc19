@@ -85,12 +85,9 @@ class CrusaderManager() {
     this.pass_map = getPassableLocations();
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = [];
-    this.base_location == null;
+    this.base_location == the church OR castle immediately next to you;
   }
   function turn(step, self) {
-    if (first move) {
-      this.base_location = the church OR castle immediately next to you
-    }
 
     if (signal | COMM16.HEADER_MASK == COMM16.ESCORT_HEADER) { // this is how you figure out the signal type.
       this.mode = CONSTANTS.ESCORT
@@ -149,12 +146,9 @@ class PreacherManager() {
     this.pass_map = getPassableLocations();
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = [];
-    this.base_location == null;
+    this.base_location == the church OR castle immediately next to you;
   }
   function turn(step, self) {
-    if (first move) {
-      this.base_location = the church OR castle immediately next to you
-    }
 
     if (attack_signal) {
       this.mode = CONSTANTS.ATTACK
