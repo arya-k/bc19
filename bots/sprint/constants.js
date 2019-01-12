@@ -21,6 +21,18 @@ export let COMM8 {
   BUILT_PREACHER: 3,
 
   BUILDUP_STAGE: 50,
+
+  // If we have <64 static messages, then we can setup location sending too:
+  HEADER_MASK: 0b11<<6,
+
+  X_HEADER: 0b10<<6,
+  X: function(x){ return 0b10<<6 + x; },
+  DECODE_X: function(s) { return s&63; }
+
+  Y_HEADER: 0b11<<6,
+  Y: function(y){ return 0b10<<6 + y; },
+  DECODE_Y: function(s) { return s&63; }
+
 }
 
 export let COMM16 {
@@ -43,6 +55,10 @@ export let COMM16 {
   ENEMYLOC_HEADER: 0b0100<<12,
   ENEMYLOC: function(x,y){ return (0b0100<<12) + (y<<6) + x; },
   DECODE_ENEMYLOC: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
+
+  GOTO_HEADER: 0b0101<<12,
+  GOTO: function(x,y){ return (0b0101<<12) + (y<<6) + x; },
+  DECODE_GOTO: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
 
 }
 
