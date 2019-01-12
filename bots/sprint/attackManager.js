@@ -89,7 +89,7 @@ class CrusaderManager() {
   }
   function turn(step, self) {
 
-    if (signal | COMM16.HEADER_MASK == COMM16.ESCORT_HEADER) { // this is how you figure out the signal type.
+    if (signal & COMM16.HEADER_MASK == COMM16.ESCORT_HEADER) { // this is how you figure out the signal type.
       this.mode = CONSTANTS.ESCORT
       this.mode_location = null;
       this.base_location = COMM16.DECODE_ESCORT(escort_signal) // base_location is the pilgrim id
