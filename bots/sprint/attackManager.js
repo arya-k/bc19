@@ -1,5 +1,6 @@
 import {SPECS} from 'battlecode';
-import {CONSTANTS,COMM8,COMM16,CIRCLES}
+import {CONSTANTS,COMM8,COMM16,CIRCLES} from './constants.js'
+import {move_towards, move_to} from './path.js'
 
 
 // crusader, prophet, preacher
