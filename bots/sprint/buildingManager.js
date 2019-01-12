@@ -83,8 +83,8 @@ class CastleManager() {
 
   function step(step, self) {
 
-    available_fuel = self.fuel
-    available_karbonite = self.karbonite
+    let available_fuel = self.fuel
+    let available_karbonite = self.karbonite
 
     for each r which has a r.castle_talk {
       if (castle_talk == COMM8.BUILDUP_STAGE) {
@@ -97,7 +97,7 @@ class CastleManager() {
         available_fuel -= fuel cost of a crusader // use SPECS.UNITS[SPECS.CRUSADER]... DON'T HARDCODE THE VALUES.
         available_karbonite -= karbonite cost of a crusader // use SPECS.UNITS[SPECS.CRUSADER]... DON'T HARDCODE THE VALUES.
       } else if (castle_talk & COMM8.HEADER_MASK == Y_HEADER) {
-        resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
+        let resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
         this.partial_point[r.id] = null;
         if (resource_point is one of our fuel or karbonite spots) {
           remove that point // we no longer need to send a pilgrim there - someone else already did!
@@ -112,7 +112,7 @@ class CastleManager() {
     } else if (this.signal_queue.length > 0){
       let sig = this.signal_queue.shift()
       self.signal(sig[0], sig[1]);
-      if (sig.length > 2) { // then there's a castleTalk too
+      if (sig.length > 2) { // when we're building a crusader, we have to queue the pilgrimSignal, and the Y coord castleTalk.
         self.castleTalk(sig[2])
       }
     }
@@ -128,6 +128,7 @@ class CastleManager() {
           return build_unit(unit, available_spot)
         }
       }
+      return null; // we have to wait until we can build the unit
     }
 
     if (this.stage == CONSTANTS.EXPLORATION) {
@@ -155,7 +156,7 @@ class CastleManager() {
         <repeat the for loop above, but replace all karbonites with fuels>
       }
     } else { // buildup or attack stage
-      if (no preacher in visible range) {
+      if (no preacher in visible range) { // we're missing our defensive preacher.
         if (have resources to build a preacher in self.karbonite and self.fuel) { // no more paired units, so we don't need to watch for others building crusaders.
           if (have room to build a preacher) {
             build a preacher (our defensive preacher)
