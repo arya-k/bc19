@@ -1,49 +1,51 @@
 import {SPECS} from 'battlecode';
 // church, castle
 
-function find_enemy_castle_location(self) {
-  figure out symmetry using self.pass_map {
-    return location of castle that is symmetric to self.me
-  }
-}
+class ChurchManager(){
+  function init(self) {
+    self.castleTalk(COMM8.BUILDUP_STAGE); // let castles know that the buildup stage has started.
 
-initialPartyPilgrims = 2;
-initialPartyPreachers = 1;
-class CastleManager(){
-  function init() {
-    this.initialPilgrims = 2;
-    this.initialPreachers = 1;
-    this.haveToBuildCrusader = false;
-  }
-  function step() {
-    if (haveToBuildCrusader){
-      this.haveToBuildCrusader = false;
-      signal(ESCORT: pilgrim that was assigned to something)
-      buildCrusader
+    this.stage = CONSTANTS.BUILDUP
+    // every time kryptonite > 70, we increment to_attack. 
+    // If kryptonite <70, we set to_attack to 0. 
+    // if to_attack >= 3, switch stage to ATTACK
+    this.to_attack = 0; 
+
+    // Every time a church is created, the pilgrim that created it will tell it where enemy castles are.
+    if (signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
+      this.enemy_loc = COMM16.DECODE_ENEMYLOC(signal);
     }
-    
-    for (signal in signals) {
-      if castletalks tell it to subtract initial units {
-        subtract from initalPilgrims or initialPreachers
+
+  }
+  function step(step, self) {
+    // check if stage can change:
+    if (this.stage == CONSTANTS.BUILDUP) { // check if we need to change the stage
+      if (this.kryptonite > 70) {
+        this.to_attack++;
+      } else {
+        this.to_attack = 0
+      }
+
+      if (this.to_attack >= 3) {
+        this.stage = CONSTANTS.ATTACK
       }
     }
-    
-    if (have to build initialPilgrims) {
-      this.haveToBuildCrusader = true;
-      castletalk(built_pilgrim)
-      signal(preacher_location)
-      build initial pilgrim
-    } else if (have to build initialPreacher) {
-      castletalk(built_preacher)
-      signal(ATTACK: find_enemy_castle_location() to the preacher)
-      build initial preacher
+
+    if (this.stage == CONSTANTS.BUILDUP) {
+      if (see any enemies) { // Look through arya's code -> he loops through visibleRobots to basically do this.
+        if (see my crusader and have the fuel to message it) {
+          self.signal(COMM16.DISTRESS(nearest enemy))
+        }
+      }
+      return null;
+    } else if (this.stage == CONSTANTS.ATTACK) {
+      if (have resources to build crusader) {
+        if (have room to build a crusader) {
+          self.signal(COMM16.ATTACK(this.enemy_loc[0], this.enemy_loc[1])) // That way the crusader will attack the enemy
+          return build crusader;
+        }
+      }
     }
 
-
   }
-
-}
-
-class ChurchManager(){
-
 }

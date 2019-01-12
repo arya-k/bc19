@@ -5,6 +5,11 @@ export let CONSTANTS {
   OFFENSE = 1,
   ESCORT = 2,
 
+  // stages:
+  EXPLORATION: 49,
+  BUILDUP: 50,
+  ATTACK: 51,
+
   ELIMINATED_ENEMY = 100,
   ABANDON_ESCORT = 101,
 
@@ -14,6 +19,8 @@ export let COMM8 {
   BUILT_PILGRIM: 1,
   BUILT_CRUSADER: 2,
   BUILT_PREACHER: 3,
+
+  BUILDUP_STAGE: 50,
 }
 
 export let COMM16 {
@@ -32,6 +39,10 @@ export let COMM16 {
   DISTRESS_HEADER: 0b0011<<12,
   DISTRESS: function(x,y){ return (0b0011<<12) + (y<<6) + x; },
   DECODE_DISTRESS: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
+
+  ENEMYLOC_HEADER: 0b0100<<12,
+  ENEMYLOC: function(x,y){ return (0b0100<<12) + (y<<6) + x; },
+  DECODE_ENEMYLOC: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
 
 }
 
