@@ -26,20 +26,19 @@ function defensiveBehavior(self, mode_location, base_location) {
   // Once you've killed the enemy, return to castle/church and deposit resources.
   var visibleRobots = this.getVisibleRobots()
   var unit = self.unit
-  visibleRobots.forEach(function(r){
+  for (const r of visibleRobots){
     if (self.team !== r.team){
-      distance = ((r.x-self.x)**2)+((r.y-self.y)**2)
-      if (distance > ATTACK_RANGES_MAX[unit]){
-        return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],ATTACK_RANGES_MIN[unit],ATTACK_RANGES_MAX[unit])
+      distance = dist([self.x,self.y],[r.x,r.y])
+      if (distance > SPECS.UNITS[unit].ATTACK_RADIUS[1]){
+        return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
       }
-      else if (distance <= ATTACK_RANGES_MAX[unit]){
+      else if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
         return this.attack(r.x-self.x,r.y-self.y)
       }
     }
-
-  })
-  if (mode_location !== null) {
-    if ((((mode_location.x-self.x)**2)+((mode_location.y-self.y)**2)) > VISIBLE_RANGES[unit]) {
+  
+}  if (mode_location !== null) {
+    if (dist([mode_location.x,mode_location.y],[self.x,self.y]) > SPECS.UNITS[unit].VISION_RADIUS) {
         return move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[r.x,r.y])
     } else { // we've killed the enemy
         return CONSTANTS.ELIMINATED_ENEMY;
@@ -47,7 +46,7 @@ function defensiveBehavior(self, mode_location, base_location) {
   }
   
   if (mode_location === null) {
-    if ((((base_location.x-self.x)**2)+((base_location.y-self.y)**2)) > 2) {
+    if (dist([mode_location.x,mode_location.y],[self.x,self.y]) > 2) {
        return move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[base_location.x,base_location.y])
     }
     else if (self.karbonite > 0) {
@@ -64,19 +63,19 @@ function offensiveBehavior(self, mode_location) {
   // A* toward target
   var visibleRobots = this.getVisibleRobots()
   var unit = self.unit
-  visibleRobots.forEach(function(r){
-    if (self.team !== r.team){
-      distance = ((r.x-self.x)**2)+((r.y-self.y)**2)
-      if (distance > ATTACK_RANGES_MAX[unit]){
-        return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],ATTACK_RANGES_MIN[unit],ATTACK_RANGES_MAX[unit])
+  for (const r of visibleRobots){
+      if (self.team !== r.team){
+        distance = dist([self.x,self.y],[r.x,r.y])
+        if (distance > SPECS.UNITS[unit].ATTACK_RADIUS[1]){
+          return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+        }
+        else if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
+          return this.attack(r.x-self.x,r.y-self.y)
+        }
       }
-      else if (distance <= ATTACK_RANGES_MAX[unit]){
-        return this.attack(r.x-self.x,r.y-self.y)
-      }
-    }
-
-  })
-  else if ((((mode_location.x-self.x)**2)+((mode_location.y-self.y)**2)) > VISIBLE_RANGES[unit]) {
+    
+  }
+  else if (dist([mode_location.x,mode_location.y],[self.x,self.y]) > SPECS.UNITS[unit].VISION_RADIUS) {
       return move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[r.x,r.y])
   }
   else {
@@ -88,22 +87,22 @@ function escortBehavior(self, pilgrim_id) {
   var pilgrim = this.getRobot(pilgrim_id)
   var pilgrimX = pilgrim.x
   var pilgrimY = pilgrim.y
-  CIRCLES[2].forEach(function(r){
+  for (const r of CIRCLES[2]){
     if (this.getRobot[robotMap[r[1]+pilgrimY][r[0]+pilgrimX]].unit==1){
       return CONSTANTS.ABANDON_ESCORT
     }
-  })
+  }
 
   var visibleRobots = this.getVisibleRobots()
   var unit = self.unit
-  visibleRobots.forEach(function(r){
+  for (const r of visibleRobots){
     if (self.team !== r.team){
-      if (distance <= ATTACK_RANGES_MAX[unit]){
+      if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
         return this.attack(r.x-self.x,r.y-self.y)
       }
     }
 
-  })
+  }
   
   else {
     var dx = pilgrimX-self.x
@@ -125,24 +124,23 @@ function escortBehavior(self, pilgrim_id) {
 function randomMoveBehavior() {
   var visibleRobots = this.getVisibleRobots()
   var unit = self.unit
-  visibleRobots.forEach(function(r){
-    if (self.team !== r.team){
-      distance = ((r.x-self.x)**2)+((r.y-self.y)**2)
-      if (distance > ATTACK_RANGES_MAX[unit]){
-        return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],ATTACK_RANGES_MIN[unit],ATTACK_RANGES_MAX[unit])
-      }
-      else if (distance <= ATTACK_RANGES_MAX[unit]){
-        return this.attack(r.x-self.x,r.y-self.y)
-      }
-    }
-
-  })
+  for (const r of visibleRobots){
+      if (self.team !== r.team){
+        distance = dist([self.x,self.y],[r.x,r.y])
+        if (distance > SPECS.UNITS[unit].ATTACK_RADIUS[1]){
+          return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+        }
+        else if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
+          return this.attack(r.x-self.x,r.y-self.y)
+        }
+      } 
+  }
   var pass = this.getPassableMap()
-  CIRCLES[1].forEach(function(r){
+  for (const r of CIRCLES[1]){
     if ((self.y+r[1])>0 && (self.x+r[0])>0 && (self.y+r[1])<pass.length && (self.x+r[0])<pass[0].length && pass[self.y+r[1]][self.x+r[0]]){
       return this.move(r.x-self.x,r.y-self.y)
     }
-  })
+  }
 }
 
 
