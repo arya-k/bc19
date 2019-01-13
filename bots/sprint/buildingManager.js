@@ -152,7 +152,7 @@ class CastleManager() {
   function constructor(self) {
     const pass_map, fuel_map, karbonite_map, vis_map = self.map, self.fuel_map, self.karbonite_map, self.getVisibleRobotMap();
     this.enemy_loc = determine_enemy_location(pass_map, fuel_map, karbonite_map, [self.me.x, self.me.y])
-    this.canReachEnemy = move_to(pass_map, vis_map, [self.me.x, self.me.y], this.enemy_loc) !== null // move_to comes from path.js
+    this.canReachEnemy = move_to(pass_map, vis_map, SPECS.UNITS[SPECS.PREACHER].SPEED, [self.me.x, self.me.y], this.enemy_loc) !== null // move_to comes from path.js
 
     res = bfs_resources(pass_map, fuel_map, karbonite_map, [self.me.x, self.me.y])
     this.fuel_spots = [res.fuel[:Math.ceil(res.fuel.length/3)]]
