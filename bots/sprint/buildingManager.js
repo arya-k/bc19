@@ -172,45 +172,68 @@ class CastleManager() {
     let available_fuel = self.fuel
     let available_karbonite = self.karbonite
     let adjacent_preacher = null;
+    let enemy_loc = null;
+    let adjacent_count = 0;
+    let available_spots = CIRCLES[2];
+    let near_pilgrim = null;
+    let preacher_visible = false;
 
     for (const r of self.getVisibleRobots()){
+      let dist = dist([self.me.x, self.me.y], [r.x, r.y]);
+      if (dist <= 2){
+        adjacent_count++;
+        let temp = available_spots.indexOf([r.x-self.me.x, r.y-self.me.y]);
+        available_spots.splice(temp, 1);
+      }
+
       if (r.team != null && r.team == self.me.team){ // ally!
         const castle_talk = r.castle_talk;
         if (castle_talk != null) {
           if (castle_talk == COMM8.BUILDUP_STAGE) {
             this.stage = CONSTANTS.BUILDUP
+          
           } else if (castle_talk == COMM8.BUILT_PREACHER) {
             this.preacher_built = true;
+          
           } else if (castle_talk & COMM8.HEADER_MASK == X_HEADER) {
             this.partial_point[r.id] = COMM8.DECODE_X(castle_talk)
             // someone just built a pilgrim: we need to make sure we don't use up their crusader fund:
             available_fuel -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL;
             available_karbonite -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE
+          
           } else if (castle_talk & COMM8.HEADER_MASK == Y_HEADER) {
             let resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
             this.partial_point[r.id] = null;
             if (this.fuel_spots.includes(resource_point)) {
               let index = this.fuel_spots.indexOf(resource_point)// we no longer need to send a pilgrim there - someone else already did!
               this.fuel_spots.splice(index, 1);
-            }
-            else if (this.karbonite_spots.includes(resource_point)){
+            }else if (this.karbonite_spots.includes(resource_point)){
               let index = this.karbonite_spots.indexOf(resource_point)// we no longer need to send a pilgrim there - someone else already did!
               this.karbonite_spots.splice(index, 1);
             }
           }
         }
+        if (r.unit == SPECS.PREACHER) {
+          preacher_visible = true;
+          if (dist <= 2){
+            adjacent_preacher = [r, dist];
+            if (enemy_loc != null)
+              self.signal(COMM16.DISTRESS(...enemy_loc), dist([self.me.x, self.me.y], [adjacent_preacher.x, adjacent_preacher.y])) 
+          }
+        } else if (r.unit == SPECS.PILGRIM) {
+          if (near_pilgrim == null || near_pilgrim[1] > dist){
+            near_pilgrim = [r, dist]
+          }
+        }
       }
       else { //enemy!
+        enemy_loc = [r.x, r.y]
         if (adjacent_preacher != null)
           self.signal(COMM16.DISTRESS(enemy_loc), dist([self.me.x, self.me.y], [adjacent_preacher.x, adjacent_preacher.y]))
       }
     }
 
-    if (i see an enemy) {
-      if (there is a preacher adjacent) {
-        self.signal(COMM16.DISTRESS(enemy_loc), r^2 of adjacent preacher (1 or 2))
-      }
-    } else if (this.signal_queue.length > 0){
+    if (enemy_loc == null && this.signal_queue.length > 0){ // no visible enemies
       let sig = this.signal_queue.shift()
       self.signal(sig[0], sig[1]);
       if (sig.length > 2) { // when we're building a crusader, we have to queue the pilgrimSignal, and the Y coord castleTalk.
@@ -220,53 +243,79 @@ class CastleManager() {
 
     if (this.build_queue.length > 0){
       let unit = this.build_queue.shift()
-      if (have resources to build unit) {
-        if (have room to build unit) {
-          if (the unit is a crusader) {
-            let pilgrim_id = (find id of the nearby pilgrim)
-            add [COMM16.ESCORT(pilgrim_id), r^2 of crusader youre about to build (1 or 2)] to this.signal_queue
+      if (self.fuel > SPECS.UNITS[unit].CONSTRUCTION_FUEL && self.karbonite > SPECS.UNITS[unit].CONSTRUCTION_KARBONITE) {
+        if (available_spots != []) {
+          if (unit == SPECS) {
+            let pilgrim_id = near_pilgrim.id;
+            this.signal_queue.push([COMM16.ESCORT(pilgrim_id), dist([0,0], available_spots[0])])
           }
-          return build_unit(unit, available_spot)
+          return build_unit(unit, ...available_spots[0]);
         }
       }
       return null; // we have to wait until we can build the unit
     }
 
-    if (this.stage == CONSTANTS.EXPLORATION) {
+    if (this.stage == CONSTANTS.EXPLORATION) { // if in exploration stage
       if (!this.preacher_built && this.canReachEnemy) {
-        if (have resources to build a preacher in available_fuel and available_karbonite) {
-          if (have room to build a preacher) {
-            castleTalk(CONSTANTS.BUILT_PREACHER)
-            add [COMM16.ATTACK(this.enemy_loc), r^2 of built preacher (1 or 2)] to this.signal_queue
-            return build a preacher
+        if (this.available_fuel > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_FUEL && this.available_karbonite > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_KARBONITE) {
+          if (available_spots != []) {
+            castleTalk(CONSTANTS.BUILT_PREACHER);
+            this.signal_queue([COMM16.ATTACK(this.enemy_loc), dist([0,0], available_spots[0])]);
+            return build_unit(SPECS.PREACHER, ...available_spots[0]);
           }
         }
       } else if (this.fuel_spots.length + this.karbonite_spots.length > 0) {
-        for each karbonite spot {
-          if (the x value of the karbonite spot is not in any this.partial_points) { // no other units MIGHT be trying to build at that spot.
-            if (we have the resources in available_fuel + available_karbonite to build a pilgrim AND crusader) {
-              if (we have the space to build a pilgrim) {
-                castleTalk(COMM8.X(the x coord of the karbonite spot we are sending the pilgrim to))
-                add [COMM16.GOTO(karbonite spot), r^2 of pilgrim to be built (1 or 2), COMM8.Y(y coord of the karbonite spot)] to this.signal_queue
-                add SPECS.CRUSADER to this.build_queue
-                return build a pilgrim
+        let bool = false;
+        let spot = null;
+        for (const k_spot of this.karbonite_spots){
+          spot = k_spot;
+          if (Object.values(this.partial_points).includes(k_spot[0])) { // no other units MIGHT be trying to build at that spot.
+            if (this.available_fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL && 
+              this.available_karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) {
+              if (available_spots != []) {
+                bool = true;
               }
             }
           }
         }
-        <repeat the for loop above, but replace all karbonites with fuels>
+        if (bool){
+          castleTalk(COMM8.X(spot[0]));
+          this.signal_queue.push([COMM16.GOTO(spot), dist([0,0], available_spots[0]), COMM8.Y(spot[1])]);
+          this.build_queue.push(SPECS.CRUSADER);
+          let index = this.karbonite_spots.indexOf(spot);
+          this.karbonite_spots.splice(index, 1)
+          return build_unit(SPECS.PILGRIM, ...available_spots[0]);
+        }
+
+        for (const f_spot of this.fuel_spots){
+          spot = f_spot;
+          if (Object.values(this.partial_points).includes(f_spot[0])) { // no other units MIGHT be trying to build at that spot.
+            if (this.available_fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL && 
+              this.available_karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) {
+              if (available_spots != []) {
+                bool = true;
+              }
+            }
+          }
+        }
+        if (bool){
+          castleTalk(COMM8.X(spot[0]));
+          this.signal_queue.push([COMM16.GOTO(spot), dist([0,0], available_spots[0]), COMM8.Y(spot[1])]);
+          this.build_queue.push(SPECS.CRUSADER);
+          let index = this.fuel_spots.indexOf(spot);
+          this.fuel_spots.splice(index, 1)
+          return build_unit(SPECS.PILGRIM, ...available_spots[0]);
+        }
       }
     } else { // buildup or attack stage
-      if (no preacher in visible range) { // we're missing our defensive preacher.
-        if (have resources to build a preacher in self.karbonite and self.fuel) { // no more paired units, so we don't need to watch for others building crusaders.
-          if (have room to build a preacher) {
-            build a preacher (our defensive preacher)
+      if (!preacher_visible) { // we're missing our defensive preacher.
+        if (self.fuel > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_FUEL && 
+        self.karbonite > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_KARBONITE) { // no more paired units, so we don't need to watch for others building crusaders.
+          if (available_spots != []) {
+            return build_unit(SPECS.PREACHER, ...available_spots[0]);
           }
         }
       }
     }
-
-
-
   }
 }
