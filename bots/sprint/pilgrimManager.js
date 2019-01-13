@@ -65,7 +65,7 @@ class PilgrimManager {
         self.stage = CONSTANTS.MINE;
         return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
       } else {
-        let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.base_loc, 1, 2); // get adjacent
+        let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.base_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED, 1, 2); // get adjacent
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         }
@@ -77,7 +77,7 @@ class PilgrimManager {
       if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
         return self.mine();
       } else if (mine_loc !== null) {
-        let move_node = move_to(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.mine_loc)
+        let move_node = move_to(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.mine_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED)
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
         }
@@ -88,7 +88,7 @@ class PilgrimManager {
     if (this.stage == CONSTANTS.BUILD) {
       if (Math.abs(self.me.x - this.new_base_loc[0]) <= 1 &&
           Math.abs(self.me.y - this.new_base_loc[1]) <= 1) {
-        let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.new_base_loc, 1, 2)
+        let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.new_base_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED, 1, 2)
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         }
