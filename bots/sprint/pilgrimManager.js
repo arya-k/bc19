@@ -54,7 +54,7 @@ class PilgrimManager {
       }
     } else if (this.stage == CONSTANTS.BUILD) {
       if (self.karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE ||
-          self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
+          self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL + 2) { // account for signal, too.
         this.stage = CONSTANTS.MINE; // can no longer afford church
       }
     }
@@ -94,6 +94,7 @@ class PilgrimManager {
         }
         return null;
       } else {
+        self.signal(COMM16.ENEMYLOC(this.base_loc[0], this.base_loc[1]), dist([self.me.x, self.me.y], this.new_base_loc))
         this.base_loc = this.new_base_loc;
         this.stage = CONSTANTS.MINE;
         this.base_near_mine = true;

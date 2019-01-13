@@ -61,8 +61,12 @@ class ChurchManager(){
     // if to_attack >= 3, switch stage to ATTACK
 
     // Every time a church is created, the pilgrim that created it will tell it where enemy castles are.
-    if (signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
-      this.enemy_loc = COMM16.DECODE_ENEMYLOC(signal);
+    this.enemy_loc = null;
+    for (const r of self.getVisibleRobots()) {
+      if (r.signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
+        let my_loc = COMM16.DECODE_ENEMYLOC(r.signal);
+        this.enemy_loc = determine_enemy_location(self.map, self.fuel_map, self.karbonite_map, my_loc);
+      }
     }
 
   }
