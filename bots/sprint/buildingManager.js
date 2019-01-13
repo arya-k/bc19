@@ -1,28 +1,64 @@
 import {SPECS} from 'battlecode';
+import {CONSTANTS, CIRCLES, COMM8, COMM16} from './constants.js'
 // church, castle
 
-function determine_enemy_location(pass_map, fuel_map, my_location) {
+function determine_enemy_location(pass_map, fuel_map, karbonite_map, my_location) {
   // given my_location: [x, y] and the two maps, determine the map symmetry (vertical or horizontal).
   // from there, return the location of the enemy based on your location, and the map symmetry.
   // it's important that we do this in a DETERMINISTIC way (so no random point sampling.)
   // We need this function to return the same result, every time.
 }
 
+
 function bfs_resources(pass_map, fuel_map, karbonite_map, my_location) {
   // copy paste (almost) of arya's code. returns the fuel spots and the karbonite spots.
   // for fuel/karbonite spots, it's a list of points
   // each point is a list [x_coord, y_coord]
+  const x, y = my_location[0], my_location[1]
+  var resource_map = {fuel: [], karbonite: []};
+
+    // Generate the visited set:
+    let visited = new Set()
+    let queue = [[x,y]]
+
+    while (queue.length > 0) {
+        let current = queue.shift()
+
+        if (visited.has((current.y*64) + current.x)) { continue; } // seen before.
+        visited.add((current.y*64) + current.x) // mark as visited
+
+        // check for fuel + karbonite:
+        if (fuel_map[current.y][current.x]) {
+            resource_map.fuel.push([current.x, current.y, 0, CONSTANTS.NO_ROBOT_ASSIGNED, -1000])
+        } else if (karbonite_map[current.y][current.x]) {
+            resource_map.karbonite.push([current.x, current.y, 0, CONSTANTS.NO_ROBOT_ASSIGNED, -1000])
+        }
+
+        CIRCLES[SPECS.UNITS[SPECS.PREACHER].SPEED].forEach(function(dir) { // add nbrs
+            if ((current.x + dir[0]) >= 0 && (current.x + dir[0]) < pass_map[0].length) {
+                if ((current.y + dir[1]) >= 0 && (current.y + dir[1]) < pass_map.length) { // in map range
+                    if (pass_map[current.y + dir[1]][current.x + dir[0]]) { // can go here
+                        queue.push([current.x + dir[0], current.y + dir[1]])
+                    }
+                }
+            }
+        })
+    }
+    return resource_map;
+}
+
+function dist(my_location, other_location){ // returns the squared distance
+  return (my_location[0]-other_location[1])**2+(mylocation[1]-other_location[1])**2
 }
 
 class ChurchManager(){
-  function init(self) {
+  function constructor(self) {
     self.castleTalk(COMM8.BUILDUP_STAGE); // let castles know that the buildup stage has started.
 
     this.stage = CONSTANTS.BUILDUP
-    // every time kryptonite > 70, we increment to_attack. 
-    // If kryptonite <70, we set to_attack to 0. 
+    // every time karbonite > 70, we increment to_attack. 
+    // If karbonite <70, we set to_attack to 0. 
     // if to_attack >= 3, switch stage to ATTACK
-    this.to_attack = 0; 
 
     // Every time a church is created, the pilgrim that created it will tell it where enemy castles are.
     if (signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
@@ -33,7 +69,7 @@ class ChurchManager(){
   function step(step, self) {
     // check if stage can change:
     if (this.stage == CONSTANTS.BUILDUP) { // check if we need to change the stage
-      if (this.kryptonite > 70) {
+      if (this.karbonite > 70) {
         this.to_attack++;
       } else {
         this.to_attack = 0
@@ -44,20 +80,59 @@ class ChurchManager(){
       }
     }
 
-    if (this.stage == CONSTANTS.BUILDUP) {
-      if (see any enemies) { // Look through arya's code -> he loops through visibleRobots to basically do this.
-        if (see my crusader and have the fuel to message it) {
-          self.signal(COMM16.DISTRESS(nearest enemy))
+    if (this.stage == CONSTANTS.BUILDUP) { // buildup stage
+      let close_crusader = null;
+      let enemySighting = null; // check if there are any enemies.
+      for (const r of self.getVisibleRobots()) {
+        if (r.team !== undefined) { 
+          let dist = dist([r.x, r.y], [self.me.x, self.me.y]); 
+          if (r.team != self.me.team) { // enemy sighting!
+            if (SPECS.UNITS[r.unit].SPEED != null) { // not castle/church
+              if (enemySighting != null && enemySighting[1] > dist) 
+                enemySighting = [r, dist]; //will end up being the closest enemy
+            }
+          }
+          else { // ally sighting!
+            if (r.unit == SPECS.CRUSADER)
+              close_crusader = [r, dist];
+          }
         }
       }
-      return null;
-    } else if (this.stage == CONSTANTS.ATTACK) {
-      if (crusader adjacent to me) {
-        self.signal(COMM16.ATTACK(this.enemy_loc[0], this.enemy_loc[1]), r^2 of the crusader (1 or 2)) // That way the crusader will attack the enemy
+
+      if (enemySighting != null){ // if see an enemy and ally crusader, signal distress to ally if fuel is sufficient
+        if (close_crusader != null && self.fuel > Math.ceil(Math.sqrt(close_crusader[1])))
+          self.signal(COMM16.DISTRESS(nearest enemy), Math.ceil(Math.sqrt(close_crusader[1])));
       }
-      if (have resources to build crusader) {
-        if (have room to build a crusader) {
-          return build crusader;
+      return null;
+
+    } else if (this.stage == CONSTANTS.ATTACK) { // attack stage
+      let adjacent_crusader = null; // the adjacent crusader
+      let open = [false, null]; // adjacent empty point
+      let visibleRobotMap = self.getVisibleRobotMap()
+      for (const dir of CIRCLES[2]){ //check each cardinal direction
+        let id = visibleRobotMap[self.me.y + dir[0]][self.me.x + dir[1]];
+        if (id > 0) {// if there's a robot there
+          let r = this.getRobot(id);
+          if (r.unit == SPECS.CRUSADER && r.team != self.me.team){
+            adjacent_crusader = r;
+            if (open[0])
+              break;
+          }
+        }
+        else if (id == 0){
+          open = [true, [self.me.x + dir[0], self.me.y + dir[1]];
+          if (adjacent_crusader != null)
+            break;
+        }
+      }
+      if (adjacent_crusader != null) {
+        self.signal(COMM16.ATTACK(this.enemy_loc[0], this.enemy_loc[1]), 
+        Math.ceil(Math.sqrt(dist([adjacent_crusader.x, adjacent_crusader.y], [self.me.x, self.me.y])))) // That way the crusader will attack the enemy
+      }
+      if (self.karbonite > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE &&
+        self.fuel > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) { // if we are able to build a crusader, build it
+        if (open) {
+          return self.build_unit(SPECS.CRUSADER, open[1][0], open[1][1]);
         }
       }
     }
@@ -66,13 +141,14 @@ class ChurchManager(){
 }
 
 class CastleManager() {
-  function init(self) {
-    this.enemy_loc = determine_enemy_location(<whatever the args are>)
+  function constructor(self) {
+    const pass_map, fuel_map, karbonite_map = self.map, self.fuel_map, self.karbonite_map;
+    this.enemy_loc = determine_enemy_location(pass_map, fuel_map, karbonite_map, [self.me.x, self.me.y])
     this.canReachEnemy = move_to(<args>, [self.me.x, self.me.y], this.enemy_loc) !== null // move_to comes from path.js
 
     res = bfs_resources(pass_map, fuel_map, karbonite_map, [self.me.x, self.me.y])
-    this.fuel_spots = [first third of res[0] (round up) ]
-    this.karbonite_spots = [first third of res[1] (round up) ]
+    this.fuel_spots = [res.fuel[:Math.ceil(res.fuel.length/3)]]
+    this.karbonite_spots = [res.karbonite[:Math.ceil(res.karbonite.length/3)]]
 
     this.preacher_built = false;
 
@@ -88,21 +164,24 @@ class CastleManager() {
     let available_fuel = self.fuel
     let available_karbonite = self.karbonite
 
-    for each r which has a r.castle_talk {
-      if (castle_talk == COMM8.BUILDUP_STAGE) {
-        this.stage = CONSTANTS.BUILDUP
-      } else if (castle_talk == COMM8.BUILT_PREACHER) {
-        this.preacher_built = true;
-      } else if (castle_talk & COMM8.HEADER_MASK == X_HEADER) {
-        this.partial_point[r.id] = COMM8.DECODE_X(castle_talk)
-        // someone just built a pilgrim: we need to make sure we don't use up their crusader fund:
-        available_fuel -= fuel cost of a crusader // use SPECS.UNITS[SPECS.CRUSADER]... DON'T HARDCODE THE VALUES.
-        available_karbonite -= karbonite cost of a crusader // use SPECS.UNITS[SPECS.CRUSADER]... DON'T HARDCODE THE VALUES.
-      } else if (castle_talk & COMM8.HEADER_MASK == Y_HEADER) {
-        let resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
-        this.partial_point[r.id] = null;
-        if (resource_point is one of our fuel or karbonite spots) {
-          remove that point // we no longer need to send a pilgrim there - someone else already did!
+    for (const r of self.getVisibleRobots()){
+      const castle_talk = r.castle_talk;
+      if (castle_talk != null) {
+        if (castle_talk == COMM8.BUILDUP_STAGE) {
+          this.stage = CONSTANTS.BUILDUP
+        } else if (castle_talk == COMM8.BUILT_PREACHER) {
+          this.preacher_built = true;
+        } else if (castle_talk & COMM8.HEADER_MASK == X_HEADER) {
+          this.partial_point[r.id] = COMM8.DECODE_X(castle_talk)
+          // someone just built a pilgrim: we need to make sure we don't use up their crusader fund:
+          available_fuel -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL;
+          available_karbonite -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE
+        } else if (castle_talk & COMM8.HEADER_MASK == Y_HEADER) {
+          let resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
+          this.partial_point[r.id] = null;
+          if (resource_point is one of our fuel or karbonite spots) {
+            remove that point // we no longer need to send a pilgrim there - someone else already did!
+          }
         }
       }
     }
