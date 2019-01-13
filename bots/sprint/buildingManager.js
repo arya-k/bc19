@@ -34,7 +34,7 @@ function bfs_resources(pass_map, fuel_map, karbonite_map, my_location) {
             resource_map.karbonite.push([current.x, current.y, 0, CONSTANTS.NO_ROBOT_ASSIGNED, -1000])
         }
 
-        CIRCLES[SPECS.UNITS[SPECS.PREACHER].SPEED].forEach(function(dir) { // add nbrs
+        for (dir of CIRCLES[SPECS.UNITS[SPECS.PREACHER].SPEED]){ // add nbrs
             if ((current.x + dir[0]) >= 0 && (current.x + dir[0]) < pass_map[0].length) {
                 if ((current.y + dir[1]) >= 0 && (current.y + dir[1]) < pass_map.length) { // in map range
                     if (pass_map[current.y + dir[1]][current.x + dir[0]]) { // can go here
@@ -42,7 +42,7 @@ function bfs_resources(pass_map, fuel_map, karbonite_map, my_location) {
                     }
                 }
             }
-        })
+        }
     }
     return resource_map;
 }
@@ -179,7 +179,7 @@ class CastleManager() {
         } else if (castle_talk & COMM8.HEADER_MASK == Y_HEADER) {
           let resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
           this.partial_point[r.id] = null;
-          if (resource_point is one of our fuel or karbonite spots) {
+          if (this.fuel_spots.includes() {
             remove that point // we no longer need to send a pilgrim there - someone else already did!
           }
         }
