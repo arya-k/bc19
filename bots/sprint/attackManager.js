@@ -30,7 +30,12 @@ function defensiveBehavior(self, mode_location, base_location) {
     if (self.team !== r.team){
       distance = dist([self.x,self.y],[r.x,r.y])
       if (distance > SPECS.UNITS[unit].ATTACK_RADIUS[1]){
-        return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+        var move = move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+        if (move !== null) {
+          return self.move(move.x - self.me.x, move.y - self.me.y);
+        } else {
+          return null; // NO MOVE POSSIBLE
+        }
       }
       else if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
         return this.attack(r.x-self.x,r.y-self.y)
@@ -39,16 +44,27 @@ function defensiveBehavior(self, mode_location, base_location) {
   
 }  if (mode_location !== null) {
     if (dist([mode_location.x,mode_location.y],[self.x,self.y]) > SPECS.UNITS[unit].VISION_RADIUS) {
-        return move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[r.x,r.y])
+        move = move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[mode_location.x,mode_location.y])
+        if (move !== null) {
+          return self.move(move.x - self.me.x, move.y - self.me.y);
+        } else {
+          return null; // NO MOVE POSSIBLE
+        }
     } else { // we've killed the enemy
         return CONSTANTS.ELIMINATED_ENEMY;
     }
   }
   
   if (mode_location === null) {
-    if (dist([mode_location.x,mode_location.y],[self.x,self.y]) > 2) {
-       return move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[base_location.x,base_location.y])
+    if (dist([base_location.x,base_location.y],[self.x,self.y]) > 2) {
+       move= move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[base_location.x,base_location.y])
+       if (move !== null) {
+         return self.move(move.x - self.me.x, move.y - self.me.y);
+       } else {
+         return null; // NO MOVE POSSIBLE
+       }
     }
+    
     else if (self.karbonite > 0) {
        return(base_location.x-self.x,base_location.y-self.y,self.karbonite,0)
     } else {
@@ -67,7 +83,12 @@ function offensiveBehavior(self, mode_location) {
       if (self.team !== r.team){
         distance = dist([self.x,self.y],[r.x,r.y])
         if (distance > SPECS.UNITS[unit].ATTACK_RADIUS[1]){
-          return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+          move= move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+          if (move !== null) {
+            return self.move(move.x - self.me.x, move.y - self.me.y);
+          } else {
+            return null; // NO MOVE POSSIBLE
+          }
         }
         else if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
           return this.attack(r.x-self.x,r.y-self.y)
@@ -76,7 +97,12 @@ function offensiveBehavior(self, mode_location) {
     
   }
   else if (dist([mode_location.x,mode_location.y],[self.x,self.y]) > SPECS.UNITS[unit].VISION_RADIUS) {
-      return move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[r.x,r.y])
+      move= move_to(this.getPassableMap(),this.getVisibleRobotMap(),[self.x,self.y],[mode_location.x,mode_location.y])
+      if (move !== null) {
+        return self.move(move.x - self.me.x, move.y - self.me.y);
+      } else {
+        return null; // NO MOVE POSSIBLE
+      }
   }
   else {
     return CONSTANTS.ELIMINATED_ENEMY;
@@ -89,7 +115,7 @@ function escortBehavior(self, pilgrim_id) {
   var pilgrimY = pilgrim.y
   for (const r of CIRCLES[2]){
     if (this.getRobot[robotMap[r[1]+pilgrimY][r[0]+pilgrimX]].unit==1){
-      return CONSTANTS.ABANDON_ESCORT
+      return [CONSTANTS.ABANDON_ESCORT,this.getRobot[robotMap[r[1]+pilgrimY][r[0]+pilgrimX]].id]
     }
   }
 
@@ -98,7 +124,7 @@ function escortBehavior(self, pilgrim_id) {
   for (const r of visibleRobots){
     if (self.team !== r.team){
       if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
-        return this.attack(r.x-self.x,r.y-self.y)
+        return [0,this.attack(r.x-self.x,r.y-self.y)]
       }
     }
 
@@ -112,10 +138,10 @@ function escortBehavior(self, pilgrim_id) {
     var dr = (dx*dx)+(dy*dy)
     if (dr <= 9)
     {
-      return this.move(dx,dy)
+      return [0,this.move(dx,dy)]
     }
     else{
-      return this.move((dx/Math.abs(dx))*2,(dy/Math.abs(dy))*2)
+      return [0,this.move((dx/Math.abs(dx))*2,(dy/Math.abs(dy))*2)]
     }
   }
 
@@ -128,7 +154,12 @@ function randomMoveBehavior() {
       if (self.team !== r.team){
         distance = dist([self.x,self.y],[r.x,r.y])
         if (distance > SPECS.UNITS[unit].ATTACK_RADIUS[1]){
-          return move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+          move= move_towards(this.getPassableMap(),this,getVisibleRobotMap(),[self.x,self.y],[r.x,r.y],SPECS.UNITS[unit].ATTACK_RADIUS[0],SPECS.UNITS[unit].ATTACK_RADIUS[1])
+          if (move !== null) {
+            return self.move(move.x - self.me.x, move.y - self.me.y);
+          } else {
+            return null; // NO MOVE POSSIBLE
+          }
         }
         else if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
           return this.attack(r.x-self.x,r.y-self.y)
@@ -136,7 +167,7 @@ function randomMoveBehavior() {
       } 
   }
   var pass = this.getPassableMap()
-  for (const r of CIRCLES[1]){
+  for (const r of CIRCLES[SPECS.UNITS[unit].SPEED]){
     if ((self.y+r[1])>0 && (self.x+r[0])>0 && (self.y+r[1])<pass.length && (self.x+r[0])<pass[0].length && pass[self.y+r[1]][self.x+r[0]]){
       return this.move(r.x-self.x,r.y-self.y)
     }
@@ -157,40 +188,48 @@ class CrusaderManager() {
     }
   }
   function turn(step, self) {
-
-    if (signal && COMM16.HEADER_MASK == COMM16.ESCORT_HEADER) { // this is how you figure out the signal type.
-      this.mode = CONSTANTS.ESCORT
-      this.mode_location = null;
-      this.base_location = COMM16.DECODE_ESCORT(escort_signal) // base_location is the pilgrim id
-    } else if (attack_signal) {
-      this.mode = CONSTANTS.ATTACK
-      this.mode_location = COMM16.DECODE_ATTACK(attack_signal)
-    } else if (distress_signal) {
-      this.mode = CONSTANTS.DEFENSE
-      this.mode_location = COMM16.DECODE_DISTRESS(distress_signal)
+    for (const r of self.getVisibleRobots()){
+      if (r.signal){
+        if (COMM16.HEADER_MASK == COMM16.ESCORT_HEADER){
+          this.mode = CONSTANTS.ESCORT
+          this.mode_location = null;
+          var tmp = COMM16.DECODE_ESCORT(escort_signal)
+          this.base_location = {x:tmp[0],y:tmp[1],}
+        }
+        else if (COMM16.HEADER_MASK == COMM16.ATTACK_HEADER){
+          this.mode = CONSTANTS.ATTACK
+          var tmp = COMM16.DECODE_ATTACK(attack_signal)
+          this.mode_location = {x:tmp[0],y:tmp[1],}
+        }
+        else if (COMM16.HEADER_MASK == COMM16.DISTRESS_HEADER){
+          this.mode = CONSTANTS.DEFENSE
+          var tmp = COMM16.DECODE_DISTRESS(distress_signal)
+          this.mode_location = {x:tmp[0],y:tmp[1],}
+        }
+      } 
     }
 
-    if (mode is ESCORT) {
-      action = escortBehavior(self, base_location)
-      if (action == CONSTANTS.ABANDON_ESCORT) {
+    if (this.mode == CONSTANTS.ESCORT) {
+      var action = escortBehavior(self, base_location)
+      if (action[0] == CONSTANTS.ABANDON_ESCORT) {
         this.mode = CONSANTS.DEFENSE
         this.mode_location = null;
-        this.base_location = (church next to pilgrim with id base_location)
+        this.base_location = action[1]  
       } else {
-        return action;
+        return action[1];
       }
-    } else if (mode is DEFENSE) {
-      action = defensiveBehavior(self, mode_location, base_location)
+    } else if (this.mode == CONSTANTS.DEFENSE) {
+      var action = defensiveBehavior(self, mode_location, base_location)
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        this.modeLocation == null;
+        this.modeLocation = null;
         return null;
       } else {
         return action;
       }
-    } else if (mode is ATTACK && this.modeLocation !== null){
-      action = offensiveBehavior(self, mode_location)
+    } else if (this.mode == CONSTANTS.OFFENSE && this.modeLocation !== null){
+      var action = offensiveBehavior(self, mode_location)
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        this.modeLocation == null;
+        this.modeLocation = null;
         return null;
       } else {
         return action;
@@ -211,39 +250,52 @@ class ProphetManager() {
 
 // PREACHER BEHAVIOR is just CRUSADER - the escort stuff
 class PreacherManager() {
-  function init() {
-    this.pass_map = getPassableLocations();
+  function init(startx,starty,pass_map,visibleRobots) {
+    this.pass_map = pass_map;
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = [];
-    this.base_location == the church OR castle immediately next to you;
+    for (let r of CIRCLES[2]) {
+      if (visibleRobots[starty+r[1]][startx+r[0]].unit == 0 || visibleRobots[starty+r[1]][startx+r[0]].unit == 1) {
+        this.base_location={x:startx+r[0],y:starty+r[1],}
+        break;
+      }
+    }
   }
   function turn(step, self) {
-
-    if (attack_signal) {
-      this.mode = CONSTANTS.ATTACK
-      this.mode_location = COMM16.DECODE_ATTACK(attack_signal)
-    } else if (distress_signal) {
-      this.mode = CONSTANTS.DEFENSE
-      this.mode_location = COMM16.DECODE_DISTRESS(distress_signal)
+    for (const r of self.getVisibleRobots()){
+      if (r.signal){
+        if (COMM16.HEADER_MASK == COMM16.ATTACK_HEADER){
+          this.mode = CONSTANTS.ATTACK
+          var tmp = COMM16.DECODE_ATTACK(attack_signal)
+          this.mode_location = {x:tmp[0],y:tmp[1],}
+        }
+        else if (COMM16.HEADER_MASK == COMM16.DISTRESS_HEADER){
+          this.mode = CONSTANTS.DEFENSE
+          var tmp = COMM16.DECODE_DISTRESS(distress_signal)
+          this.mode_location = {x:tmp[0],y:tmp[1],}
+        }
+      } 
     }
-
-    if (mode is DEFENSE) {
-      action = defensiveBehavior(self, mode_location, base_location)
+    if (this.mode == CONSTANTS.DEFENSE) {
+      var action = defensiveBehavior(self, mode_location, base_location)
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        this.modeLocation == null;
+        this.modeLocation = null;
+        return null;
+      } 
+      else {
+        return action;
+      }
+    } 
+    else if (this.mode == CONSTANTS.OFFENSE && this.modeLocation !== null){
+      var action = offensiveBehavior(self, mode_location)
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        this.modeLocation = null;
         return null;
       } else {
         return action;
       }
-    } else if (mode is ATTACK && this.modeLocation !== null){
-      action = offensiveBehavior(self, mode_location)
-      if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        this.modeLocation == null;
-        return null;
-      } else {
-        return action;
-      }
-    } else {
+    } 
+    else {
       return randomMoveBehavior(self);
     }
   }
