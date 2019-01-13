@@ -5,6 +5,12 @@ export let CONSTANTS {
   OFFENSE = 1,
   ESCORT = 2,
 
+  // pilgrims:
+  MINE: 25,
+  DEPOSIT: 26,
+  BUILD: 27,
+  FOUND_NEARBY_BASE: 28,
+
   // stages:
   EXPLORATION: 49,
   BUILDUP: 50,

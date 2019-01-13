@@ -69,7 +69,7 @@ class ChurchManager(){
     for (const r of self.getVisibleRobots()) {
       if (r.signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
         let my_loc = COMM16.DECODE_ENEMYLOC(r.signal);
-        this.enemy_loc = determine_enemy_location(self.map, self.fuel_map, self.karbonite_map, my_loc)
+        this.enemy_loc = determine_enemy_location(self.map, self.fuel_map, self.karbonite_map, my_loc);
       }
     }
 
@@ -150,9 +150,9 @@ class ChurchManager(){
 
 class CastleManager() {
   function constructor(self) {
-    const pass_map, fuel_map, karbonite_map = self.map, self.fuel_map, self.karbonite_map;
+    const pass_map, fuel_map, karbonite_map, vis_map = self.map, self.fuel_map, self.karbonite_map, self.getVisibleRobotMap();
     this.enemy_loc = determine_enemy_location(pass_map, fuel_map, karbonite_map, [self.me.x, self.me.y])
-    this.canReachEnemy = move_to(<args>, [self.me.x, self.me.y], this.enemy_loc) !== null // move_to comes from path.js
+    this.canReachEnemy = move_to(pass_map, vis_map, [self.me.x, self.me.y], this.enemy_loc) !== null // move_to comes from path.js
 
     res = bfs_resources(pass_map, fuel_map, karbonite_map, [self.me.x, self.me.y])
     this.fuel_spots = [res.fuel[:Math.ceil(res.fuel.length/3)]]

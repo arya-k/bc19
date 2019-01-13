@@ -8,7 +8,7 @@ export function move_towards(pass_map, vis_map, start, end, attack_radius_min, a
   // if no path exists, it'll return null;
   // If a path exists, it'll return a single point, the ABSOLUTE coordinates of the move
   // Here is a sample use:
-  // var move = astar(self.getPassableLocations(), self.getVisibleRobotMap(), start, end)
+  // var move = move_towards(self.getPassableLocations(), self.getVisibleRobotMap(), start, end)
   // if (move !== null) {
   //   return self.move(move.x - self.me.x, move.y - self.me.y);
   // } else {
@@ -24,7 +24,7 @@ export function move_to(pass_map, vis_map, start, end) {
   // if no path exists, it'll return null;
   // If a path exists, it'll return a single point, the ABSOLUTE coordinates of the move
   // Here is a sample use:
-  // var move = astar(self.getPassableLocations(), self.getVisibleRobotMap(), start, end)
+  // var move = move_to(self.getPassableLocations(), self.getVisibleRobotMap(), start, end)
   // if (move !== null) {
   //   return self.move(move.x - self.me.x, move.y - self.me.y);
   // } else {
