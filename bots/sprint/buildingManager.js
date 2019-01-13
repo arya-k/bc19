@@ -1,5 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES, COMM8, COMM16} from './constants.js'
+import {move_to} from './path.js'
 // church, castle
 
 function determine_enemy_location(pass_map, fuel_map, karbonite_map, my_location) {
@@ -48,7 +49,7 @@ function bfs_resources(pass_map, fuel_map, karbonite_map, my_location) {
 }
 
 function dist(my_location, other_location){ // returns the squared distance
-  return (my_location[0]-other_location[1])**2+(mylocation[1]-other_location[1])**2
+  return (my_location[0]-other_location[0])**2+(mylocation[1]-other_location[1])**2
 }
 
 class ChurchManager(){
@@ -61,8 +62,15 @@ class ChurchManager(){
     // if to_attack >= 3, switch stage to ATTACK
 
     // Every time a church is created, the pilgrim that created it will tell it where enemy castles are.
-    if (signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
+    /*if (signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
       this.enemy_loc = COMM16.DECODE_ENEMYLOC(signal);
+    }*/
+    this.enemy_loc = null;
+    for (const r of self.getVisibleRobots()) {
+      if (r.signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
+        let my_loc = COMM16.DECODE_ENEMYLOC(r.signal);
+        this.enemy_loc = determine_enemy_location(self.map, self.fuel_map, self.karbonite_map, my_loc)
+      }
     }
 
   }
@@ -163,26 +171,38 @@ class CastleManager() {
 
     let available_fuel = self.fuel
     let available_karbonite = self.karbonite
+    let adjacent_preacher = null;
 
     for (const r of self.getVisibleRobots()){
-      const castle_talk = r.castle_talk;
-      if (castle_talk != null) {
-        if (castle_talk == COMM8.BUILDUP_STAGE) {
-          this.stage = CONSTANTS.BUILDUP
-        } else if (castle_talk == COMM8.BUILT_PREACHER) {
-          this.preacher_built = true;
-        } else if (castle_talk & COMM8.HEADER_MASK == X_HEADER) {
-          this.partial_point[r.id] = COMM8.DECODE_X(castle_talk)
-          // someone just built a pilgrim: we need to make sure we don't use up their crusader fund:
-          available_fuel -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL;
-          available_karbonite -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE
-        } else if (castle_talk & COMM8.HEADER_MASK == Y_HEADER) {
-          let resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
-          this.partial_point[r.id] = null;
-          if (this.fuel_spots.includes() {
-            remove that point // we no longer need to send a pilgrim there - someone else already did!
+      if (r.team != null && r.team == self.me.team){ // ally!
+        const castle_talk = r.castle_talk;
+        if (castle_talk != null) {
+          if (castle_talk == COMM8.BUILDUP_STAGE) {
+            this.stage = CONSTANTS.BUILDUP
+          } else if (castle_talk == COMM8.BUILT_PREACHER) {
+            this.preacher_built = true;
+          } else if (castle_talk & COMM8.HEADER_MASK == X_HEADER) {
+            this.partial_point[r.id] = COMM8.DECODE_X(castle_talk)
+            // someone just built a pilgrim: we need to make sure we don't use up their crusader fund:
+            available_fuel -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL;
+            available_karbonite -= SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE
+          } else if (castle_talk & COMM8.HEADER_MASK == Y_HEADER) {
+            let resource_point = [this.partial_point[r.id], COMM8.DECODE_Y(castle_talk)]
+            this.partial_point[r.id] = null;
+            if (this.fuel_spots.includes(resource_point)) {
+              let index = this.fuel_spots.indexOf(resource_point)// we no longer need to send a pilgrim there - someone else already did!
+              this.fuel_spots.splice(index, 1);
+            }
+            else if (this.karbonite_spots.includes(resource_point)){
+              let index = this.karbonite_spots.indexOf(resource_point)// we no longer need to send a pilgrim there - someone else already did!
+              this.karbonite_spots.splice(index, 1);
+            }
           }
         }
+      }
+      else { //enemy!
+        if (adjacent_preacher != null)
+          self.signal(COMM16.DISTRESS(enemy_loc), dist([self.me.x, self.me.y], [adjacent_preacher.x, adjacent_preacher.y]))
       }
     }
 
