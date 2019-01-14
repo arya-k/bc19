@@ -8,6 +8,25 @@ function determine_enemy_location(pass_map, fuel_map, karbonite_map, my_location
   // from there, return the location of the enemy based on your location, and the map symmetry.
   // it's important that we do this in a DETERMINISTIC way (so no random point sampling.)
   // We need this function to return the same result, every time.
+  let horizontalSymmetry = true; // y = len - y - 1
+  let N = pass_map.length;
+
+  outer: for (let i = 0; i < N; i++) {
+    for (let j = 0; j < Math.floor(N/2); j++) {
+      if (pass_map[i][j] != pass_map[i][N - j - 1] ||
+          fuel_map[i][j] != fuel_map[i][N - j - 1]) {
+        horizontalSymmetry = false;
+        break outer;
+      }
+    }
+  }
+
+  if (horizontalSymmetry) {
+    return [my_location[0], N - my_location[1] - 1];
+  } else {
+    return [N - my_location[0] - 1, my_location[1]];
+  }
+
 }
 
 
