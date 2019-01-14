@@ -1,9 +1,8 @@
-
-export let CONSTANTS {
+export let CONSTANTS = {
   // attacking troops:
-  DEFENSE = 0,
-  OFFENSE = 1,
-  ESCORT = 2,
+  DEFENSE: 0,
+  OFFENSE: 1,
+  ESCORT: 2,
 
   // pilgrims:
   MINE: 25,
@@ -16,12 +15,12 @@ export let CONSTANTS {
   BUILDUP: 50,
   ATTACK: 51,
 
-  ELIMINATED_ENEMY = 100,
-  ABANDON_ESCORT = 101,
+  ELIMINATED_ENEMY: 100,
+  ABANDON_ESCORT: 101,
 
 }
 
-export let COMM8 {
+export let COMM8 = {
   BUILT_PILGRIM: 1,
   BUILT_CRUSADER: 2,
   BUILT_PREACHER: 3,
@@ -31,17 +30,17 @@ export let COMM8 {
   // If we have <64 static messages, then we can setup location sending too:
   HEADER_MASK: 0b11<<6,
 
-  X_HEADER: 0b10<<6,
-  X: function(x){ return 0b10<<6 + x; },
-  DECODE_X: function(s) { return s&63; }
+  X_HEADER: 0b10<<6, // 10000000
+  X: function(x){ return (0b10<<6) + x; },
+  DECODE_X: function(s) { return s&63; },
 
-  Y_HEADER: 0b11<<6,
-  Y: function(y){ return 0b10<<6 + y; },
-  DECODE_Y: function(s) { return s&63; }
+  Y_HEADER: 0b11<<6, // 11000000
+  Y: function(y){ return (0b11<<6) + y; },
+  DECODE_Y: function(s) { return s&63; },
 
 }
 
-export let COMM16 {
+export let COMM16 = {
   // signalling communications
 
   HEADER_MASK: 0b1111<<12, // and the signal with this, then compare them to various headers.
@@ -68,7 +67,7 @@ export let COMM16 {
 
 }
 
-export let CIRCLES { // all directions within R^2 of a point
+export let CIRCLES = { // all directions within R^2 of a point
   1: [[-1, 0], [0, -1], [0, 1], [1, 0]],
   2: [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [0, -1], [0, 1], [1, 0]],
   3: [[-1, -1], [-1, 1], [1, -1], [1, 1], [-1, 0], [0, -1], [0, 1], [1, 0]],

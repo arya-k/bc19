@@ -1,4 +1,7 @@
 import {BCAbstractRobot, SPECS} from 'battlecode';
+import {CastleManager, ChurchManager} from './buildingManager.js'
+
+class NoneManager { turn(step, self){ return null; }}
 
 let step = -1;
 let robotManager = null;
@@ -13,18 +16,22 @@ class MyRobot extends BCAbstractRobot {
       } else if (self.me.unit === SPECS.CHURCH) {
         robotManager = new ChurchManager(self);
       } else if (self.me.unit === SPECS.PILGRIM) {
-        robotManager = new PilgrimManager(self);
+        // robotManager = new PilgrimManager(self);
+        robotManager = new NoneManager();
       } else if (self.me.unit === SPECS.CRUSADER) {
-        robotManager = new CrusaderManager(self);
+        // robotManager = new CrusaderManager(self);
+        robotManager = new NoneManager();
       } else if (self.me.unit === SPECS.PROPHET) {
-        robotManager = new ProphetManager(self);
+        // robotManager = new ProphetManager(self);
+        robotManager = new NoneManager();
       } else if (self.me.unit === SPECS.PREACHER) {
-        robotManager = new PreacherManager(self);
+        // robotManager = new PreacherManager(self);
+        robotManager = new NoneManager();
       }
     }
 
     // now, just obey the manager;
-    action = robotManager.turn(step, self);
+    let action = robotManager.turn(step, self);
     if (action === null) {
       return;
     } else {
@@ -33,4 +40,4 @@ class MyRobot extends BCAbstractRobot {
   }
 }
 
-var robot = new roboClass()
+var robot = new MyRobot()
