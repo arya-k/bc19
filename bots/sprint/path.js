@@ -173,7 +173,7 @@ Graph.prototype.neighbors = function(node) {
   return ret;
 };
 
-export function move_towards(pass_map, vis_map, start, end, speed, attack_radius_min, attack_radius_max) {
+export function move_towards(pass_map, vis_map, a, b, speed, attack_radius_min, attack_radius_max) {
   // given getPassableLocations(), getVisibleRobotMap(), [start_x, start_y], [end_x, end_y], 
   // minimum_radius (1 for PREACHER), maximum_radius (16 for PREACHER)
   // This function will run A*, and just try to position you so that you are within attack range of
@@ -260,6 +260,11 @@ export function move_to(pass_map, vis_map, speed, a, b) {
   //   return null; // NO MOVE POSSIBLE
   // }
 
+  // If we can see the end point, and there's someone else on it, return null:
+  if (vis_map[b[1]][b[0]] > 0) {
+    return null;
+  }
+
   var graph = new Graph(pass_map, vis_map, speed);
   var openHeap = getHeap();
 
@@ -313,7 +318,7 @@ export function move_to(pass_map, vis_map, speed, a, b) {
   return null; // no path found.
 }
 
-export function num_moves(pass_map, vis_map, start, end, speed) {
+export function num_moves(pass_map, vis_map, speed, a, b) {
   // just like move_towards, except returns number of moves to get there (or -1 if no route exists.)
   var graph = new Graph(pass_map, vis_map, speed);
   var openHeap = getHeap();

@@ -1,5 +1,5 @@
 import {SPECS} from 'battlecode';
-import {CONSTANTS,COMM16} from './constants.js'
+import {CONSTANTS,CIRCLES,COMM16} from './constants.js'
 import {move_towards, move_to, num_moves} from './path.js'
 
 function Point(x, y){
@@ -11,8 +11,8 @@ function find_valid_base_locations(self) {
   // First, see if there are any churches or castles within 3 steps:
   for (const r of self.getVisibleRobots()) {
     if (r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
-      if (num_moves(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y],
-                    [r.x, r.y], SPECS.UNITS[SPECS.PILGRIM].SPEED) <= 3) { // number of moves to get adjacent.
+      if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[SPECS.PILGRIM].SPEED,
+          [self.me.x, self.me.y], [r.x, r.y]) <= 3) { // number of moves to get adjacent.
         return [CONSTANTS.FOUND_NEARBY_BASE, [r.x, r.y]];
       }
     }
@@ -49,13 +49,13 @@ function find_valid_base_locations(self) {
   }
 }
 
-function dist(my_location, other_location){ // returns the squared distance
-  return (my_location[0]-other_location[0])**2+(mylocation[1]-other_location[1])**2
+function dist(a, b){ // returns the squared distance
+  return (a[0]-b[0])**2+(a[1]-b[1])**2
 }
 
 // pilgrim
-class PilgrimManager {
-  contructor(self) {
+export class PilgrimManager {
+  constructor(self) {
     // this is the init function
     this.stage = CONSTANTS.MINE
     this.base_loc = null; // the castle that spawned it.
@@ -74,14 +74,18 @@ class PilgrimManager {
   turn(step, self) {
     if (this.mine_loc === null) {
       for (const r of self.getVisibleRobots()) {
-        if (r.signal & COMM16.HEADER_MASK == COMM16.GOTO_HEADER) {
+        if ((r.signal & COMM16.HEADER_MASK) == COMM16.GOTO_HEADER) {
           this.mine_loc = COMM16.DECODE_GOTO(r.signal)
         }
       }
     }
 
+    if (this.mine_loc === null) {
+      return null; // there's nothing to do.
+    }
+
     if (this.stage == CONSTANTS.MINE) {
-      if (self.me.karbinite * 2 > SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
+      if (self.me.karbonite * 2 > SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY ||
           self.me.fuel * 2 > SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
         this.stage = CONSTANTS.DEPOSIT;
       } else if (!this.base_near_mine && self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
@@ -105,7 +109,7 @@ class PilgrimManager {
     if (this.stage == CONSTANTS.DEPOSIT) {
       if (Math.abs(self.me.x - this.base_loc[0]) <= 1 &&
           Math.abs(self.me.y - this.base_loc[1]) <= 1) {
-        self.stage = CONSTANTS.MINE;
+        this.stage = CONSTANTS.MINE;
         return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
       } else {
         let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.base_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED, 1, 2); // get adjacent
@@ -119,8 +123,8 @@ class PilgrimManager {
     if (this.stage == CONSTANTS.MINE) {
       if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
         return self.mine();
-      } else if (mine_loc !== null) {
-        let move_node = move_to(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.mine_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED)
+      } else if (this.mine_loc !== null) {
+        let move_node = move_to(self.map, self.getVisibleRobotMap(), SPECS.UNITS[SPECS.PILGRIM].SPEED, [self.me.x, self.me.y], this.mine_loc)
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
         }

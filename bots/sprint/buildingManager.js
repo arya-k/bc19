@@ -72,8 +72,8 @@ function bfs_resources(pass_map, fuel_map, karbonite_map, my_location) {
     return resource_map;
 }
 
-function dist(my_location, other_location){ // returns the squared distance
-  return (my_location[0]-other_location[0])**2+(my_location[1]-other_location[1])**2
+function dist(a, b){ // returns the squared distance
+  return (a[0]-b[0])**2+(a[1]-b[1])**2
 }
 
 export class ChurchManager {
