@@ -8,6 +8,10 @@ function Point(x, y){
 }
 
 function find_valid_base_locations(self) {
+  let map = self.getPassableMap();
+  let fuel_map = self.getFuelMap();
+  let karbonite_map = self.getKarboniteMap();
+
   // First, see if there are any churches or castles within 3 steps:
   for (const r of self.getVisibleRobots()) {
     if (r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
@@ -30,9 +34,9 @@ function find_valid_base_locations(self) {
 
     // if any adjacent spots don't have fuel, karbonite or robots:
     for (const dir of CIRCLES[2]) {
-      if (self.map[current.y + dir[1]][current.x + dir[0]]) { // passable
-        if (!self.fuel_map[current.y + dir[1]][current.x + dir[0]]) { // no fuel
-          if (!self.karbonite_map[current.y + dir[1]][current.x + dir[0]]) { // no karbonite
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) { // passable
+        if (!fuel_map[current.y + dir[1]][current.x + dir[0]]) { // no fuel
+          if (!karbonite_map[current.y + dir[1]][current.x + dir[0]]) { // no karbonite
             if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] < 1) { // 
               return [current.x + dir[0], current.y + dir[1]];
             }
@@ -42,7 +46,7 @@ function find_valid_base_locations(self) {
     }
 
     for (const dir of CIRCLES[SPECS.UNITS[SPECS.PILGRIM].SPEED]) {
-      if (self.map[current.y + dir[1]] && self.map[current.y + dir[1]][current.x + dir[0]]) {
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) {
         queue.push(new Point(current.x + dir[0], current.y + dir[1]))
       }
     }
