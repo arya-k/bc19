@@ -36,7 +36,7 @@ function defensiveBehavior(self, mode_location, base_location) {
           return null; // NO MOVE POSSIBLE
         }
       } else if (distance <= SPECS.UNITS[unit].ATTACK_RADIUS[1]){
-        return this.attack(r.x-self.me.x,r.y-self.me.y)
+        return self.attack(r.x-self.me.x,r.y-self.me.y)
       }
     }
   }
@@ -55,7 +55,7 @@ function defensiveBehavior(self, mode_location, base_location) {
   }
   
   if (mode_location === null) {
-    if (dist([base_location[0],base_location[1]],[self.me.x,self.me.y]) > 2) {
+    if (Math.abs(base_location[0] - self.me.x) <= 1 && Math.abs(base_location[1] - self.me.y) <= 1)  {
        let move = move_towards(this.getPassableMap(),this.getVisibleRobotMap(),[self.me.x,self.me.y],base_location,SPECS.UNITS[unit].SPEED, 1, 2)
        if (move !== null) {
          return self.move(move.x - self.me.x, move.y - self.me.y);
@@ -112,7 +112,7 @@ function escortBehavior(self, pilgrim_id) {
   var pilgrim = self.getRobot(pilgrim_id)
   var pilgrimX = pilgrim.x
   var pilgrimY = pilgrim.y
-
+  self.log("HERE1")
   for (const dir of CIRCLES[2]){
     if (robotMap[dir[1]+pilgrimY] && robotMap[dir[1]+pilgrimY][dir[0]+pilgrimX]) {
       if (robotMap[dir[1]+pilgrimY][dir[0]+pilgrimX] > 0) {
@@ -123,7 +123,9 @@ function escortBehavior(self, pilgrim_id) {
       }
     }
   }
-
+  self.log("HERE2")
+  self.log(pilgrimX)
+  self.log(pilgrimY)
   var visibleRobots = self.getVisibleRobots()
   var unit = self.me.unit
   for (const r of visibleRobots) {
@@ -133,6 +135,7 @@ function escortBehavior(self, pilgrim_id) {
       }
     } else {
       let move = move_towards(self.getPassableMap(),self.getVisibleRobotMap(),[self.me.x,self.me.y],[pilgrimX, pilgrimY], SPECS.UNITS[self.me.unit].SPEED, 1, 2)
+      self.log(move)
       if (move !== null) {
         return [0, self.move(move.x - self.me.x, move.y - self.me.y)]
       } else {
@@ -191,7 +194,7 @@ export class CrusaderManager {
   }
   turn(step, self) {
     for (const r of self.getVisibleRobots()){
-      if ((r.signal & COMM16.HEADER_MASK) == COMM16.ESCORT_HEADER){
+      if ((r.signal & COMM16.HEADER_MASK) == COMM16.ESCORT_HEADER && this.mode != CONSTANTS.ESCORT){
         this.mode = CONSTANTS.ESCORT
         this.mode_location = null;
         this.base_location = COMM16.DECODE_ESCORT(r.signal)
