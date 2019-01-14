@@ -97,8 +97,8 @@ export class PilgrimManager {
         if (possible_base_loc[0] == CONSTANTS.FOUND_NEARBY_BASE) {
           this.base_loc = possible_base_loc[1];
           this.base_near_mine = true;
-        } else if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
-                   self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
+        } else if (self.karbonite >= 2 * (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
+                   self.fuel >= 2 * (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL)) {
           this.new_base_loc = possible_base_loc;
           this.stage = CONSTANTS.BUILD;
         }

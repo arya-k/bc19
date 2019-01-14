@@ -101,7 +101,7 @@ export class ChurchManager {
   turn(step, self) {
     // check if stage can change:
     if (this.stage == CONSTANTS.BUILDUP) { // check if we need to change the stage
-      if (this.karbonite > 70) {
+      if (self.karbonite > SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE) {
         this.to_attack++;
       } else {
         this.to_attack = 0
@@ -145,34 +145,35 @@ export class ChurchManager {
       }
 
     } else if (this.stage == CONSTANTS.ATTACK) { // attack stage
-      let adjacent_crusader = null; // the adjacent crusader
-      let open = [false, null]; // adjacent empty point
+      self.log("ATTACK STAGEEEEEEEEE")
+      let signalled_crusader = false; // the adjacent crusader
+      let built_robot; // adjacent empty point
+      let open = [false, null]
       let visibleRobotMap = self.getVisibleRobotMap()
+      self.log("HERE1")
       for (const dir of CIRCLES[2]) { //check each cardinal direction
-        let id = visibleRobotMap[self.me.y + dir[0]][self.me.x + dir[1]];
+        self.log("HERE2")
+        if (!(self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]))
+          continue;
+        let id = visibleRobotMap[self.me.y + dir[1]][self.me.x + dir[0]];
         if (id > 0) {// if there's a robot there
-          let r = this.getRobot(id);
-          if (r.unit == SPECS.CRUSADER && r.team == self.me.team){
-            adjacent_crusader = r;
-            if (open[0])
-              break;
+          let r = self.getRobot(id);
+          if (r.unit == SPECS.CRUSADER && r.team == self.me.team && !signalled_crusader){
+            self.signal(COMM16.ATTACK(...this.enemy_loc), dist([self.me.x, self.me.y], [r.x, r.y]))
+            signalled_crusader = true;
           }
         } else if (id == 0){
-          open = [true, [self.me.x + dir[0], self.me.y + dir[1]]];
-          if (adjacent_crusader !== null)
-            break;
+          open = [true, [dir[0], dir[1]]];
         }
       }
-      if (adjacent_crusader !== null) {
-        self.signal(COMM16.ATTACK(this.enemy_loc[0], this.enemy_loc[1]), 
-        dist([adjacent_crusader.x, adjacent_crusader.y], [self.me.x, self.me.y])) // That way the crusader will attack the enemy
-      }
+      self.log("HERE3")
       if (self.karbonite > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE &&
         self.fuel > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) { // if we are able to build a crusader, build it
-        if (open) {
+        if (open[0]) {
           return self.buildUnit(SPECS.CRUSADER, open[1][0], open[1][1]);
         }
       }
+      self.log("HERE4")
     }
 
   }
@@ -208,7 +209,7 @@ export class CastleManager {
     for (const dir of CIRCLES[2]) {
       if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
         if (self.getVisibleRobotMap()[self.me.y + dir[1]][self.me.x + dir[0]] < 1)
-        available_spots.push(dir)
+          available_spots.push(dir)
       }
     }
 
@@ -298,7 +299,7 @@ export class CastleManager {
             return self.buildUnit(SPECS.PREACHER, ...available_spots[0]);
           }
         }
-      } else if (this.fuel_spots.length + this.karbonite_spots.length > 0) {
+      } else if ((this.fuel_spots.length + this.karbonite_spots.length) > 0) {
         let bool = false;
         let spot = null;
         for (const k_spot of this.karbonite_spots){
