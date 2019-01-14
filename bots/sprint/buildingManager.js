@@ -150,30 +150,26 @@ export class ChurchManager {
       let built_robot; // adjacent empty point
       let open = [false, null]
       let visibleRobotMap = self.getVisibleRobotMap()
-      self.log("HERE1")
       for (const dir of CIRCLES[2]) { //check each cardinal direction
-        self.log("HERE2")
         if (!(self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]))
           continue;
         let id = visibleRobotMap[self.me.y + dir[1]][self.me.x + dir[0]];
         if (id > 0) {// if there's a robot there
           let r = self.getRobot(id);
           if (r.unit == SPECS.CRUSADER && r.team == self.me.team && !signalled_crusader){
-            self.signal(COMM16.ATTACK(...this.enemy_loc), dist([self.me.x, self.me.y], [r.x, r.y]))
+            self.signal(COMM16.ATTACK(this.enemy_loc[0],this.enemy_loc[1]), dist([self.me.x, self.me.y], [r.x, r.y]))
             signalled_crusader = true;
           }
         } else if (id == 0){
           open = [true, [dir[0], dir[1]]];
         }
       }
-      self.log("HERE3")
       if (self.karbonite > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE &&
         self.fuel > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) { // if we are able to build a crusader, build it
         if (open[0]) {
           return self.buildUnit(SPECS.CRUSADER, open[1][0], open[1][1]);
         }
       }
-      self.log("HERE4")
     }
 
   }
