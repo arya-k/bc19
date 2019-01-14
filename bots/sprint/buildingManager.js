@@ -44,8 +44,8 @@ function bfs_resources(pass_map, fuel_map, karbonite_map, my_location) {
     while (queue.length > 0) {
         let current = queue.shift()
 
-        if (visited.has((current.y*64) + current.x)) { continue; } // seen before.
-        visited.add((current.y*64) + current.x) // mark as visited
+        if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
+        visited.add((current.y<<6) + current.x) // mark as visited
 
         // check for fuel + karbonite:
         if (fuel_map[current.y][current.x]) {
