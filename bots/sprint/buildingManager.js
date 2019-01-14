@@ -91,7 +91,7 @@ export class ChurchManager {
     }*/
     this.enemy_loc = null;
     for (const r of self.getVisibleRobots()) {
-      if (r.signal & COMM16.HEADER_MASK == COMM16.ENEMYLOC_HEADER) {
+      if ((r.signal & COMM16.HEADER_MASK) == COMM16.ENEMYLOC_HEADER) {
         let my_loc = COMM16.DECODE_ENEMYLOC(r.signal);
         this.enemy_loc = determine_enemy_location(self.map, self.fuel_map, self.karbonite_map, my_loc);
       }
@@ -145,33 +145,30 @@ export class ChurchManager {
       }
 
     } else if (this.stage == CONSTANTS.ATTACK) { // attack stage
-      self.log("ATTACK STAGEEEEEEEEE")
-      let signalled_crusader = false; // the adjacent crusader
-      let built_robot; // adjacent empty point
-      let open = [false, null]
-      let visibleRobotMap = self.getVisibleRobotMap()
-      for (const dir of CIRCLES[2]) { //check each cardinal direction
-        if (!(self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]))
-          continue;
-        let id = visibleRobotMap[self.me.y + dir[1]][self.me.x + dir[0]];
-        if (id > 0) {// if there's a robot there
-          let r = self.getRobot(id);
-          if (r.unit == SPECS.CRUSADER && r.team == self.me.team && !signalled_crusader){
-            self.signal(COMM16.ATTACK(this.enemy_loc[0],this.enemy_loc[1]), dist([self.me.x, self.me.y], [r.x, r.y]))
-            signalled_crusader = true;
+      const vis_map = self.getVisibleRobotMap()
+      for (const dir of CIRCLES[2]) {
+        if (vis_map[self.me.y + dir[1]] && vis_map[self.me.y + dir[1]][self.me.x + dir[0]]) {
+          if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] > 0) {
+            let r = self.getRobot(vis_map[self.me.y + dir[1]][self.me.x + dir[0]])
+            if (r.unit == SPECS.CRUSADER && r.team == self.me.team) {
+              self.signal(COMM16.ATTACK(this.enemy_loc[0], this.enemy_loc[1]), dist([0,0], dir));
+              break;
+            }
           }
-        } else if (id == 0){
-          open = [true, [dir[0], dir[1]]];
         }
       }
+
       if (self.karbonite > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE &&
-        self.fuel > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) { // if we are able to build a crusader, build it
-        if (open[0]) {
-          return self.buildUnit(SPECS.CRUSADER, open[1][0], open[1][1]);
+          self.fuel > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) {
+        for (const dir of CIRCLES[2]) {
+          if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
+            if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] == 0) {
+              return self.buildUnit(SPECS.CRUSADER, ...dir);
+            }
+          }
         }
       }
     }
-
   }
 }
 
