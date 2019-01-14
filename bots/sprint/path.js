@@ -4,7 +4,7 @@ function pathTo(node) {
   var curr = node;
   var path = [];
   while (curr.parent) {
-    path.unshift(curr);
+    path.push(curr);
     curr = curr.parent;
   }
   return path;
@@ -173,50 +173,6 @@ Graph.prototype.neighbors = function(node) {
   return ret;
 };
 
-function astar(graph, start, end, self) {
-  var openHeap = getHeap();
-
-  start.h = heuristic(start, end);
-  graph.markDirty(start);
-  openHeap.push(start);
-
-  while (openHeap.size() > 0) {
-    var currentNode = openHeap.pop();
-
-    if (currentNode === end) {
-      return pathTo(currentNode);
-    }
-
-    currentNode.closed = true;
-    var neighbors = graph.neighbors(currentNode);
-
-    for (var i = 0; i < neighbors.length; i++) {
-      var neighbor = neighbors[i];
-      if (neighbor.closed || neighbor.isWall) { continue; }
-
-      var gScore = currentNode.g + neighbor.getCost(currentNode);
-      var beenVisited = neighbor.visited;
-
-      if (!beenVisited || gScore < neighbor.g) {
-        neighbor.visited = true;
-        neighbor.parent = currentNode;
-        neighbor.h = neighbor.h || heuristic(neighbor, end);
-        neighbor.g = gScore;
-        neighbor.f = neighbor.g + neighbor.h;
-        graph.markDirty(neighbor);
-
-
-        if (!beenVisited) {
-          openHeap.push(neighbor);
-        } else {
-          openHeap.rescoreElement(neighbor);
-        }
-      }
-    }
-  }
-  return []; // nothing found.
-}
-
 export function move_towards(pass_map, vis_map, start, end, speed, attack_radius_min, attack_radius_max) {
   // given getPassableLocations(), getVisibleRobotMap(), [start_x, start_y], [end_x, end_y], 
   // minimum_radius (1 for PREACHER), maximum_radius (16 for PREACHER)
@@ -253,7 +209,7 @@ export function move_towards(pass_map, vis_map, start, end, speed, attack_radius
     if (dist >= attack_radius_min && dist <= attack_radius_max) {
       let path = pathTo(currentNode);
       if (path.length > 0) {
-        return path[0]; // the first step along the way
+        return path[path.length - 1]; // the first step along the way
       } else {
         return null; // you were already at the goal node
       }
@@ -321,7 +277,7 @@ export function move_to(pass_map, vis_map, speed, a, b) {
     if (currentNode.x == end.x && currentNode.y == end.y) {
       let path = pathTo(currentNode);
       if (path.length > 0) {
-        return path[0]; // the first step along the way
+        return path[path.length - 1]; // the first step along the way
       } else {
         return null; // you were already at the goal node
       }
@@ -355,4 +311,54 @@ export function move_to(pass_map, vis_map, speed, a, b) {
     }
   }
   return null; // no path found.
+}
+
+export function num_moves(pass_map, vis_map, start, end, speed) {
+  // just like move_towards, except returns number of moves to get there (or -1 if no route exists.)
+  var graph = new Graph(pass_map, vis_map, speed);
+  var openHeap = getHeap();
+
+  var start = graph.grid[a[1]][a[0]]
+  var end = graph.grid[b[1]][b[0]]
+
+  start.h = heuristic(start, end);
+  graph.markDirty(start);
+  openHeap.push(start);
+
+
+  while (openHeap.size() > 0) {
+    var currentNode = openHeap.pop();
+
+    if (Math.abs(currentNode.x - end.x) <= 1 && Math.abs(currentNode.y - end.y)) {
+      return pathTo(currentNode).length;
+    }
+
+    currentNode.closed = true;
+    var neighbors = graph.neighbors(currentNode);
+
+    for (var i = 0; i < neighbors.length; i++) {
+      var neighbor = neighbors[i];
+      if (neighbor.closed || neighbor.isWall) { continue; }
+
+      var gScore = currentNode.g + neighbor.getCost(currentNode);
+      var beenVisited = neighbor.visited;
+
+      if (!beenVisited || gScore < neighbor.g) {
+        neighbor.visited = true;
+        neighbor.parent = currentNode;
+        neighbor.h = neighbor.h || heuristic(neighbor, end);
+        neighbor.g = gScore;
+        neighbor.f = neighbor.g + neighbor.h;
+        graph.markDirty(neighbor);
+
+
+        if (!beenVisited) {
+          openHeap.push(neighbor);
+        } else {
+          openHeap.rescoreElement(neighbor);
+        }
+      }
+    }
+  }
+  return 1<<13; // no path found.
 }
