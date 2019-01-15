@@ -103,7 +103,9 @@ export class PilgrimManager {
           this.stage = CONSTANTS.BUILD;
         }
       }
-    } else if (this.stage == CONSTANTS.BUILD) {
+    }
+
+    if (this.stage == CONSTANTS.BUILD) {
       if (self.karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE ||
           self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL + 2) { // account for signal, too.
         this.stage = CONSTANTS.MINE; // can no longer afford church
