@@ -110,6 +110,7 @@ export class ChurchManager {
 
       if (this.to_attack >= 3) {
         this.stage = CONSTANTS.ATTACK
+        self.castleTalk(COMM8.ATTACK_STAGE);
       }
     }
 
@@ -217,6 +218,9 @@ export class CastleManager {
         const castle_talk = r.castle_talk;
         if (castle_talk == COMM8.BUILDUP_STAGE) {
           this.stage = CONSTANTS.BUILDUP
+
+        } else if (castle_talk == COMM8.ATTACK_STAGE) {
+          this.stage = CONSTANTS.ATTACK
         
         } else if (castle_talk == COMM8.BUILT_PREACHER) {
           this.preacher_built = true;
@@ -325,9 +329,17 @@ export class CastleManager {
     } else { // buildup or attack stage
       if (!preacher_visible) { // we're missing our defensive preacher.
         if (self.fuel > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_FUEL && 
-        self.karbonite > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_KARBONITE) { // no more paired units, so we don't need to watch for others building crusaders.
+            self.karbonite > SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_KARBONITE) { // no more paired units, so we don't need to watch for others building crusaders.
           if (available_spots.length > 0) {
             return self.buildUnit(SPECS.PREACHER, ...available_spots[0]);
+          }
+        }
+      } else if (this.stage == CONSTANTS.ATTACK) {
+        if (self.fuel > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL &&
+            self.karbonite > SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) {
+          if (available_spots.length > 0) {
+            this.signal_queue.push([COMM16.ATTACK(...this.enemy_loc), dist([0,0], available_spots[0])]);
+            return self.buildUnit(SPECS.CRUSADER, ...available_spots[0]);
           }
         }
       }
