@@ -89,8 +89,8 @@ export class PilgrimManager {
     }
 
     if (this.stage == CONSTANTS.MINE) {
-      if (self.me.karbonite * 2 > SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY ||
-          self.me.fuel * 2 > SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
+      if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY ||
+          self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
         this.stage = CONSTANTS.DEPOSIT;
       } else if (!this.base_near_mine && self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
         let possible_base_loc = find_valid_base_locations(self);

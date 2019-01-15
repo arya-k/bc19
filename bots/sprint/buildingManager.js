@@ -177,9 +177,12 @@ export class CastleManager {
     this.enemy_loc = determine_enemy_location(self.map, self.fuel_map, self.karbonite_map, [self.me.x, self.me.y])
     this.canReachEnemy = move_to(self.map, self.getVisibleRobotMap(), SPECS.UNITS[SPECS.PREACHER].SPEED, [self.me.x, self.me.y], this.enemy_loc) !== null // move_to comes from path.js
 
-    let res = bfs_resources(self.map, self.fuel_map, self.karbonite_map, [self.me.x, self.me.y])
-    this.fuel_spots = res.fuel.slice(0, Math.ceil(res.fuel.length/3) + 1)
-    this.karbonite_spots = res.karbonite.slice(0, Math.ceil(res.karbonite.length/3) + 1)
+    let res = bfs_resources(self.map, self.fuel_map, self.karbonite_map, [self.me.x, self.me.y]);
+    this.fuel_spots = res.fuel.slice(0, Math.ceil(res.fuel.length/3) + 1);
+    this.karbonite_spots = res.karbonite.slice(0, Math.ceil(res.karbonite.length/3) + 1);
+
+    this.num_fuel_spots = this.fuel_spots.length;
+    this.num_karbonite_spots = this.karbonite_spots.length;
 
     this.preacher_built = false;
 
@@ -196,7 +199,6 @@ export class CastleManager {
     let adjacent_preacher = null;
     let enemy_loc = null;
     let available_spots = [];
-    let near_pilgrim = null;
     let preacher_visible = false;
 
     for (const dir of CIRCLES[2]) {
@@ -247,10 +249,6 @@ export class CastleManager {
               self.signal(COMM16.DISTRESS(enemy_loc[0], enemy_loc[1]), dist([self.me.x, self.me.y], [adjacent_preacher.x, adjacent_preacher.y])) 
             }
           }
-        } else if (r.unit == SPECS.PILGRIM) {
-          if (near_pilgrim == null || near_pilgrim[1] > d){
-            near_pilgrim = [r, d]
-          }
         }
       }
       else if (r.id != self.me.id) { //enemy!
@@ -269,14 +267,14 @@ export class CastleManager {
     }
 
     if (this.build_queue.length > 0){
-      let unit = this.build_queue.shift()
-      if (self.fuel > SPECS.UNITS[unit].CONSTRUCTION_FUEL && self.karbonite > SPECS.UNITS[unit].CONSTRUCTION_KARBONITE) {
+      let bq = this.build_queue.shift()
+      if (self.fuel > SPECS.UNITS[bq[0]].CONSTRUCTION_FUEL && self.karbonite > SPECS.UNITS[bq[0]].CONSTRUCTION_KARBONITE) {
         if (available_spots.length > 0) {
-          if (unit == SPECS.CRUSADER) {
-            let pilgrim_id = near_pilgrim[0].id;
+          if (bq[0] == SPECS.CRUSADER) {
+            let pilgrim_id = self.getVisibleRobotMap()[self.me.y + bq[1][1]][self.me.x + bq[1][0]];
             this.signal_queue.push([COMM16.ESCORT(pilgrim_id), dist([0,0], available_spots[0])])
           }
-          return self.buildUnit(unit, ...available_spots[0]);
+          return self.buildUnit(bq[0], ...available_spots[0]);
         }
       }
       return null; // we have to wait until we can build the unit
@@ -293,47 +291,29 @@ export class CastleManager {
           }
         }
       } else if ((this.fuel_spots.length + this.karbonite_spots.length) > 0) {
-        let bool = false;
-        let spot = null;
-        for (const k_spot of this.karbonite_spots){
-          spot = k_spot;
-          if (Object.values(this.partial_points).indexOf(k_spot[0]) == -1) { // no other units MIGHT be trying to build at that spot.
-            if (available_fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL && 
-              available_karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) {
-              if (available_spots.length > 0) {
-                bool = true;
-                break;
+        if (available_fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL && 
+            available_karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE && 
+            available_spots.length > 0) { // could build
+
+          let spots_inorder = [this.karbonite_spots, this.fuel_spots];
+          if ((this.num_karbonite_spots - this.karbonite_spots.length) > (this.num_fuel_spots - this.fuel_spots.length)) {
+            spots_inorder.reverse()
+          }
+
+          for (const i of [0,1]) {
+            for (const spot of spots_inorder[i]) {
+              if (Object.values(this.partial_points).indexOf(spot[0]) == -1 ) { // no other units MIGHT be trying to build at that spot.
+                self.castleTalk(COMM8.X(spot[0]));
+                this.signal_queue.push([COMM16.GOTO(...spot), dist([0,0], available_spots[0]), COMM8.Y(spot[1])]);
+                if (dist([self.me.x, self.me.y], spot) > 9) { // the crusader wouldn't get in the way
+                  this.build_queue.push([SPECS.CRUSADER, available_spots[0]]);
+                }
+                let index = spots_inorder[i].indexOf(spot);
+                spots_inorder[i].splice(index, 1);
+                return self.buildUnit(SPECS.PILGRIM, ...available_spots[0])
               }
             }
           }
-        }
-        if (bool){
-          self.castleTalk(COMM8.X(spot[0]));
-          this.signal_queue.push([COMM16.GOTO(...spot), dist([0,0], available_spots[0]), COMM8.Y(spot[1])]);
-          this.build_queue.push(SPECS.CRUSADER);
-          let index = this.karbonite_spots.indexOf(spot);
-          this.karbonite_spots.splice(index, 1)
-          return self.buildUnit(SPECS.PILGRIM, ...available_spots[0]);
-        }
-        for (const f_spot of this.fuel_spots){
-          spot = f_spot;
-          if (Object.values(this.partial_points).indexOf(f_spot[0]) == -1) { // no other units MIGHT be trying to build at that spot.
-            if (available_fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL && 
-              available_karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) {
-              if (available_spots.length > 0) {
-                bool = true;
-                break;
-              }
-            }
-          }
-        }
-        if (bool){
-          self.castleTalk(COMM8.X(spot[0]));
-          this.signal_queue.push([COMM16.GOTO(...spot), dist([0,0], available_spots[0]), COMM8.Y(spot[1])]);
-          this.build_queue.push(SPECS.CRUSADER);
-          let index = this.fuel_spots.indexOf(spot);
-          this.fuel_spots.splice(index, 1)
-          return self.buildUnit(SPECS.PILGRIM, ...available_spots[0]);
         }
       }
     } else { // buildup or attack stage
@@ -346,5 +326,7 @@ export class CastleManager {
         }
       }
     }
+
+    return null; // no move to make
   }
 }

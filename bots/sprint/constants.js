@@ -17,7 +17,7 @@ export let CONSTANTS = {
 
   ELIMINATED_ENEMY: 200,
   ABANDON_ESCORT: 201,
-
+  LOST_ESCORT: 202,
 }
 
 export let COMM8 = {
