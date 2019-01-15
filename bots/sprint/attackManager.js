@@ -128,16 +128,66 @@ function escortBehavior(self, pilgrim_id) {
   }
 }
 
+// Random move huh... maybe you should call me RANDOM EXPLORATION :))
+
 function shuffleArray(array) {
-    for (var i = array.length - 1; i > 0; i--) {
-        var j = Math.floor(Math.random() * (i + 1));
-        var temp = array[i];
-        array[i] = array[j];
-        array[j] = temp;
-    }
+  for (var i = array.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var temp = array[i];
+    array[i] = array[j];
+    array[j] = temp;
+  }
 }
 
-function randomMoveBehavior(self) {
+function createVisitedMap(self, obj) {
+  let dim = self.map.length;
+  obj.visitedMap = [...Array(dim)].map(e => Array(dim).fill(false)); // create a 2d array (dim x dim)
+}
+
+function updateVisitedMap(self, obj) {
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]) {
+    if (self.map[self.me.y + dir[1]] && (self.map[self.me.y + dir[1]][self.me.x + dir[0]] !== undefined)) {
+      obj.visitedMap[self.me.y + dir[1]][self.me.x + dir[0]] = true;
+    }
+  }
+}
+
+function Point(x, y, p){
+  this.x = x;
+  this.y = y;
+  this.p = p;
+}
+
+function bfs(map, occ_map, vis_map, a, speed) {
+  let visited = new Set()
+  let queue = [new Point(a[0], a[1], null)]
+
+  while (queue.length > 0) {
+    let current = queue.shift()
+
+    if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
+    visited.add((current.y<<6) + current.x) // mark as visited
+
+    // if the spot has not yet been visited.
+    if (!vis_map[current.y][current.x]) {
+      if (current.p === null) { return null; }
+      while (current.p.p !== null) { current = current.p; }
+      return current;
+    }
+
+    for (let i = CIRCLES[speed].length - 1; i >= 0; i--) {
+      const dir = CIRCLES[speed][i];
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) {
+        if (occ_map[current.y + dir[1]][current.x + dir[0]] < 1) {
+          queue.push(new Point(current.x + dir[0], current.y + dir[1], current))
+        }
+      }
+    }
+  }
+  return null;
+}
+
+function randomMoveBehavior(self, obj) {
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
       if (dist([r.x, r.y], [self.me.x, self.me.y]) <= SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1]) {
@@ -154,6 +204,12 @@ function randomMoveBehavior(self) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
     }
+  }
+
+  // BFS towards an unseen spot:
+  let move = bfs(self.map, self.getVisibleRobotMap(), obj.visitedMap, [self.me.x, self.me.y], SPECS.UNITS[self.me.unit].SPEED);
+  if (move !== null) {
+    return self.move(move.x - self.me.x, move.y - self.me.y)
   }
 
   let possible_moves = CIRCLES[SPECS.UNITS[self.me.unit].SPEED].slice(0)
@@ -187,9 +243,11 @@ export class CrusaderManager {
         }
       }
     }
+    createVisitedMap(self, this);
   }
 
   turn(step, self) {
+    updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if ((r.signal & COMM16.HEADER_MASK) == COMM16.ESCORT_HEADER) {
         if (this.mode != CONSTANTS.ESCORT) {
@@ -238,7 +296,7 @@ export class CrusaderManager {
       }
     }
 
-    return randomMoveBehavior(self);
+    return randomMoveBehavior(self, this);
   }
 }
 
@@ -270,9 +328,11 @@ export class PreacherManager {
         }
       }
     }
+    createVisitedMap(self, this);
   }
 
   turn(step, self) {
+    updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if ((r.signal & COMM16.HEADER_MASK) == COMM16.ATTACK_HEADER) {
         this.mode = CONSTANTS.ATTACK
@@ -314,6 +374,6 @@ export class PreacherManager {
         return action
       }
     }
-    return randomMoveBehavior(self);
+    return randomMoveBehavior(self, this);
   }
 }
