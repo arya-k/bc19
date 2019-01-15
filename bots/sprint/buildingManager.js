@@ -80,7 +80,8 @@ export class ChurchManager {
   constructor(self) {
     self.castleTalk(COMM8.BUILDUP_STAGE); // let castles know that the buildup stage has started.
 
-    this.stage = CONSTANTS.BUILDUP
+    this.stage = CONSTANTS.BUILDUP;
+    this.attackerCount = 0;
     // every time karbonite > 70, we increment to_attack. 
     // If karbonite <70, we set to_attack to 0. 
     // if to_attack >= 3, switch stage to ATTACK
@@ -163,6 +164,7 @@ export class ChurchManager {
         for (const dir of CIRCLES[2]) {
           if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
             if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] == 0) {
+              this.attackerCount++;
               return self.buildUnit(SPECS.CRUSADER, ...dir);
             }
           }
@@ -188,6 +190,7 @@ export class CastleManager {
 
     this.partial_points = {}; // r_id of castle: x_coord of the points (they haven't told us the y coord yet.)
     this.stage = CONSTANTS.EXPLORATION; // first stage
+    this.attackerCount = 0;
 
     this.build_queue = [] // fairly self-explanatory lol
     this.signal_queue = [] // fairly self-explanatory lol
@@ -275,6 +278,7 @@ export class CastleManager {
             let pilgrim_id = self.getVisibleRobotMap()[self.me.y + bq[1][1]][self.me.x + bq[1][0]];
             this.signal_queue.push([COMM16.ESCORT(pilgrim_id), dist([0,0], available_spots[0])])
           }
+          this.attackerCount++;
           return self.buildUnit(bq[0], ...available_spots[0]);
         }
       }
@@ -288,12 +292,13 @@ export class CastleManager {
             self.castleTalk(COMM8.BUILT_PREACHER);
             this.signal_queue.push([COMM16.ATTACK(...this.enemy_loc), dist([0,0], available_spots[0])]);
             this.preacher_built = true;
+            this.attackerCount++;
             return self.buildUnit(SPECS.PREACHER, ...available_spots[0]);
           }
         }
       } else if ((this.fuel_spots.length + this.karbonite_spots.length) > 0) {
-        if (available_fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL && 
-            available_karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE && 
+        if (available_fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL + 1 && 
+            available_karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE + 1 && 
             available_spots.length > 0) { // could build
 
           let spots_inorder = [this.karbonite_spots, this.fuel_spots];
