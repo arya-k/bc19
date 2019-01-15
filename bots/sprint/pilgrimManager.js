@@ -116,7 +116,12 @@ export class PilgrimManager {
       if (Math.abs(self.me.x - this.base_loc[0]) <= 1 &&
           Math.abs(self.me.y - this.base_loc[1]) <= 1) {
         this.stage = CONSTANTS.MINE;
-        return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
+        let r = self.getRobot(self.getVisibleRobotMap()[this.base_loc[1]][this.base_loc[0]])
+        if (r !== null && r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
+          return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
+        } else {
+          return null; // our base has disappeared :(
+        }
       } else {
         let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.base_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED, 1, 2); // get adjacent
         if (move_node !== null) {

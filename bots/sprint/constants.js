@@ -26,7 +26,6 @@ export let COMM8 = {
   BUILT_PREACHER: 3,
 
   BUILDUP_STAGE: 50,
-  ATTACK_STAGE: 51,
 
   // If we have <64 static messages, then we can setup location sending too:
   HEADER_MASK: 0b11<<6,

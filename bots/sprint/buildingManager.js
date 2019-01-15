@@ -110,7 +110,6 @@ export class ChurchManager {
 
       if (this.to_attack >= 3) {
         this.stage = CONSTANTS.ATTACK
-        self.castleTalk(COMM8.ATTACK_STAGE);
       }
     }
 
@@ -205,6 +204,14 @@ export class CastleManager {
     let available_spots = [];
     let preacher_visible = false;
 
+    if (self.karbonite > SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE) {
+      this.to_attack++;
+    } else {
+      this.to_attack = 0
+    }
+    
+    if (this.to_attack >= 3) { this.stage = CONSTANTS.ATTACK; }
+
     for (const dir of CIRCLES[2]) {
       if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
         if (self.getVisibleRobotMap()[self.me.y + dir[1]][self.me.x + dir[0]] < 1)
@@ -218,9 +225,6 @@ export class CastleManager {
         const castle_talk = r.castle_talk;
         if (castle_talk == COMM8.BUILDUP_STAGE) {
           this.stage = CONSTANTS.BUILDUP
-
-        } else if (castle_talk == COMM8.ATTACK_STAGE) {
-          this.stage = CONSTANTS.ATTACK
         
         } else if (castle_talk == COMM8.BUILT_PREACHER) {
           this.preacher_built = true;
