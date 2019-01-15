@@ -246,14 +246,15 @@ export class CastleManager {
           if (d <= 2){
             adjacent_preacher = [r, d];
             if (enemy_loc !== null){
-              self.signal(COMM16.DISTRESS(enemy_loc[0], enemy_loc[1]), dist([self.me.x, self.me.y], [adjacent_preacher.x, adjacent_preacher.y])) 
+              self.signal(COMM16.DISTRESS(enemy_loc[0], enemy_loc[1]), d) 
             }
           }
         }
       }
       else if (r.id != self.me.id) { //enemy!
+        enemy_loc = [r.x, r.y]
         if (adjacent_preacher !== null){
-          self.signal(COMM16.DISTRESS(r.x, r.y), dist([self.me.x, self.me.y], [adjacent_preacher.x, adjacent_preacher.y]))
+          self.signal(COMM16.DISTRESS(r.x, r.y), adjacent_preacher[1])
         }
       }
     }
