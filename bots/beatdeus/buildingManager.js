@@ -210,8 +210,8 @@ export class CastleManager {
 
       if (this.best_castle[0] == self.me.x && this.best_castle[1] == self.me.y) {
         // build a robot + preacher:
-        self.build_signal_queue.push([COMM16.BASELOC(this.best_cluster.x, this.best_cluster.y), SPECS.PREACHER]);
-        self.build_signal_queue.push([COMM16.BASELOC(this.best_cluster.x, this.best_cluster.y), SPECS.PILGRIM]);
+        this.build_signal_queue.push([SPECS.PREACHER, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
+        this.build_signal_queue.push([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
       }
     }
 
@@ -220,5 +220,13 @@ export class CastleManager {
       self.castleTalk(this.castle_talk_queue.pop()); // not performant: doesn't matter
     }
 
+    if (this.build_signal_queue.length > 0) {
+      let locs = getClearLocations(self, 2);
+      if (locs.length > 0) {
+        let bs = this.build_signal_queue.pop();
+        self.signal(bs[1], dist([self.me.x, self.me.y], locs[0]));
+        return self.buildUnit(bs[0], locs[0][0] - self.me.x, locs[0][1] - self.me.y);
+      }
+    }
   }
 }
