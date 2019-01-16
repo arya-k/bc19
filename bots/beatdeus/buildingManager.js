@@ -156,9 +156,16 @@ function get_best_castle(self, x, y, castle_locations) {
   let empty_vis_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(-1));
 
   for (const c of castle_locations) {
-    let dist = num_moves(self.map, SPECS.UNITS[SPECS.PILGRIM].SPEED, [x,y], c);
-    self.log("DISTANCE FROM " + c + " TO " + [x,y] + " => " + dist);
+    let dist = num_moves(self.map, empty_vis_map, SPECS.UNITS[SPECS.PILGRIM].SPEED, [x,y], c);
+    if (dist !== null) {
+      if (best_dist === null || dist < best_dist) {
+        best_dist = dist;
+        best_castle = c;
+      }
+    }
   }
+
+  return best_castle;
 }
 
 
@@ -202,7 +209,7 @@ export class CastleManager {
 
       this.best_castle = get_best_castle(self, this.best_cluster.x, this.best_cluster.y, this.castle_locations);
 
-      self.log("I would mine the cluster @ " + [this.best_cluster.x, this.best_cluster.y]);
+      self.log("CASTLE @ " + this.best_castle + " SHOULD MINE @ " + [this.best_cluster.x, this.best_cluster.y]);
       self.log("F: " + this.best_cluster.fuel + ", K: " + this.best_cluster.karbonite);
     }
 
