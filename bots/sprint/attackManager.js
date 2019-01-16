@@ -264,6 +264,10 @@ export class CrusaderManager {
       }
     }
 
+    if (this.base_location == null) {
+      this.mode = CONSTANTS.ATTACK
+    }
+
     if (this.mode == CONSTANTS.ESCORT) {
       let action = escortBehavior(self, this.base_location);
       if (action[0] == CONSTANTS.ABANDON_ESCORT) {
