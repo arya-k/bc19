@@ -117,7 +117,7 @@ function find_resource_clusters(map, fuel_map, karb_map) {
   return clusters;
 }
 
-function sort_resource_clusters(clusters, castle_locations, self) {
+function get_best_cluster(clusters, castle_locations) {
   let mean_x = 0;
   let mean_y = 0;
 
@@ -128,8 +128,6 @@ function sort_resource_clusters(clusters, castle_locations, self) {
 
   mean_x = Math.floor(mean_x / castle_locations.length);
   mean_y = Math.floor(mean_y / castle_locations.length);
-
-  self.log([self.me.x, self.me.y] + " MEAN AT " + [mean_x, mean_y])
 
   // sort the array:
   clusters.sort(function(a, b) {
@@ -145,6 +143,14 @@ function sort_resource_clusters(clusters, castle_locations, self) {
       return dist([a.x, a.y], [mean_x, mean_y]) > dist([b.x, b.y], [mean_x, mean_y]) ? 1 : -1;
     }
   })
+
+  // then return the largest one:
+  return clusters[0];
+}
+
+function get_best_castle(x, y, castle_locations) {
+  let best_dist = 1<<20; // suuper bad distance
+  let best_castle = null;
 }
 
 
@@ -179,11 +185,17 @@ export class CastleManager {
 
     if (step == 2) { // we've just gotten castle location information.
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
-      sort_resource_clusters(this.resource_clusters, this.castle_locations, self)
+      this.best_cluster = get_best_cluster(this.resource_clusters, this.castle_locations)
 
-      self.log("clusters:")
-      for (const cl of this.resource_clusters)
-        self.log([cl.x, cl.y] + " => F: " + cl.fuel + ", K: " + cl.karbonite);
+      if (this.best_cluster === undefined) {
+        self.log("ERROR! BROKEN MAP.");
+        return;
+      }
+
+      this.best_castle = get_best_castle(this.best_cluster.x, this.best_cluster.y, this.castle_locations);
+
+      self.log("I would mine the cluster @ " + [this.best_cluster.x, this.best_cluster.y]);
+      self.log("F: " + this.best_cluster.fuel + ", K: " + this.best_cluster.karbonite);
     }
 
     // now, do any cached activities.
