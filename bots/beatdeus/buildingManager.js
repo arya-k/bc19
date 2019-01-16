@@ -2,6 +2,7 @@ import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
 import {dist, is_valid, getNearbyRobots, getClearLocations} from './utils.js'
 import {COMM8} from './comm.js'
+import {num_moves} from './path.js'
 
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
@@ -148,9 +149,16 @@ function get_best_cluster(clusters, castle_locations) {
   return clusters[0];
 }
 
-function get_best_castle(x, y, castle_locations) {
-  let best_dist = 1<<20; // suuper bad distance
+function get_best_castle(self, x, y, castle_locations) {
+  let best_dist = null;
   let best_castle = null;
+
+  let empty_vis_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(-1));
+
+  for (const c of castle_locations) {
+    let dist = num_moves(self.map, SPECS.UNITS[SPECS.PILGRIM].SPEED, [x,y], c);
+    self.log("DISTANCE FROM " + c + " TO " + [x,y] + " => " + dist);
+  }
 }
 
 
@@ -192,7 +200,7 @@ export class CastleManager {
         return;
       }
 
-      this.best_castle = get_best_castle(this.best_cluster.x, this.best_cluster.y, this.castle_locations);
+      this.best_castle = get_best_castle(self, this.best_cluster.x, this.best_cluster.y, this.castle_locations);
 
       self.log("I would mine the cluster @ " + [this.best_cluster.x, this.best_cluster.y]);
       self.log("F: " + this.best_cluster.fuel + ", K: " + this.best_cluster.karbonite);
