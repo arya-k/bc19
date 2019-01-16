@@ -19,3 +19,16 @@ export const COMM8 = {
     DECODE_Y: function (s) { return (s^MASK8)&63; },
 
 }
+
+export const COMM16 = {
+    // message type declarations:
+    BASELOC_HEADER: 0b1000<<12,
+
+    // check header:
+    type: function(s) { return (s^MASK16) & (0b1111<<12); },
+
+    // encode and decodes:
+    ENCODE_BASELOC: function(x, y) { return ((0b1000<<12) + (y<<6) + x) ^ MASK16; },
+
+    DECODE_BASELOC: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
+}

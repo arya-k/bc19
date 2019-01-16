@@ -1,7 +1,7 @@
 import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
 import {dist, is_valid, getNearbyRobots, getClearLocations} from './utils.js'
-import {COMM8} from './comm.js'
+import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
 
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
@@ -179,8 +179,7 @@ export class CastleManager {
     this.horiSym = isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)
 
     this.castle_talk_queue = [COMM8.ENCODE_Y(self.me.y), COMM8.ENCODE_X(self.me.x)];
-    this.signal_queue = [];
-    this.build_queue = [];
+    this.build_signal_queue = [];
 
     this.resource_clusters = find_resource_clusters(self.map, self.fuel_map, self.karbonite_map);
   }
@@ -209,8 +208,11 @@ export class CastleManager {
 
       this.best_castle = get_best_castle(self, this.best_cluster.x, this.best_cluster.y, this.castle_locations);
 
-      self.log("CASTLE @ " + this.best_castle + " SHOULD MINE @ " + [this.best_cluster.x, this.best_cluster.y]);
-      self.log("F: " + this.best_cluster.fuel + ", K: " + this.best_cluster.karbonite);
+      if (this.best_castle[0] == self.me.x && this.best_castle[1] == self.me.y) {
+        // build a robot + preacher:
+        self.build_signal_queue.push([COMM16.BASELOC(this.best_cluster.x, this.best_cluster.y), SPECS.PREACHER]);
+        self.build_signal_queue.push([COMM16.BASELOC(this.best_cluster.x, this.best_cluster.y), SPECS.PILGRIM]);
+      }
     }
 
     // now, do any cached activities.
