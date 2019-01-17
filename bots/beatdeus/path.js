@@ -328,7 +328,7 @@ export function move_away(self, enemies) {
       }
     }
   }
-  if (threat_points.has((self.me.y<<6) + self.me.x))
+  if (!threat_points.has((self.me.y<<6) + self.me.x))
     return null;
   let max = [0, null];
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
