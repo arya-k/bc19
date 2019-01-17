@@ -152,7 +152,6 @@ function get_best_cluster(clusters, castle_locations) {
 function get_best_castle(self, x, y, castle_locations) {
   let best_dist = null;
   let best_castle = null;
-
   let empty_vis_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(-1));
 
   for (const c of castle_locations) {
@@ -166,6 +165,33 @@ function get_best_castle(self, x, y, castle_locations) {
   }
 
   return best_castle;
+}
+
+function sort_enemy_attack_order(self, c_locs, e_locs) {
+  let timed_pairs = [];
+  let empty_vis_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(-1));
+
+  for (let i=0; i<c_locs.length; i++) {
+    let dist = num_moves(self.map, empty_vis_map, SPECS.UNITS[SPECS.PREACHER].SPEED, c_locs[i], e_locs[i]);
+    timed_pairs.push([c_locs[i], e_locs[i], dist]) 
+  }
+
+  timed_pairs.sort(function (a,b) {
+    if (a[2] !== null && b[2] !== null) {
+      return a[2] - b[2];
+    } else if (a[2] === null && b[2] !== null) {
+      return 1;
+    } else if (a[2] !== null && b[2] === null) {
+      return -1;
+    } else {
+      return 0; 
+    }
+  })
+
+  let to_ret = []
+  for (const tp of timed_pairs)
+    to_ret.push(tp[1]);
+  return to_ret;
 }
 
 
@@ -185,7 +211,7 @@ export class CastleManager {
   }
 
   turn(step, self) {
-    // RULE: NO PILGRIMS MAY BROADCAST LOCATIONS BEFORE STEP 2.
+    // RULE: NO NON-CASTLE CASTLETALK BEFORE STEP 2.
 
     if (step <= 2) {
       for (const r of self.getVisibleRobots()) {
@@ -199,6 +225,8 @@ export class CastleManager {
 
     if (step == 2) { // we've just gotten castle location information.
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
+      this.enemy_castle_locations = sort_enemy_attack_order(self, this.castle_locations, this.enemy_castle_locations);
+
       this.best_cluster = get_best_cluster(this.resource_clusters, this.castle_locations)
 
       if (this.best_cluster === undefined) {
@@ -210,9 +238,8 @@ export class CastleManager {
 
       if (this.best_castle[0] == self.me.x && this.best_castle[1] == self.me.y) {
         // build a robot + preacher:
-        this.build_signal_queue.push([SPECS.PREACHER, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
-        this.build_signal_queue.push([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
-      }
+        this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
+        this.build_signal_queue.unshift([SPECS.PREACHER, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);      }
     }
 
     // now, do any cached activities.
