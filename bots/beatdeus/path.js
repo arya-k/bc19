@@ -1,5 +1,10 @@
 import {CIRCLES} from './constants.js'
 
+function Point(x, y){
+  this.x = x;
+  this.y = y;
+}
+
 function pathTo(node) {
   var curr = node;
   var path = [];
@@ -309,6 +314,37 @@ export function move_to(self, a, b) {
     }
   }
   return null; // no path found.
+}
+
+export function move_away(self, enemies){
+  let visited = new Set()
+  let queue = [new Point(self.me.x,self.me.y)]
+
+  while (queue.length > 0) {
+    let current = queue.shift()
+
+    if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
+    visited.add((current.y<<6) + current.x) // mark as visited
+
+    // if any adjacent spots don't have fuel, karbonite or robots:
+    for (const dir of CIRCLES[2]) {
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) { // passable
+        if (!fuel_map[current.y + dir[1]][current.x + dir[0]]) { // no fuel
+          if (!karbonite_map[current.y + dir[1]][current.x + dir[0]]) { // no karbonite
+            if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] < 1) { // 
+              return [current.x + dir[0], current.y + dir[1]];
+            }
+          }
+        }
+      }
+    }
+
+    for (const dir of CIRCLES[SPECS.UNITS[SPECS.PILGRIM].SPEED]) {
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) {
+        queue.push(new Point(current.x + dir[0], current.y + dir[1]))
+      }
+    }
+  }
 }
 
 export function num_moves(pass_map, vis_map, speed, a, b) {
