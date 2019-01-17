@@ -1,7 +1,7 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS,CIRCLES} from './constants.js'
-import {COMM8, COMM16} from '.comm.js'
-import {move_towards, move_to, num_moves} from './path.js'
+import {COMM8, COMM16} from './comm.js'
+import {move_towards, move_to, move_away, num_moves} from './path.js'
 
 function dist(a, b) { // returns the squared distance
   return (a[0]-b[0])**2+(a[1]-b[1])**2
@@ -10,7 +10,7 @@ function dist(a, b) { // returns the squared distance
 function find_depots(self, church_loc) {
   var split_resource_map = {fuel: [], karbonite: []};
   var resource_map = []
-  const fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
+  const pass_map = self.map, fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
 
   // Generate the visited set:
   let visited = new Set()
@@ -19,29 +19,30 @@ function find_depots(self, church_loc) {
   while (queue.length > 0) {
       let current = queue.shift()
 
-      if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
-      visited.add((current.y<<6) + current.x) // mark as visited
+      if (visited.has((current[1]<<6) + current[0])) { continue; } // seen before.
+      visited.add((current[1]<<6) + current[0]) // mark as visited
 
       // check for fuel + karbonite:
-      if (fuel_map[current.y][current.x]) {
-          split_resource_map.fuel.push([current.x, current.y]);
-          resource_map.push([current.x, current.y]);
-      } else if (karbonite_map[current.y][current.x]) {
-          split_resource_map.karbonite.push([current.x, current.y]);
-          resource_map.push([current.x, current.y]);
+      if (fuel_map[current[1]][current[0]]) {
+        split_resource_map.fuel.push([current[0], current[1]]);
+        resource_map.push([current[0], current[1]]);
+      } else if (karbonite_map[current[1]][current[0]]) {
+        split_resource_map.karbonite.push([current[0], current[1]]);
+        resource_map.push([current[0], current[1]]);
       }
-
+      
       for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){ // add nbrs
-        if ((current.x + dir[0]) >= 0 && (current.x + dir[0]) < pass_map[0].length) {
-          if ((current.y + dir[1]) >= 0 && (current.y + dir[1]) < pass_map.length) { // in map range
-            if (pass_map[current.y + dir[1]][current.x + dir[0]]) { // can go here
-              if (dist([current.y + dir[1],current.x + dir[0]], church_loc) > 8){ // search radius
-                queue.push([current.x + dir[0], current.y + dir[1]]);
+        if ((current[0] + dir[0]) >= 0 && (current[0] + dir[0]) < pass_map[0].length) {
+          if ((current[1] + dir[1]) >= 0 && (current[1] + dir[1]) < pass_map.length) { // in map range
+            if (pass_map[current[1] + dir[1]][current[0] + dir[0]]) { // can go here
+              if (dist([current[1] + dir[1],current[0] + dir[0]], church_loc) > 8){ // search radius
+                queue.push([current[0] + dir[0], current[1] + dir[1]]);
               }
             }
           }
         }
       }
+      
   }
   return [split_resource_map, resource_map];
 }
@@ -59,6 +60,7 @@ function find_mine(self, all_resources, priority = null) {
 
   let closest_visible = [Number.MAX_SAFE_INTEGER, null];
   let closest_invisible = [Number.MAX_SAFE_INTEGER, null];
+  self.log(resources)
   for (const depot of resources){
     let d = dist([self.me.x, self.me.y], depot);
     if (self.getVisibleRobotMap(depot) == 0){
@@ -71,6 +73,7 @@ function find_mine(self, all_resources, priority = null) {
     }
 
   }
+
   if (closest_visible[1] !== null)
     return closest_visible[1];
   return closest_invisible[1];
@@ -111,6 +114,8 @@ export class PilgrimManager {
           this.church_loc = COMM16.DECODE_BASELOC(r.signal);
           this.resources = find_depots(self, this.church_loc);
           this.mine_loc = find_mine(self, this.resources);
+          self.log(this.church_loc)
+          self.log(this.mine_loc)
         }
       }
     }
@@ -196,6 +201,7 @@ export class PilgrimManager {
       if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
         return self.mine();
       } else if (this.mine_loc !== null) {
+        this.mine_loc = find_mine(self, this.resources);
         let move_node = move_to(self.map, self.getVisibleRobotMap(), SPECS.UNITS[SPECS.PILGRIM].SPEED, [self.me.x, self.me.y], this.mine_loc)
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)

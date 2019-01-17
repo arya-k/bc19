@@ -1,3 +1,4 @@
+import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
 
 function Point(x, y){
