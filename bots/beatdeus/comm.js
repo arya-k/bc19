@@ -26,7 +26,6 @@ export const COMM16 = {
     // message type declarations:
     BASELOC_HEADER: 0b1000<<12,
     ENEMYSIGHTING_HEADER: 0b1001<<12,
-    NEWBASE_HEADER: 0b1010<<12,
 
     // check header:
     type: function(s) { return (s^MASK16) & (0b1111<<12); },
@@ -34,9 +33,7 @@ export const COMM16 = {
     // encode and decodes:
     ENCODE_BASELOC: function(x, y) { return ((0b1000<<12) + (y<<6) + x) ^ MASK16; },
     ENCODE_ENEMYSIGHTING: function(x, y) { return ((0b1001<<12) + (y<<6) + x) ^ MASK16; },
-    ENCODE_NEWBASE: function(x, y) { return ((0b1010<<12) + (y<<6) + x) ^ MASK16; },
 
     DECODE_BASELOC: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
     ENCODE_ENEMYSIGHTING: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
-    DECODE_NEWBASE: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
 }
