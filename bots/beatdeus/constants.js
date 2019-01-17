@@ -46,29 +46,3 @@ export let CONSTANTS = {
   LOST_ESCORT: 202,
 
 }
-export let COMM16 = {
-  // signalling communications
-
-  HEADER_MASK: 0b1111<<12, // and the signal with this, then compare them to various headers.
-
-  ESCORT_HEADER: 0b0001<<12,
-  ESCORT: function(pilgrim_id){ return (0b0001<<12) + pilgrim_id; },
-  DECODE_ESCORT: function(s){ return s&4095; },
-
-  ATTACK_HEADER: 0b0010<<12,
-  ATTACK: function(x,y){ return (0b0010<<12) + (y<<6) + x; },
-  DECODE_ATTACK: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
-
-  DISTRESS_HEADER: 0b0011<<12,
-  DISTRESS: function(x,y){ return (0b0011<<12) + (y<<6) + x; },
-  DECODE_DISTRESS: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
-
-  ENEMYLOC_HEADER: 0b0100<<12,
-  ENEMYLOC: function(x,y){ return (0b0100<<12) + (y<<6) + x; },
-  DECODE_ENEMYLOC: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
-
-  GOTO_HEADER: 0b0101<<12,
-  GOTO: function(x,y){ return (0b0101<<12) + (y<<6) + x; },
-  DECODE_GOTO: function(s){ return [s&0b111111,(s&(0b111111<<6))>>6]; }, // x, y
-
-}

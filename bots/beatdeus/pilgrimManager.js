@@ -1,9 +1,80 @@
 import {SPECS} from 'battlecode';
-import {CONSTANTS,CIRCLES,COMM16} from './constants.js'
+import {CONSTANTS,CIRCLES} from './constants.js'
+import {COMM8, COMM16} from '.comm.js'
 import {move_towards, move_to, num_moves} from './path.js'
 
-function dist(a, b){ // returns the squared distance
+function dist(a, b) { // returns the squared distance
   return (a[0]-b[0])**2+(a[1]-b[1])**2
+}
+
+function find_depots(self, church_loc) {
+  var split_resource_map = {fuel: [], karbonite: []};
+  var resource_map = []
+  const fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
+
+  // Generate the visited set:
+  let visited = new Set()
+  let queue = [[church_loc[0], church_loc[1]]]
+
+  while (queue.length > 0) {
+      let current = queue.shift()
+
+      if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
+      visited.add((current.y<<6) + current.x) // mark as visited
+
+      // check for fuel + karbonite:
+      if (fuel_map[current.y][current.x]) {
+          split_resource_map.fuel.push([current.x, current.y]);
+          resource_map.push([current.x, current.y]);
+      } else if (karbonite_map[current.y][current.x]) {
+          split_resource_map.karbonite.push([current.x, current.y]);
+          resource_map.push([current.x, current.y]);
+      }
+
+      for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){ // add nbrs
+        if ((current.x + dir[0]) >= 0 && (current.x + dir[0]) < pass_map[0].length) {
+          if ((current.y + dir[1]) >= 0 && (current.y + dir[1]) < pass_map.length) { // in map range
+            if (pass_map[current.y + dir[1]][current.x + dir[0]]) { // can go here
+              if (dist([current.y + dir[1],current.x + dir[0]], church_loc) > 8){ // search radius
+                queue.push([current.x + dir[0], current.y + dir[1]]);
+              }
+            }
+          }
+        }
+      }
+  }
+  return [split_resource_map, resource_map];
+}
+
+function find_mine(self, all_resources, priority = null) {
+  let resources = null;
+  if (priority == null)
+    resources = all_resources[1];
+  else if (priority.toLowerCase().includes('f'))
+    resources = all_resources[0].fuel;
+  else if (priority.toLowerCase().includes('k'))
+    resources = all_resources[0].karbonite;
+  else
+    self.log("SOMETHING WONG");
+
+  let closest_visible = [Number.MAX_SAFE_INTEGER, null];
+  let closest_invisible = [Number.MAX_SAFE_INTEGER, null];
+  for (const depot of resources){
+    let d = dist([self.me.x, self.me.y], depot);
+    if (self.getVisibleRobotMap(depot) == 0){
+      if (d < closest_visible[0])
+        closest_visible = depot;
+    }
+    else if (self.getVisibleRobotMap(depot) == -1) {
+      if (d < closest_invisible[0])
+        closest_invisible = depot;
+    }
+
+  }
+  if (closest_visible[1] !== null)
+    return closest_visible[1];
+  return closest_invisible[1];
+
 }
 
 // pilgrim
@@ -15,6 +86,8 @@ export class PilgrimManager {
     this.church_loc = null;
     this.churchid = null;
     this.mine_loc = null;
+    this.resources = null;
+
     for (const r of self.getVisibleRobots()) {
       if (r.team === self.me.team){
         if (r.unit == SPECS.CASTLE) {
@@ -35,8 +108,9 @@ export class PilgrimManager {
     if (this.church_loc === null) {
       for (const r of self.getVisibleRobots()) {
         if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER) {
-          this.church_loc = COMM16.DECODE_BASELOC(r.signal) 
-          //set mine_loc somewhere near the church
+          this.church_loc = COMM16.DECODE_BASELOC(r.signal);
+          this.resources = find_depots(self, this.church_loc);
+          this.mine_loc = find_mine(self, this.resources);
         }
       }
     }
@@ -62,12 +136,16 @@ export class PilgrimManager {
       }
     }
 
+    var enemies = [];
     for (const r of self.getVisibleRobots()){
       if (r.team !== null && r.team != self.me.team && r.unit != SPECS.PILGRIM){
-        //move away from attack radius
-        const radius = SPECS.UNITS[r.unit].ATTACK_RADIUS;
-        return self.move(move_away(stuff iN hereeeeeeeeeeeeee))
+        enemies.push(r)
       }
+    }
+    if (enemies != []){
+      const move = move_away(self, enemies);
+      if (move != null)
+        return self.move(move);
     }
 
     if (this.stage == CONSTANTS.BUILD) {

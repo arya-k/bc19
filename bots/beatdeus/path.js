@@ -316,35 +316,31 @@ export function move_to(self, a, b) {
   return null; // no path found.
 }
 
-export function move_away(self, enemies){
-  let visited = new Set()
-  let queue = [new Point(self.me.x,self.me.y)]
-
-  while (queue.length > 0) {
-    let current = queue.shift()
-
-    if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
-    visited.add((current.y<<6) + current.x) // mark as visited
-
-    // if any adjacent spots don't have fuel, karbonite or robots:
-    for (const dir of CIRCLES[2]) {
-      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) { // passable
-        if (!fuel_map[current.y + dir[1]][current.x + dir[0]]) { // no fuel
-          if (!karbonite_map[current.y + dir[1]][current.x + dir[0]]) { // no karbonite
-            if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] < 1) { // 
-              return [current.x + dir[0], current.y + dir[1]];
-            }
-          }
-        }
-      }
-    }
-
-    for (const dir of CIRCLES[SPECS.UNITS[SPECS.PILGRIM].SPEED]) {
-      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) {
-        queue.push(new Point(current.x + dir[0], current.y + dir[1]))
+export function move_away(self, enemies) {
+  let threat_points = new Set();
+  let set = new Set();
+  for (let enemy of enemies) {
+    for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS]){
+      let point = [enemy.x + dir[0], enemy.y + dir[1]];
+      if (self.getPassableMap()[point[1]][point[0]]){
+        threat_points.push((point[1]<<6) + point[0]);
       }
     }
   }
+  if (threat_points.has((self.me.y<<6) + self.me.x))
+    return null;
+  let max = [0, null];
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
+    let point = [self.me.x + dir[0], self.me.y + dir[1]];
+    if (!threat_points.has((point[1]<<6) + point[0]))
+      return dir
+    let sum = 0;
+    for (let enemy of enemies)
+      sum += ((enemy.x - point[0])**2 + (enemy.y - point[1])**2);
+    if (sum > max[0])
+      max = [sum, dir];
+  }
+  return max[1];
 }
 
 export function num_moves(pass_map, vis_map, speed, a, b) {
