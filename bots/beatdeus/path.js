@@ -186,11 +186,20 @@ export function move_towards(self, a, b) {
   // The enemy. It will NOT try to bring you exactly to the enemy
   // This is the function you use if you want to A* towards an enemy (so all the attack behavior)
 
+
   const pass_map = self.map;
   const vis_map = self.getVisibleRobotMap();
   const speed = SPECS.UNITS[self.me.unit].SPEED;
-  const attack_radius_min = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0]
-  const attack_radius_max = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1]
+  let attack_radius_min = null;
+  let attack_radius_max = null;
+
+  if (self.me.unit == SPECS.PILGRIM) {
+    attack_radius_max = 2;
+    attack_radius_min = 1;
+  } else {
+    attack_radius_min = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0];
+    attack_radius_max = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1];
+  }
 
 
   var graph = new Graph(pass_map, vis_map, speed);
@@ -199,10 +208,10 @@ export function move_towards(self, a, b) {
   var start = graph.grid[a[1]][a[0]]
   var end = graph.grid[b[1]][b[0]]
 
+
   start.h = heuristic(start, end);
   graph.markDirty(start);
   openHeap.push(start);
-
 
   while (openHeap.size() > 0) {
     var currentNode = openHeap.pop();
