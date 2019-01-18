@@ -11,7 +11,6 @@ const HORDE_SIZE = 10;
 // attack the enemy if it's in range
 // active defense troop spawning
 
-
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
   for (let i = 0; i < N; i++) {

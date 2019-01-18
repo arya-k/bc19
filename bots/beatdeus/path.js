@@ -187,11 +187,20 @@ export function move_towards(self, a, b) {
   // The enemy. It will NOT try to bring you exactly to the enemy
   // This is the function you use if you want to A* towards an enemy (so all the attack behavior)
 
+
   const pass_map = self.map;
   const vis_map = self.getVisibleRobotMap();
   const speed = SPECS.UNITS[self.me.unit].SPEED;
-  const attack_radius_min = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0]
-  const attack_radius_max = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1]
+  let attack_radius_min = null;
+  let attack_radius_max = null;
+
+  if (self.me.unit == SPECS.PILGRIM) {
+    attack_radius_max = 2;
+    attack_radius_min = 1;
+  } else {
+    attack_radius_min = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0];
+    attack_radius_max = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1];
+  }
 
 
   var graph = new Graph(pass_map, vis_map, speed);
@@ -200,10 +209,10 @@ export function move_towards(self, a, b) {
   var start = graph.grid[a[1]][a[0]]
   var end = graph.grid[b[1]][b[0]]
 
+
   start.h = heuristic(start, end);
   graph.markDirty(start);
   openHeap.push(start);
-
 
   while (openHeap.size() > 0) {
     var currentNode = openHeap.pop();
@@ -321,20 +330,23 @@ export function move_to(self, a, b) {
 export function move_away(self, enemies) {
   let threat_points = new Set();
   let set = new Set();
-  self.log("here1")
+
+  let p, d;
   for (let enemy of enemies) {
+    threat_points.add((enemy.y<<6) + enemy.x);
     for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1]]){
-      let point = [enemy.x + dir[0], enemy.y + dir[1]];
-      if (is_valid(...point, self.map.length)){
-        if (self.map[point[1]][point[0]]){
-          threat_points.add((point[1]<<6) + point[0]);
+      p = [enemy.x + dir[0], enemy.y + dir[1]];
+      d = dist(p, [self.me.x, self.me.y]);
+      if (d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0]) { // prophets have a min_radius too.
+        if (is_valid(p[0], p[1], self.map.length)){
+          threat_points.add((p[1]<<6) + p[0]);
         }
       }
     }
   }
-  self.log("here2")
   if (!threat_points.has((self.me.y<<6) + self.me.x))
     return null;
+
   let max = [0, null];
   let max_safe = [0, null]
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
