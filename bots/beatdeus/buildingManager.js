@@ -10,6 +10,9 @@ const HORDE_SIZE = 10;
 // spawn more pilgrims to clumps whenever we run low on resources
 // attack the enemy if it's in range
 // active defense troop spawning
+// plan hordes
+// track horde sizes
+// send the hordes out to each other.
 
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
@@ -156,7 +159,7 @@ function get_best_cluster(clusters, castle_locations) {
   return clusters[0];
 }
 
-function get_best_castle(self, x, y, castle_locations) {
+function get_best_cluster_castle(self, x, y, castle_locations) {
   let best_dist = null;
   let best_castle = null;
   let empty_vis_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(-1));
@@ -218,7 +221,6 @@ export class CastleManager {
   }
 
   turn(step, self) {
-    // RULE: NO NON-CASTLE CASTLETALK BEFORE STEP 2.
     if (step <= 2) {
       for (const r of self.getVisibleRobots()) {
         if (COMM8.type(r.castle_talk) == COMM8.X_HEADER) {
@@ -240,7 +242,7 @@ export class CastleManager {
         return;
       }
 
-      this.best_castle = get_best_castle(self, this.best_cluster.x, this.best_cluster.y, this.castle_locations);
+      this.best_castle = get_best_cluster_castle(self, this.best_cluster.x, this.best_cluster.y, this.castle_locations);
 
       if (this.best_castle[0] == self.me.x && this.best_castle[1] == self.me.y) {
         // build a pilgrim + prophet:
@@ -249,10 +251,23 @@ export class CastleManager {
       }
     }
 
-    if (step >= 2) {
-      // start by seeing if we have any castles to attack:
-      if (this.attack_targets.length > 0) {
+    let myRobots = [] // gather my robots
+    for (const r_id of getNearbyRobots(self, SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
+      let r = self.getRobot(r_id);
+      if (r.team === self.me.team) {
+        myRobots.push(r);
+      }
+    }
 
+    // if we have the resources to build a defensive prophet, build it.
+    if (step >= 10) { // we'll build it sooner if we're attacked.
+      if (self.karbonite > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) &&
+          self.fuel > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL)) {
+        if (!myRobots.some(function(r) { r.unit == SPECS.PROPHET })) { // no prophets exist.
+          if (!this.build_signal_queue.some(function (bs) { bs[0] != SPECS.PROPHET })) {
+            this.build_signal_queue.unshift([SPECS.PROPHET, null]);
+          }
+        }
       }
     }
 
@@ -265,8 +280,12 @@ export class CastleManager {
       let locs = getClearLocations(self, 2);
       if (locs.length > 0) {
         let bs = this.build_signal_queue.pop();
-        self.signal(bs[1], dist([self.me.x, self.me.y], locs[0]));
-        return self.buildUnit(bs[0], locs[0][0] - self.me.x, locs[0][1] - self.me.y);
+        if (bs[1] !== null) {
+          self.signal(bs[1], dist([self.me.x, self.me.y], locs[0]));
+        }
+        if (bs[0] !== null) {
+          return self.buildUnit(bs[0], locs[0][0] - self.me.x, locs[0][1] - self.me.y);
+        }
       }
     }
   }
