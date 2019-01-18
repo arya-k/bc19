@@ -333,6 +333,8 @@ export function move_away(self, enemies) {
   let p, d;
   for (let enemy of enemies) {
     threat_points.add((enemy.y<<6) + enemy.x);
+    self.log(enemy.unit)
+    self.log(SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1].toString())
     for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1]]){
       p = [enemy.x + dir[0], enemy.y + dir[1]];
       d = dist(p, [self.me.x, self.me.y]);
@@ -364,10 +366,11 @@ export function move_away(self, enemies) {
         max = [sum, dir];
     }
   }
+
   if (max_safe[1] !== null)
     return max_safe[1];
   else
-  return max[1];
+    return max[1];
 }
 
 export function num_moves(pass_map, vis_map, speed, a, b) {
