@@ -4,6 +4,8 @@ import {dist, is_valid, getNearbyRobots, getClearLocations} from './utils.js'
 import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
 
+const HORDE_SIZE = 10;
+
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
   for (let i = 0; i < N; i++) {
@@ -212,7 +214,6 @@ export class CastleManager {
 
   turn(step, self) {
     // RULE: NO NON-CASTLE CASTLETALK BEFORE STEP 2.
-
     if (step <= 2) {
       for (const r of self.getVisibleRobots()) {
         if (COMM8.type(r.castle_talk) == COMM8.X_HEADER) {
@@ -225,7 +226,7 @@ export class CastleManager {
 
     if (step == 2) { // we've just gotten castle location information.
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
-      this.enemy_castle_locations = sort_enemy_attack_order(self, this.castle_locations, this.enemy_castle_locations);
+      this.attack_targets = sort_enemy_attack_order(self, this.castle_locations, this.enemy_castle_locations);
 
       this.best_cluster = get_best_cluster(this.resource_clusters, this.castle_locations)
 
@@ -237,9 +238,17 @@ export class CastleManager {
       this.best_castle = get_best_castle(self, this.best_cluster.x, this.best_cluster.y, this.castle_locations);
 
       if (this.best_castle[0] == self.me.x && this.best_castle[1] == self.me.y) {
-        // build a robot + preacher:
+        // build a pilgrim + prophet:
         this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
-        this.build_signal_queue.unshift([SPECS.PREACHER, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);      }
+        this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
+      }
+    }
+
+    if (step >= 2) {
+      // start by seeing if we have any castles to attack:
+      if (this.attack_targets.length > 0) {
+
+      }
     }
 
     // now, do any cached activities.
