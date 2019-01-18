@@ -329,16 +329,24 @@ export function move_to(self, a, b) {
 export function move_away(self, enemies) {
   let threat_points = new Set();
   let set = new Set();
+  let p, d;
+
   for (let enemy of enemies) {
-    for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS]){
-      let point = [enemy.x + dir[0], enemy.y + dir[1]];
-      if (self.getPassableMap()[point[1]][point[0]]){
-        threat_points.push((point[1]<<6) + point[0]);
+    threat_points.push((enemy.y<<6) + enemy.x);
+    for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1]]){
+      p = [enemy.x + dir[0], enemy.y + dir[1]];
+      d = dist(p, [self.me.x, self.me.y]);
+      if (d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0]) { // prophets have a min_radius too.
+        if (is_valid(point[0], point[1], self.map.length)){
+          threat_points.push((point[1]<<6) + point[0]);
+        }
       }
     }
   }
+
   if (!threat_points.has((self.me.y<<6) + self.me.x))
     return null;
+
   let max = [0, null];
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
     let point = [self.me.x + dir[0], self.me.y + dir[1]];
