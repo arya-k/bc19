@@ -1,3 +1,4 @@
+import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
 
 export function dist(a, b) {

@@ -1,6 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
-import {dist, is_valid, getNearbyRobots, getClearLocations} from './utils.js'
+import {dist, is_valid, getNearbyRobots, getClearLocations, getAttackOrder} from './utils.js'
 import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
 
@@ -8,11 +8,9 @@ const HORDE_SIZE = 10;
 
 // redo clump ordering to be a little smarter
 // spawn more pilgrims to clumps whenever we run low on resources
-// attack the enemy if it's in range
-// active defense troop spawning
 // plan hordes
 // track horde sizes
-// send the hordes out to each other.
+// send the hordes out to attack.
 
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
@@ -251,41 +249,70 @@ export class CastleManager {
       }
     }
 
-    let myRobots = [] // gather my robots
+    let myRobots = []; // gather my robots
+    let enemy_crusader = null; // should spawn preacher
+    let enemy_attacker = null; // non-crusader. should spawn prophet.
     for (const r_id of getNearbyRobots(self, SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
       let r = self.getRobot(r_id);
       if (r.team === self.me.team) {
         myRobots.push(r);
-      }
-    }
-
-    // if we have the resources to build a defensive prophet, build it.
-    if (step >= 10) { // we'll build it sooner if we're attacked.
-      if (self.karbonite > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) &&
-          self.fuel > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL)) {
-        if (!myRobots.some(function(r) { return r.unit == SPECS.PROPHET })) { // no prophets exist.
-          if (!this.build_signal_queue.some(function (bs) { return bs[0] != SPECS.PROPHET })) {
-            this.build_signal_queue.unshift([SPECS.PROPHET, null]);
-          }
+      } else if (r.team !== self.me.team) {
+        if (r.unit == SPECS.CRUSADER){
+          enemy_crusader = r;
+        } else if (r.unit == SPECS.PROPHET || r.unit == SPECS.PREACHER) {
+          enemy_attacker = r;
         }
       }
     }
+
+    let building_locations = getClearLocations(self, 2);
+
+    // if we see a crusader, it's gonna be in groups, so we should just build a preacher.
+    if (enemy_crusader !== null &&
+        self.fuel >= SPECS.UNITS[SPECS.PREACHER].FUEL_CAPACITY &&
+        self.karbonite >= SPECS.UNITS[SPECS.PREACHER].KARBONITE_CAPACITY &&
+        building_locations.length > 0 ) {
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemy_crusader.x, enemy_crusader.y), dist([self.me.x, self.me.y], building_locations[0]))
+      return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+    }
+
+    // otherwise if they're close enough to whack, then whack them.
+    let attackableEnemy = getAttackOrder(self);
+    if (attackableEnemy.length > 0) {
+      return self.attack(attackableEnemy[0].x - self.me.x, attackableEnemy[0].y - self.me.y);
+    }
+
+    // active defense: if we can't whack them, build units that CAN whack them:
+    if ((enemy_crusader !== null || enemy_attacker !== null) &&
+        self.fuel >= SPECS.UNITS[SPECS.PROPHET].FUEL_CAPACITY &&
+        self.karbonite >= SPECS.UNITS[SPECS.PROPHET].KARBONITE_CAPACITY &&
+        building_locations.length > 0 ) {
+      let r = enemy_crusader !== null ? enemy_crusader : enemy_attacker;
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(r.x, r.y), dist([self.me.x, self.me.y], building_locations[0]))
+      return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+    }
+
+    // passive defense: single prophet after 10 rounds if we can do it comfortably.
+    if (step >= 10) // we'll build it sooner if we're attacked.
+      if (self.karbonite > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) &&
+          self.fuel > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL))
+        if (!myRobots.some(function(r) { return r.unit == SPECS.PROPHET })) // no prophets exist.
+          if (!this.build_signal_queue.some(function (bs) { return bs[0] != SPECS.PROPHET }))
+            this.build_signal_queue.unshift([SPECS.PROPHET, null]);
+
 
     // now, do any cached activities.
-    if (this.castle_talk_queue.length > 0) {
+    if (this.castle_talk_queue.length > 0)
       self.castleTalk(this.castle_talk_queue.pop()); // not performant: doesn't matter
-    }
 
     if (this.build_signal_queue.length > 0) {
-      let locs = getClearLocations(self, 2);
-      if (locs.length > 0) {
+      let building_locations = getClearLocations(self, 2);
+      if (building_locations.length > 0) {
         let bs = this.build_signal_queue.pop();
-        if (bs[1] !== null) {
-          self.signal(bs[1], dist([self.me.x, self.me.y], locs[0]));
-        }
-        if (bs[0] !== null) {
-          return self.buildUnit(bs[0], locs[0][0] - self.me.x, locs[0][1] - self.me.y);
-        }
+        if (bs[1] !== null)
+          self.signal(bs[1], dist([self.me.x, self.me.y], building_locations[0]));
+        if (bs[0] !== null)
+          return self.buildUnit(bs[0], building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
       }
     }
   }
