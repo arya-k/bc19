@@ -263,8 +263,8 @@ export class CastleManager {
     if (step >= 10) { // we'll build it sooner if we're attacked.
       if (self.karbonite > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) &&
           self.fuel > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL)) {
-        if (!myRobots.some(function(r) { r.unit == SPECS.PROPHET })) { // no prophets exist.
-          if (!this.build_signal_queue.some(function (bs) { bs[0] != SPECS.PROPHET })) {
+        if (!myRobots.some(function(r) { return r.unit == SPECS.PROPHET })) { // no prophets exist.
+          if (!this.build_signal_queue.some(function (bs) { return bs[0] != SPECS.PROPHET })) {
             this.build_signal_queue.unshift([SPECS.PROPHET, null]);
           }
         }

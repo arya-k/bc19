@@ -9,29 +9,9 @@ function find_depots(self, church_loc) {
   var resource_map = []
   const pass_map = self.map, fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
 
-  let current = [church_loc[0], church_loc[1]];
-
-  for (const dir of CIRCLES[8]){ // add nbrs
-    let x = current[0] + dir[0];
-    let y = current[1] + dir[1];
-    if (x >= 0 && x < pass_map[0].length) {
-      if (y >= 0 && y < pass_map.length) { // in map range
-        if (pass_map[y][x]) { // can go here
-          if (fuel_map[y][x]) {
-            split_resource_map.fuel.push([x, y]);
-            resource_map.push([x, y]);
-          } else if (karbonite_map[y][x]) {
-            split_resource_map.karbonite.push([x, y]);
-            resource_map.push([x, y]);
-          }
-        }
-      }
-    }
-  }
-
 
   // Generate the visited set:
-  /*let visited = new Set()
+  let visited = new Set()
   let queue = [[church_loc[0], church_loc[1]]]
 
   while (queue.length > 0) {
@@ -60,7 +40,7 @@ function find_depots(self, church_loc) {
         }
       }
     }
-  }*/
+  }
   return [split_resource_map, resource_map];
 }
 
@@ -75,13 +55,12 @@ function find_mine(self, all_resources, priority = null) {
   else
     self.log("SOMETHING WONG");
 
-  let closest_visible = [2**14, null];
-  let closest_invisible = [2**14, null];
-  let empty_vis_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(-1));
+  let closest_visible = [1<<14, null];
+  let closest_invisible = [1<<14, null];
 
   for (const depot of resources){
     let d = dist([self.me.x, self.me.y], depot);
-    //num_moves(self.map, empty_vis_map, [self.me.x, self.me.y], depot);
+    // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
     if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
       if (d < closest_visible[0]){
         closest_visible = [d, depot];
@@ -142,59 +121,61 @@ export class PilgrimManager {
       return null; // there's nothing to do.
     }
 
-    if (dist(this.church_loc, this.castle_loc) <= 4){
+    if (dist(this.church_loc, this.castle_loc) <= 4){// if church_loc is close to castle, no point building it
       this.church_loc = this.castle_loc;
       this.base_loc = this.castle_loc;
     }
 
-    if (self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]] > 0){
+    if (self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]] > 0){ // if you see a church where your church should be, it is built.
       let r = self.getRobot(self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]]);
       if (this.church_loc != this.base_loc && r.team != null && r.team == self.me.team && r.unit == SPECS.CHURCH)
         this.base_loc = this.church_loc; // set new base location if a church is visible at church_loc
     }
 
-    if (this.stage == CONSTANTS.MINE) {
-      if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
-          self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && this.base_loc != this.church_loc) {
-        this.stage = CONSTANTS.BUILD;
-      } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
-                  self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
-        this.stage = CONSTANTS.DEPOSIT;
-      } else if (self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY && 
-                  self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
-        if (!self.fuel_map[self.me.y][self.me.x]){
-          let new_mine = find_mine(self, this.resources, 'fuel');
-          if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
-              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
-            this.mine_loc = new_mine;
-          } else {
-            this.stage = CONSTANTS.DEPOSIT;
-          }
-        }
-      } else if (self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY && 
-                  self.me.karbonite < SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY){
-        if (!self.karbonite_map[self.me.y][self.me.x]){
-          let new_mine = find_mine(self, this.resources, 'karbonite');
-          if (new_mine !== null &&
-              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
-              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
-            this.mine_loc = new_mine;
-          } else {
-            this.stage = CONSTANTS.DEPOSIT;
-          }
-        }
-      }
-      //do that num moves thing
-    }
 
-    if (this.stage == CONSTANTS.BUILD) {
-      if (self.karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE ||
-          self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
-        this.stage = CONSTANTS.MINE; // can no longer afford church
-      }
-    }
 
-    var closest_enemy = [2**14, null];
+    // if (this.stage == CONSTANTS.MINE) {
+    //   if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
+    //       self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && this.base_loc != this.church_loc) {
+    //     this.stage = CONSTANTS.BUILD;
+    //   } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
+    //               self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
+    //     this.stage = CONSTANTS.DEPOSIT;
+    //   } else if (self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY && 
+    //               self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
+    //     if (!self.fuel_map[self.me.y][self.me.x]){
+    //       let new_mine = find_mine(self, this.resources, 'fuel');
+    //       if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
+    //           num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
+    //         this.mine_loc = new_mine;
+    //       } else {
+    //         this.stage = CONSTANTS.DEPOSIT;
+    //       }
+    //     }
+    //   } else if (self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY && 
+    //               self.me.karbonite < SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY){
+    //     if (!self.karbonite_map[self.me.y][self.me.x]){
+    //       let new_mine = find_mine(self, this.resources, 'karbonite');
+    //       if (new_mine !== null &&
+    //           num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
+    //           num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
+    //         this.mine_loc = new_mine;
+    //       } else {
+    //         this.stage = CONSTANTS.DEPOSIT;
+    //       }
+    //     }
+    //   }
+    //   //do that num moves thing
+    // }
+
+    // if (this.stage == CONSTANTS.BUILD) {
+    //   if (self.karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE ||
+    //       self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
+    //     this.stage = CONSTANTS.MINE; // can no longer afford church
+    //   }
+    // }
+
+    var closest_enemy = [1<<14, null]; // get our closest enemy, and the distance to our nearest ally.
     var enemies = [];
     var max_ally = 0;
     for (const r of self.getVisibleRobots()){
@@ -208,6 +189,7 @@ export class PilgrimManager {
         max_ally = d;
       }
     }
+
     if (closest_enemy[1] !== null){
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
       if (SPECS.UNITS[closest_enemy[1].unit].ATTACK_DAMAGE !== null){
@@ -221,61 +203,60 @@ export class PilgrimManager {
       }
     }
 
-    if (this.stage == CONSTANTS.BUILD) {
-      if (Math.abs(self.me.x - this.church_loc[0]) > 1 ||
-          Math.abs(self.me.y - this.church_loc[1]) > 1) {
-        let move_node = move_towards(self, [self.me.x, self.me.y], this.church_loc)
-        if (move_node !== null) {
-          return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
-        } else {
-          return null;
-        }
-      } else {
-        this.base_loc = this.church_loc;
-        this.stage = CONSTANTS.MINE;
-        return self.buildUnit(SPECS.CHURCH, this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y);
-      }
-    }
+    // if (this.stage == CONSTANTS.BUILD) {
+    //   if (Math.abs(self.me.x - this.church_loc[0]) > 1 ||
+    //       Math.abs(self.me.y - this.church_loc[1]) > 1) {
+    //     let move_node = move_towards(self, [self.me.x, self.me.y], this.church_loc)
+    //     if (move_node !== null) {
+    //       return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
+    //     } else {
+    //       return null;
+    //     }
+    //   } else {
+    //     this.base_loc = this.church_loc;
+    //     this.stage = CONSTANTS.MINE;
+    //     return self.buildUnit(SPECS.CHURCH, this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y);
+    //   }
+    // }
 
-    if (this.stage == CONSTANTS.DEPOSIT) {
-      let homesick = true;
-      if (Math.abs(self.me.x - this.base_loc[0]) <= 1 &&
-          Math.abs(self.me.y - this.base_loc[1]) <= 1) {
-        homesick = false;
-        this.stage = CONSTANTS.MINE;
-        let r = self.getRobot(self.getVisibleRobotMap()[this.base_loc[1]][this.base_loc[0]])
-        if (r !== null && r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
-          return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
-        } else {
-          if (base_loc == church_loc){ // our base has disappeared :( go to castle
-            this.church_loc = null;
-            this.churchid = null;
-            this.base_loc = this.castle_loc;
-          }
-          homesick = true; 
-        }
-      } 
-      if (homesick){
-        let move_node = move_towards(self, [self.me.x, self.me.y], this.base_loc); // get adjacent
-        if (move_node !== null) {
-          return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
-        }
-        return null; // nothing to do, just camp out.
-      }
-    }
+    // if (this.stage == CONSTANTS.DEPOSIT) {
+    //   let homesick = true;
+    //   if (Math.abs(self.me.x - this.base_loc[0]) <= 1 &&
+    //       Math.abs(self.me.y - this.base_loc[1]) <= 1) {
+    //     homesick = false;
+    //     this.stage = CONSTANTS.MINE;
+    //     let r = self.getRobot(self.getVisibleRobotMap()[this.base_loc[1]][this.base_loc[0]])
+    //     if (r !== null && r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
+    //       return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
+    //     } else {
+    //       if (base_loc == church_loc){ // our base has disappeared :( go to castle
+    //         this.church_loc = null;
+    //         this.churchid = null;
+    //         this.base_loc = this.castle_loc;
+    //       }
+    //       homesick = true; 
+    //     }
+    //   } 
+    //   if (homesick){
+    //     let move_node = move_towards(self, [self.me.x, self.me.y], this.base_loc); // get adjacent
+    //     if (move_node !== null) {
+    //       return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
+    //     }
+    //     return null; // nothing to do, just camp out.
+    //   }
+    // }
 
-    if (this.stage == CONSTANTS.MINE) {
-      if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
-        return self.mine();
-      } else if (this.mine_loc !== null) {
-        this.mine_loc = find_mine(self, this.resources);
-        let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
-        if (move_node !== null) {
-          return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
-        }
-      }
-      return null; // nothing to do, just camp out.
-    }
-
+    // if (this.stage == CONSTANTS.MINE) {
+    //   if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
+    //     return self.mine();
+    //   } else if (this.mine_loc !== null) {
+    //     this.mine_loc = find_mine(self, this.resources);
+    //     let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
+    //     if (move_node !== null) {
+    //       return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
+    //     }
+    //   }
+    //   return null; // nothing to do, just camp out.
+    // }
   }
 }

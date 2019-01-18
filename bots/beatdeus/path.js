@@ -333,10 +333,13 @@ export function move_away(self, enemies) {
   let p, d;
   for (let enemy of enemies) {
     threat_points.add((enemy.y<<6) + enemy.x);
-    self.log(enemy.unit)
+    self.log("ENEMY @ " + [enemy.x, enemy.y]);
     self.log(SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1].toString())
     for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1]]){
       p = [enemy.x + dir[0], enemy.y + dir[1]];
+      if (p[0] == self.me.x && p[1] == self.me.y) {
+        self.log("HERE")
+      }
       d = dist(p, [self.me.x, self.me.y]);
       if (d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0]) { // prophets have a min_radius too.
         if (is_valid(p[0], p[1], self.map.length)){
@@ -345,8 +348,11 @@ export function move_away(self, enemies) {
       }
     }
   }
+
   if (!threat_points.has((self.me.y<<6) + self.me.x))
     return null;
+
+  self.log("IM IN DANGER.")
 
   let max = [0, null];
   let max_safe = [0, null]
