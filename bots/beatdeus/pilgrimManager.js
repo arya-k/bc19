@@ -150,12 +150,32 @@ export class PilgrimManager {
 
     if (this.stage == CONSTANTS.MINE) {
       if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
-          self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && step >= 5) {
+          self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && step >= 5 && this.base_loc != this.church_loc) {
         this.stage = CONSTANTS.BUILD;
       } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
                   self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
         this.stage = CONSTANTS.DEPOSIT;
-      } //else if (()) do that num moves thing
+      } else if (self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY && 
+                  self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
+        let new_mine = find_mine(self, this.resources, 'fuel');
+        if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
+            num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
+          this.mine_loc = new_mine;
+        } else {
+          this.stage = CONSTANTS.DEPOSIT;
+        }
+
+      } else if (self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY && 
+                  self.me.karbonite < SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY){
+        let new_mine = find_mine(self, this.resources, 'karbonite');
+        if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
+            num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
+          this.mine_loc = new_mine;
+        } else {
+          this.stage = CONSTANTS.DEPOSIT;
+        }
+      }
+      //do that num moves thing
     }
 
     if (this.stage == CONSTANTS.BUILD) {

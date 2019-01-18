@@ -357,7 +357,6 @@ export function move_away(self, enemies) {
         sum += dist([enemy.x, enemy.y], point);
       if (sum > max_safe[0])
         max_safe = [sum, dir];
-    //  return dir
     }
     else {
       for (let enemy of enemies)
