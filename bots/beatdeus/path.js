@@ -1,5 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
+import {dist, is_valid} from './utils.js'
 
 function Point(x, y){
   this.x = x;
@@ -328,40 +329,49 @@ export function move_to(self, a, b) {
 export function move_away(self, enemies) {
   let threat_points = new Set();
   let set = new Set();
-  let p, d;
 
+  let p, d;
   for (let enemy of enemies) {
-    threat_points.push((enemy.y<<6) + enemy.x);
+    threat_points.add((enemy.y<<6) + enemy.x);
     for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1]]){
       p = [enemy.x + dir[0], enemy.y + dir[1]];
       d = dist(p, [self.me.x, self.me.y]);
       if (d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0]) { // prophets have a min_radius too.
-        if (is_valid(point[0], point[1], self.map.length)){
-          threat_points.push((point[1]<<6) + point[0]);
+        if (is_valid(p[0], p[1], self.map.length)){
+          threat_points.add((p[1]<<6) + p[0]);
         }
       }
     }
   }
-
   if (!threat_points.has((self.me.y<<6) + self.me.x))
     return null;
 
   let max = [0, null];
+  let max_safe = [0, null]
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
     let point = [self.me.x + dir[0], self.me.y + dir[1]];
-    if (!threat_points.has((point[1]<<6) + point[0]))
-      return dir
     let sum = 0;
-    for (let enemy of enemies)
-      sum += ((enemy.x - point[0])**2 + (enemy.y - point[1])**2);
-    if (sum > max[0])
-      max = [sum, dir];
+    if (!threat_points.has((point[1]<<6) + point[0])) {
+      for (let enemy of enemies)
+        sum += dist([enemy.x, enemy.y], point);
+      if (sum > max_safe[0])
+        max_safe = [sum, dir];
+    //  return dir
+    }
+    else {
+      for (let enemy of enemies)
+        sum += dist([enemy.x, enemy.y], point);
+      if (sum > max[0])
+        max = [sum, dir];
+    }
   }
+  if (max_safe[1] !== null)
+    return max_safe[1];
+  else
   return max[1];
 }
 
 export function num_moves(pass_map, vis_map, speed, a, b) {
-
   if (vis_map[b[1]][b[0]] > 0) {
     return null;
   }

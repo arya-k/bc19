@@ -9,8 +9,29 @@ function find_depots(self, church_loc) {
   var resource_map = []
   const pass_map = self.map, fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
 
+  let current = [church_loc[0], church_loc[1]];
+
+  for (const dir of CIRCLES[8].reverse()){ // add nbrs
+    let x = current[0] + dir[0];
+    let y = current[1] + dir[1];
+    if (x >= 0 && x < pass_map[0].length) {
+      if (y >= 0 && y < pass_map.length) { // in map range
+        if (pass_map[y][x]) { // can go here
+          if (fuel_map[y][x]) {
+            split_resource_map.fuel.push([x, y]);
+            resource_map.push([x, y]);
+          } else if (karbonite_map[y][x]) {
+            split_resource_map.karbonite.push([x, y]);
+            resource_map.push([x, y]);
+          }
+        }
+      }
+    }
+  }
+
+
   // Generate the visited set:
-  let visited = new Set()
+  /*let visited = new Set()
   let queue = [[church_loc[0], church_loc[1]]]
 
   while (queue.length > 0) {
@@ -39,7 +60,7 @@ function find_depots(self, church_loc) {
         }
       }
     }
-  }
+  }*/
   return [split_resource_map, resource_map];
 }
 
@@ -56,8 +77,11 @@ function find_mine(self, all_resources, priority = null) {
 
   let closest_visible = [2**14, null];
   let closest_invisible = [2**14, null];
+  let empty_vis_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(-1));
+
   for (const depot of resources){
     let d = dist([self.me.x, self.me.y], depot);
+    //num_moves(self.map, empty_vis_map, [self.me.x, self.me.y], depot);
     if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
       if (d < closest_visible[0]){
         closest_visible = [d, depot];
@@ -142,15 +166,18 @@ export class PilgrimManager {
     }
 
     var closest_enemy = [2**14, null];
+    var enemies = [];
     var max_ally = 0;
     for (const r of self.getVisibleRobots()){
       let d = dist([self.me.x, self.me.y], [r.x, r.y]);
-      if (r.team !== null && r.team != self.me.team && d < closest_enemy[0]){
-        closest_enemy = [d, r];
+      if (r.team !== null && r.team != self.me.team){
+        if (d < closest_enemy[0])
+          closest_enemy = [d, r];
+        if (SPECS.UNITS[r.unit].ATTACK_DAMAGE != null)
+          enemies.push(r);
       } else if (r.team !== null && r.team == self.me.team && d > max_ally){
         max_ally = d;
       }
-
     }
     if (closest_enemy[1] !== null){
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
@@ -213,6 +240,8 @@ export class PilgrimManager {
         return self.mine();
       } else if (this.mine_loc !== null) {
         this.mine_loc = find_mine(self, this.resources);
+        self.log(this.church_loc)
+        self.log("Mine loc: " + this.mine_loc)
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
