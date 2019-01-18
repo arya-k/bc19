@@ -246,7 +246,6 @@ export function move_towards(self, a, b) {
         neighbor.f = neighbor.g + neighbor.h;
         graph.markDirty(neighbor);
 
-
         if (!beenVisited) {
           openHeap.push(neighbor);
         } else {
@@ -411,7 +410,6 @@ export function num_moves(pass_map, vis_map, speed, a, b) {
         neighbor.g = gScore;
         neighbor.f = neighbor.g + neighbor.h;
         graph.markDirty(neighbor);
-
 
         if (!beenVisited) {
           openHeap.push(neighbor);
