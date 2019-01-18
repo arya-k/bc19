@@ -6,6 +6,12 @@ import {num_moves} from './path.js'
 
 const HORDE_SIZE = 10;
 
+// redo clump ordering to be a little smarter
+// spawn more pilgrims to clumps whenever we run low on resources
+// attack the enemy if it's in range
+// active defense troop spawning
+
+
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
   for (let i = 0; i < N; i++) {
