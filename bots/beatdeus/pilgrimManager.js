@@ -2,10 +2,7 @@ import {SPECS} from 'battlecode';
 import {CONSTANTS,CIRCLES} from './constants.js'
 import {COMM8, COMM16} from './comm.js'
 import {move_towards, move_to, move_away, num_moves} from './path.js'
-
-function dist(a, b) { // returns the squared distance
-  return (a[0]-b[0])**2+(a[1]-b[1])**2
-}
+import {dist} from './utils.js'
 
 function find_depots(self, church_loc) {
   var split_resource_map = {fuel: [], karbonite: []};
@@ -31,7 +28,7 @@ function find_depots(self, church_loc) {
       resource_map.push([current[0], current[1]]);
     }
     
-    for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){ // add nbrs
+    for (const dir of CIRCLES[8]){ // add nbrs
       if ((current[0] + dir[0]) >= 0 && (current[0] + dir[0]) < pass_map[0].length) {
         if ((current[1] + dir[1]) >= 0 && (current[1] + dir[1]) < pass_map.length) { // in map range
           if (pass_map[current[1] + dir[1]][current[0] + dir[0]]) { // can go here
@@ -57,8 +54,8 @@ function find_mine(self, all_resources, priority = null) {
   else
     self.log("SOMETHING WONG");
 
-  let closest_visible = [2**12, null];
-  let closest_invisible = [2**12, null];
+  let closest_visible = [2**14, null];
+  let closest_invisible = [2**14, null];
   for (const depot of resources){
     let d = dist([self.me.x, self.me.y], depot);
     if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
@@ -121,47 +118,62 @@ export class PilgrimManager {
       return null; // there's nothing to do.
     }
 
+    if (self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]] > 0){
+      let r = self.getRobot(self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]]);
+      if (this.church_loc != this.base_loc && r.team != null && r.team == self.me.team && r.unit == SPECS.CHURCH)
+        this.base_loc = this.church_loc; // set new base location if a church is visible at church_loc
+    }
+
     if (this.stage == CONSTANTS.MINE) {
       if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
-          self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
+          self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && step >= 5) {
         this.stage = CONSTANTS.BUILD;
-      } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY ||
+      } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
                   self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
         this.stage = CONSTANTS.DEPOSIT;
-      }
+      } //else if (()) do that num moves thing
     }
 
     if (this.stage == CONSTANTS.BUILD) {
       if (self.karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE ||
-          self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL + 2) { // account for signal, too.
+          self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
         this.stage = CONSTANTS.MINE; // can no longer afford church
       }
     }
 
-    var enemies = [];
+    var closest_enemy = [2**14, null];
+    var max_ally = 0;
     for (const r of self.getVisibleRobots()){
-      if (r.team !== null && r.team != self.me.team && r.unit != SPECS.PILGRIM){
-        self.log(r)
-        enemies.push(r)
+      let d = dist([self.me.x, self.me.y], [r.x, r.y]);
+      if (r.team !== null && r.team != self.me.team && d < closest_enemy[0]){
+        closest_enemy = [d, r];
+      } else if (r.team !== null && r.team == self.me.team && d > max_ally){
+        max_ally = d;
       }
+
     }
-    if (enemies.length > 0){
-      const move = move_away(self, enemies);
-      if (move != null)
-        return self.move(move);
+    if (closest_enemy[1] !== null){
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
+      if (SPECS.UNITS[closest_enemy[1].unit].ATTACK_DAMAGE !== null){
+        const move = move_away(self, enemies);
+        if (move != null)
+          return self.move(move);
+      }
     }
 
     if (this.stage == CONSTANTS.BUILD) {
       if (Math.abs(self.me.x - this.church_loc[0]) > 1 ||
           Math.abs(self.me.y - this.church_loc[1]) > 1) {
-        let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.church_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED, 1, 2)
+        self.log("moving to build")
+        self.log([self.me.x, self.me.y])
+        self.log(this.church_loc)
+        let move_node = move_towards(self, [self.me.x, self.me.y], this.church_loc)
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         } else {
           return null;
         }
       } else {
-        self.signal(COMM16.ENEMYLOC(this.base_loc[0], this.base_loc[1]), dist([self.me.x, self.me.y], this.church_loc))
         this.base_loc = this.church_loc;
         this.stage = CONSTANTS.MINE;
         return self.buildUnit(SPECS.CHURCH, this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y);
@@ -178,16 +190,17 @@ export class PilgrimManager {
         if (r !== null && r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
           return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
         } else {
-          if (base_loc == church_loc){
+          if (base_loc == church_loc){ // our base has disappeared :( go to castle
             this.church_loc = null;
             this.churchid = null;
             this.base_loc = this.castle_loc;
           }
-          homesick = true; // our base has disappeared :( go to castle
+          homesick = true; 
         }
       } 
       if (homesick){
-        let move_node = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], this.base_loc, SPECS.UNITS[SPECS.PILGRIM].SPEED, 1, 2); // get adjacent
+        self.log("homesick")
+        let move_node = move_towards(self, [self.me.x, self.me.y], this.base_loc); // get adjacent
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         }
@@ -200,7 +213,7 @@ export class PilgrimManager {
         return self.mine();
       } else if (this.mine_loc !== null) {
         this.mine_loc = find_mine(self, this.resources);
-        let move_node = move_to(self.map, self.getVisibleRobotMap(), SPECS.UNITS[SPECS.PILGRIM].SPEED, [self.me.x, self.me.y], this.mine_loc)
+        let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
         if (move_node !== null) {
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
         }

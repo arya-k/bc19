@@ -35,5 +35,5 @@ preacher:
 pilgrim:
     - go to the location you were told, find a NEARBY spot to mine, and mine it.
     - whenever you can afford to build a church, build it at the location you were told to.
-    - if you see an enemy, move out of it's attack range.
+    - if you see an enemy, move out of its attack range.
     - if you don't see an enemy, either mine or deposit.
