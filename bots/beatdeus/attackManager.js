@@ -134,8 +134,14 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else if (self.me.karbonite > 0 || self.me.fuel > 0) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
-      return null; // nothing to do, just camp out.
-    }
+      let n = nonNuisanceBehavior(self);
+      if (n !== null){
+        return self.move(n[0]-self.me.x,n[1]-self.me.y);
+      }
+      else{
+        return null;
+      }
+     }
   }
 }
 
@@ -154,10 +160,20 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     } else {
       return null;
     }
-  } else if (self.me.karbonite > 0 || self.me.fuel > 0) {
+  } 
+
+  else if (self.me.karbonite > 0 || self.me.fuel > 0) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
-  } else {
-    return null; // nothing to do, just camp out.
+  } 
+
+  else {
+    let n = nonNuisanceBehavior(self);
+    if (n !== null){
+      return self.move(n[0]-self.me.x,n[1]-self.me.y);
+    }
+    else{
+      return null;
+    }
   }
 }
 
@@ -251,7 +267,6 @@ class ProphetManager {
   }
 
   turn(step, self) {
-    let action = defensive_behaviour_passive(self,this.mode_location,this.base_location)
     updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
