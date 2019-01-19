@@ -154,7 +154,7 @@ export function Graph(pass_map, vis_map, speed, no_swarm = false) {
       if (isWall)
         node = new GridNode(x, y, isWall);
       else if (no_swarm) {
-        if (has_adjacent(self, [x, y])) {
+        if (has_adjacent_attacker(self, [x, y])) {
           node = new GridNode(x, y, true);
         }
       } else
