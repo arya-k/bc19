@@ -2,7 +2,7 @@ import {SPECS} from 'battlecode';
 import {CONSTANTS,CIRCLES} from './constants.js'
 import {COMM8, COMM16} from './comm.js'
 import {move_towards, move_to, move_away, num_moves} from './path.js'
-import {dist} from './utils.js'
+import {dist, is_valid} from './utils.js'
 
 function find_depots(self, church_loc) {
   var split_resource_map = {fuel: [], karbonite: []};
@@ -132,6 +132,23 @@ export class PilgrimManager {
       if (this.church_loc != this.base_loc && r.team != null && r.team == self.me.team && r.unit == SPECS.CHURCH)
         this.base_loc = this.church_loc; // set new base location if a church is visible at church_loc
     }
+    
+    if (this.base_loc != this.church_loc) { //if there's a church that's closer to the castle that's not your own, make that new base location
+      let vis_map = self.getVisibleRobotMap();
+      for (const dir in CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
+        let p = [self.me.x + dir[0], self.me.y + dir[1]];
+        if (!is_valid(...p, vis_map.length))
+          continue;
+        let id = vis_map[p[1]][p[0]];
+        if (id > 0) {
+          let r = self.getRobot(id);
+          if (r.unit == SPECS.CHURCH){
+            self.log("setting new base location " + [r.x, r.y])
+            self.base_loc = [r.x, r.y];
+          }
+        }
+      }
+    }
 
     if (this.stage == CONSTANTS.MINE) {
       if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
@@ -203,14 +220,16 @@ export class PilgrimManager {
       if (Math.abs(self.me.x - this.church_loc[0]) > 1 ||
           Math.abs(self.me.y - this.church_loc[1]) > 1) {
         let move_node = move_towards(self, [self.me.x, self.me.y], this.church_loc)
-        if (enemies.length != 0){
-          for (let enemy of enemies) {
-            let d = dist([enemy.x, enemy.y], move_node);
-            if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
-              return null; // that move will make you vulnerable, do nothing.
-          }
-        }
         if (move_node !== null) {
+          if (enemies.length != 0){
+            self.log("self at " + [self.me.x, self.me.y])
+            for (let enemy of enemies) {
+              self.log("Enemy at " + [enemy.x, enemy.y])
+              let d = dist([enemy.x, enemy.y], move_node);
+              if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
+                return null; // that move will make you vulnerable, do nothing.
+            }
+          }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         } else {
           return null;
@@ -243,14 +262,16 @@ export class PilgrimManager {
       } 
       if (homesick){
         let move_node = move_towards(self, [self.me.x, self.me.y], this.base_loc); // get adjacent
-        if (enemies.length != 0){
-          for (let enemy of enemies) {
-            let d = dist([enemy.x, enemy.y], move_node);
-            if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
-              return null; // that move will make you vulnerable, do nothing.
-          }
-        }
         if (move_node !== null) {
+          if (enemies.length != 0){
+            self.log("self at " + [self.me.x, self.me.y])
+            for (let enemy of enemies) {
+              self.log("Enemy at " + [enemy.x, enemy.y])
+              let d = dist([enemy.x, enemy.y], move_node);
+              if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
+                return null; // that move will make you vulnerable, do nothing.
+            }
+          }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         }
         return null; // nothing to do, just camp out.
@@ -264,13 +285,24 @@ export class PilgrimManager {
         this.mine_loc = find_mine(self, this.resources);
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
         if (enemies.length != 0){
+          self.log("self at " + [self.me.x, self.me.y])
           for (let enemy of enemies) {
+            self.log("Enemy at " + [enemy.x, enemy.y])
             let d = dist([enemy.x, enemy.y], move_node);
             if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
               return null; // that move will make you vulnerable, do nothing.
           }
         }
         if (move_node !== null) {
+          if (enemies.length != 0){
+            self.log("self at " + [self.me.x, self.me.y])
+            for (let enemy of enemies) {
+              self.log("Enemy at " + [enemy.x, enemy.y])
+              let d = dist([enemy.x, enemy.y], move_node);
+              if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
+                return null; // that move will make you vulnerable, do nothing.
+            }
+          }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
         }
       }

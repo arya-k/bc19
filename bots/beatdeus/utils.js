@@ -93,7 +93,8 @@ export function has_adjacent_attacker(self, p) {
     let y = p[1] + dir[1];
     if (is_valid(x, y, self.map.length)) {
       if (vis_map[y][x] > 0){
-        if (SPECS.UNITS[self.getRobot(vis_map[y][x]).unit].ATTACK_DAMAGE !== null && SPECS.UNITS[self.getRobot(vis_map[y][x]).unit].SPEED != 0)
+        let temp = SPECS.UNITS[self.getRobot(vis_map[y][x]).unit];
+        if (temp.ATTACK_DAMAGE !== null && temp.SPEED != 0)
           return true;
       }
     }
