@@ -219,6 +219,7 @@ class CrusaderManager {
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode_location = null;
       } else {
         return action
@@ -275,6 +276,7 @@ class ProphetManager {
       let action = attack_behaviour_passive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         this.mode_location = null;
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
       } else {
         return action
       }
@@ -308,6 +310,7 @@ export class PreacherManager {
     updateVisitedMap(self, this);
     let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     if (action == CONSTANTS.ELIMINATED_ENEMY) {
+      self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
       this.mode_location = null;
       action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     }
