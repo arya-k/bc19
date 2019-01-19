@@ -1,6 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
-import {dist, is_valid} from './utils.js'
+import {dist, is_valid, has_adjacent} from './utils.js'
 
 function Point(x, y){
   this.x = x;
@@ -142,14 +142,24 @@ GridNode.prototype.getCost = function(nbr) {
   }
 };
 
-export function Graph(pass_map, vis_map, speed) {
+export function Graph(pass_map, vis_map, speed, no_swarm = false) {
   this.nodes = [];
   this.grid = [];
   this.speed = speed;
   for (var y = 0; y < pass_map.length; y++) {
     this.grid[y] = [];
     for (var x = 0; x < pass_map.length; x++) {
-      var node = new GridNode(x, y, (!pass_map[y][x] || vis_map[y][x] > 0));
+      let isWall = !pass_map[y][x] || vis_map[y][x] > 0;
+      var node;
+      if (isWall)
+        node = new GridNode(x, y, isWall);
+      else if (no_swarm) {
+        if (has_adjacent(self, [x, y])) {
+          node = new GridNode(x, y, true);
+        }
+      } else
+        node = new GridNode(x, y, isWall);
+
       this.grid[y][x] = node;
       this.nodes.push(node);
     }
@@ -432,4 +442,74 @@ export function num_moves(pass_map, vis_map, speed, a, b) {
     }
   }
   return null; // no path found.
+}
+
+export function no_swarm(self, a, b) { // bascially move_towards but not moving adjacent to other attacking allies
+  const pass_map = self.map;
+  const vis_map = self.getVisibleRobotMap();
+  const speed = SPECS.UNITS[self.me.unit].SPEED;
+  let attack_radius_min = null;
+  let attack_radius_max = null;
+
+  if (self.me.unit == SPECS.PILGRIM) {
+    attack_radius_max = 2;
+    attack_radius_min = 1;
+  } else {
+    attack_radius_min = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0];
+    attack_radius_max = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1];
+  }
+
+
+  var graph = new Graph(pass_map, vis_map, speed, true);
+  var openHeap = getHeap();
+
+  var start = graph.grid[a[1]][a[0]]
+  var end = graph.grid[b[1]][b[0]]
+
+
+  start.h = heuristic(start, end);
+  graph.markDirty(start);
+  openHeap.push(start);
+
+  while (openHeap.size() > 0) {
+    var currentNode = openHeap.pop();
+
+    var dist = (currentNode.x-end.x)**2 + (currentNode.y-end.y)**2
+
+    if (dist >= attack_radius_min && dist <= attack_radius_max) {
+      let path = pathTo(currentNode);
+      if (path.length > 0) {
+        return path[path.length - 1]; // the first step along the way
+      } else {
+        return null; // you were already at the goal node
+      }
+    }
+
+    currentNode.closed = true;
+    var neighbors = graph.neighbors(currentNode);
+
+    for (var i = 0; i < neighbors.length; i++) {
+      var neighbor = neighbors[i];
+      if (neighbor.closed || neighbor.isWall) { continue; }
+
+      var gScore = currentNode.g + neighbor.getCost(currentNode);
+      var beenVisited = neighbor.visited;
+
+      if (!beenVisited || gScore < neighbor.g) {
+        neighbor.visited = true;
+        neighbor.parent = currentNode;
+        neighbor.h = neighbor.h || heuristic(neighbor, end);
+        neighbor.g = gScore;
+        neighbor.f = neighbor.g + neighbor.h;
+        graph.markDirty(neighbor);
+
+        if (!beenVisited) {
+          openHeap.push(neighbor);
+        } else {
+          openHeap.rescoreElement(neighbor);
+        }
+      }
+    }
+  }
+  return null; 
 }
