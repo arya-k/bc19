@@ -6,12 +6,12 @@ import {num_moves} from './path.js'
 
 const HORDE_SIZE = 10;
 
-// redo clump ordering to be a little smarter
-// if castles are at clusters, build workers for the clusters
 // plan hordes
 // track horde sizes
 // send the hordes out to attack.
 
+// DONE redo clump ordering to be a little smarter (remove the ones AT the enemy locations lol)
+// DONE if castles are at clusters, build workers for the clusters
 // DONE spawn more pilgrims to clumps whenever we run low on resources
 
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
@@ -28,6 +28,37 @@ function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   return true;
 }
 
+function local_cluster_count(self) {
+  let minicurrent, minix, miniy;
+
+  let count = 0
+  let visited = new Set()
+  let miniqueue = [(self.me.y<<6)|self.me.x];
+
+  while (miniqueue.length > 0) {
+    minicurrent = miniqueue.shift();
+    minix = minicurrent&63
+    miniy = (minicurrent&4032)>>6
+
+    if (visited.has(minicurrent)){ continue; }
+
+    if (self.fuel_map[miniy][minix] || self.karbonite_map[miniy][minix]) {
+      count++;
+    } else if (miniy !== self.me.y || minix !== self.me.x) {
+      continue; // don't continue exploring a non-fuel or karb. spot
+    }
+
+    visited.add(minicurrent);
+    for (const dir of CIRCLES[8]) {
+      if (is_valid(minix+dir[0], miniy+dir[1], self.map.length)) {
+        miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
+      }
+    }
+  }
+
+  return count;
+}
+
 function determine_enemy_locations(horiSym, castle_locs, N) {
   let ret = [];
   for (const loc of castle_locs)
@@ -35,7 +66,7 @@ function determine_enemy_locations(horiSym, castle_locs, N) {
   return ret;
 }
 
-function find_resource_clusters(map, fuel_map, karb_map) {
+function find_resource_clusters(self, map, fuel_map, karb_map) {
   // returns [{x: [], y: [], fuel: [], karb: []}, ...] where (x,y) is ideal church location
   // and fuel and karb return the counts of fuel and karbonite.
 
@@ -111,7 +142,7 @@ function find_resource_clusters(map, fuel_map, karb_map) {
         }
       }
 
-      if (foundvalidloc) {
+      if (foundvalidloc && dist([churchx, churchy], [self.me.x, self.me.y]) > 8) {
         clusters.push({x:churchx, y:churchy, fuel:new_f.length, karbonite:new_k.length})
       }
     }
@@ -128,7 +159,7 @@ function find_resource_clusters(map, fuel_map, karb_map) {
   return clusters;
 }
 
-function sort_clusters(clusters, castle_locations) {
+function sort_clusters(clusters_in, castle_locations, enemy_castle_locations) {
   let mean_x = 0;
   let mean_y = 0;
 
@@ -140,22 +171,35 @@ function sort_clusters(clusters, castle_locations) {
   mean_x = Math.floor(mean_x / castle_locations.length);
   mean_y = Math.floor(mean_y / castle_locations.length);
 
+  // remove the clusters that we should NOT go to:
+  let clusters = clusters_in.filter(function (cl) {
+    for (const c of castle_locations)
+      if (dist(c, [cl.x, cl.y]) <= 8)
+        return false;
+
+    for (const c of enemy_castle_locations)
+      if (dist(c, [cl.x, cl.y]) <= 8)
+        return false;
+
+    return true;
+  })
+
   // sort the array:
   clusters.sort(function(a, b) {
     if (a.fuel + a.karbonite > b.fuel + b.karbonite) {
-      return -1; // a comes first;
+      return 1; // a comes first;
     } else if (a.fuel + a.karbonite < b.fuel + b.karbonite) {
-      return 1; // b comes first;
+      return -1; // b comes first;
     } else if (Math.abs(a.fuel - a.karbonite) < Math.abs(b.fuel - b.karbonite)){
-      return -1; // a has a batter ratio
+      return 1; // a has a batter ratio
     } else if (Math.abs(a.fuel - a.karbonite) < Math.abs(b.fuel - b.karbonite)){
-      return 1; // b has a better ratio
+      return -1; // b has a better ratio
     } else {
-      return dist([a.x, a.y], [mean_x, mean_y]) > dist([b.x, b.y], [mean_x, mean_y]) ? 1 : -1;
+      return dist([a.x, a.y], [mean_x, mean_y]) < dist([b.x, b.y], [mean_x, mean_y]) ? 1 : -1;
     }
   })
 
-  // then return the largest one:
+  // then return the clusters:
   return clusters;
 }
 
@@ -217,7 +261,8 @@ export class CastleManager {
     this.castle_talk_queue = [COMM8.ENCODE_Y(self.me.y), COMM8.ENCODE_X(self.me.x)];
     this.build_signal_queue = [];
 
-    this.resource_clusters = find_resource_clusters(self.map, self.fuel_map, self.karbonite_map);
+    this.resource_clusters = find_resource_clusters(self, self.map, self.fuel_map, self.karbonite_map)
+    this.nearby_numresources = local_cluster_count(self);
   }
 
   turn(step, self) {
@@ -234,7 +279,11 @@ export class CastleManager {
     if (step == 2) { // we've just gotten castle location information.
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
       this.attack_targets = sort_enemy_attack_order(self, this.castle_locations, this.enemy_castle_locations);
-      this.resource_clusters = sort_clusters(this.resource_clusters, this.castle_locations);
+      this.resource_clusters = sort_clusters(this.resource_clusters, this.castle_locations, this.enemy_castle_locations);
+
+      for (const rc of this.resource_clusters) {
+        self.log("CLUSTER @ " + [rc.x, rc.y])
+      }
     }
 
     let building_locations = getClearLocations(self, 2);
@@ -289,15 +338,20 @@ export class CastleManager {
             if (building_locations.length > 0) // there's room to build it.
               return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
 
-
     // if you can build pilgrims, you should probably do that:
-    if ((step + 2) % 4 == 0) { // only do it every 4 terms or so.
-      if (self.karbonite > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) && 
-          self.fuel > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL)) {
+    if (step >= 2 && (step + 2) % 3 == 0) { // only do it every 3 turns or so.
+      if (this.nearby_numresources > 0 && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
+          self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+        this.nearby_numresources--;
+        this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(self.me.x, self.me.y)])
+      } else if (self.karbonite > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) && 
+          self.fuel > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL) && 
+          this.resource_clusters.length > 0) {
         let best_cluster = this.resource_clusters.pop()
         let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations);
 
         if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) { // build a pilgrim + prophet:
+          self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y])
           this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
           this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
         }
