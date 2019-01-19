@@ -118,7 +118,7 @@ export class PilgrimManager {
         }
       }
     }
-    if (this.church_loc === null) {
+    if (this.mine_loc === null) {
       return null; // there's nothing to do.
     }
 
@@ -133,8 +133,6 @@ export class PilgrimManager {
         this.base_loc = this.church_loc; // set new base location if a church is visible at church_loc
     }
 
-
-
     if (this.stage == CONSTANTS.MINE) {
       if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
           self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && this.base_loc != this.church_loc) {
@@ -146,7 +144,8 @@ export class PilgrimManager {
                   self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
         if (!self.fuel_map[self.me.y][self.me.x]){
           let new_mine = find_mine(self, this.resources, 'fuel');
-          if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <=
+          if (new_mine !== null &&
+              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <=
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
             this.mine_loc = new_mine;
           } else {
@@ -217,9 +216,6 @@ export class PilgrimManager {
           return null;
         }
       } else {
-        self.log("Base location: " + this.base_loc)
-        self.log("Church location: " + this.church_loc)
-        self.log("Castle location: " + this.castle_loc)
         this.base_loc = this.church_loc;
         this.stage = CONSTANTS.MINE;
         return self.buildUnit(SPECS.CHURCH, this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y);
@@ -227,6 +223,7 @@ export class PilgrimManager {
     }
 
     if (this.stage == CONSTANTS.DEPOSIT) {
+
       let homesick = true;
       if (Math.abs(self.me.x - this.base_loc[0]) <= 1 &&
           Math.abs(self.me.y - this.base_loc[1]) <= 1) {
@@ -279,5 +276,6 @@ export class PilgrimManager {
       }
       return null; // nothing to do, just camp out.
     }
+    self.log("here8")
   }
 }
