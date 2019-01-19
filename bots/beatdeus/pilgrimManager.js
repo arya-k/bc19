@@ -308,6 +308,5 @@ export class PilgrimManager {
       }
       return null; // nothing to do, just camp out.
     }
-    self.log("here8")
   }
 }
