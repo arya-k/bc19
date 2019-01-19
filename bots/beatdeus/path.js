@@ -1,10 +1,11 @@
 import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
-import {dist, is_valid, has_adjacent_attacker} from './utils.js'
+import {dist, is_valid, getClearLocations, has_adjacent_attacker, adjacent_castle} from './utils.js'
 
-function Point(x, y){
+function Point(x, y, parent = null){
   this.x = x;
   this.y = y;
+  this.parent = parent;
 }
 
 function pathTo(node) {
@@ -345,9 +346,6 @@ export function move_away(self, enemies) {
     threat_points.add((enemy.y<<6) + enemy.x);
     for (let dir of CIRCLES[SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1]]){
       p = [enemy.x + dir[0], enemy.y + dir[1]];
-      // if (p[0] == self.me.x && p[1] == self.me.y) {
-      //   self.log("HERE")
-      // }
       d = dist(p, [enemy.x, enemy.y]);
       if (d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0]) { // prophets have a min_radius too.
         if (is_valid(p[0], p[1], self.map.length)){
@@ -362,7 +360,6 @@ export function move_away(self, enemies) {
   if (!threat_points.has((self.me.y<<6) + self.me.x))
     return null;
 
-  self.log("IM IN DANGER")
 
   let max = [0, null];
   let max_safe = [0, null]
@@ -512,4 +509,48 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
     }
   }
   return null; 
+}
+
+export function emptySpaceMove(self) {// finds the move towards the nearest non resource space
+  let visited = new Set()
+  let queue = [new Point(self.me.x,self.me.y)]
+  let map = self.map, vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
+
+  while (queue.length > 0) {
+    let current = queue.shift()
+
+    if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
+    if (!fuel_map[current.y][current.x] && !karbonite_map[current.y][current.x])
+
+    visited.add((current.y<<6) + current.x) // mark as visited
+
+    // if any adjacent spots don't have fuel, karbonite or robots:
+    for (const dir of CIRCLES[2]) {
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) { // passable
+        if (!fuel_map[current.y + dir[1]][current.x + dir[0]]) { // no fuel
+          if (!karbonite_map[current.y + dir[1]][current.x + dir[0]]) { // no karbonite
+            if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] < 1) { // 
+              return [current.x + dir[0], current.y + dir[1]];
+            }
+          }
+        }
+      }
+    }
+
+    for (const dir of CIRCLES[SPECS.UNITS[SPECS.PILGRIM].SPEED]) {
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) {
+        queue.push(new Point(current.x + dir[0], current.y + dir[1]))
+      }
+    }
+  }
+}
+export function nonNuisanceBehavior(self) {
+ // - if it's sitting on a resource spot, don't
+ // - if the castle you are closest to has <2 free spots available, and you are adjacent to the castle, move (i.e. move if the castle has <2 building spots) use get clear locations here
+ // - if you are adjacent to other units, WAFFLE
+ const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
+ const x = self.me.x, y = self.me.y;
+ if (fuel_map[y][x] || karbonite_map[y][x]){
+  return emptySpaceMove(self);
+ }
 }

@@ -143,7 +143,6 @@ export class PilgrimManager {
         if (id > 0) {
           let r = self.getRobot(id);
           if (r.unit == SPECS.CHURCH){
-            self.log("setting new base location " + [r.x, r.y])
             self.base_loc = [r.x, r.y];
           }
         }
@@ -222,9 +221,7 @@ export class PilgrimManager {
         let move_node = move_towards(self, [self.me.x, self.me.y], this.church_loc)
         if (move_node !== null) {
           if (enemies.length != 0){
-            self.log("self at " + [self.me.x, self.me.y])
             for (let enemy of enemies) {
-              self.log("Enemy at " + [enemy.x, enemy.y])
               let d = dist([enemy.x, enemy.y], move_node);
               if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
                 return null; // that move will make you vulnerable, do nothing.
@@ -264,9 +261,7 @@ export class PilgrimManager {
         let move_node = move_towards(self, [self.me.x, self.me.y], this.base_loc); // get adjacent
         if (move_node !== null) {
           if (enemies.length != 0){
-            self.log("self at " + [self.me.x, self.me.y])
             for (let enemy of enemies) {
-              self.log("Enemy at " + [enemy.x, enemy.y])
               let d = dist([enemy.x, enemy.y], move_node);
               if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
                 return null; // that move will make you vulnerable, do nothing.
@@ -285,9 +280,7 @@ export class PilgrimManager {
         this.mine_loc = find_mine(self, this.resources);
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
         if (enemies.length != 0){
-          self.log("self at " + [self.me.x, self.me.y])
           for (let enemy of enemies) {
-            self.log("Enemy at " + [enemy.x, enemy.y])
             let d = dist([enemy.x, enemy.y], move_node);
             if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
               return null; // that move will make you vulnerable, do nothing.
@@ -295,9 +288,7 @@ export class PilgrimManager {
         }
         if (move_node !== null) {
           if (enemies.length != 0){
-            self.log("self at " + [self.me.x, self.me.y])
             for (let enemy of enemies) {
-              self.log("Enemy at " + [enemy.x, enemy.y])
               let d = dist([enemy.x, enemy.y], move_node);
               if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
                 return null; // that move will make you vulnerable, do nothing.
