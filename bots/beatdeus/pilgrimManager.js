@@ -59,8 +59,8 @@ function find_mine(self, all_resources, priority = null) {
   let closest_invisible = [1<<14, null];
 
   for (const depot of resources){
-    let d = dist([self.me.x, self.me.y], depot);
-    // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
+    // let d = dist([self.me.x, self.me.y], depot);
+    let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
     if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
       if (d < closest_visible[0]){
         closest_visible = [d, depot];
@@ -92,11 +92,13 @@ export class PilgrimManager {
 
     for (const r of self.getVisibleRobots()) {
       if (r.team === self.me.team){
-        if (r.unit == SPECS.CASTLE) {
-          this.castle_loc = [r.x, r.y];
-        } else if (r.unit == SPECS.CHURCH){
-          this.church_loc = [r.x, r.y];
-          this.churchid = r.id;
+        if (dist([self.me.x, self.me.y], [r.x, r.y]) <= 2) {
+          if (r.unit == SPECS.CASTLE) {
+            this.castle_loc = [r.x, r.y];
+          } else if (r.unit == SPECS.CHURCH){
+            this.church_loc = [r.x, r.y];
+            this.churchid = r.id;
+          }
         }
       }
     }
@@ -116,7 +118,6 @@ export class PilgrimManager {
         }
       }
     }
-
     if (this.church_loc === null) {
       return null; // there's nothing to do.
     }
@@ -145,7 +146,7 @@ export class PilgrimManager {
                   self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
         if (!self.fuel_map[self.me.y][self.me.x]){
           let new_mine = find_mine(self, this.resources, 'fuel');
-          if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
+          if (num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <=
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
             this.mine_loc = new_mine;
           } else {
@@ -157,7 +158,7 @@ export class PilgrimManager {
         if (!self.karbonite_map[self.me.y][self.me.x]){
           let new_mine = find_mine(self, this.resources, 'karbonite');
           if (new_mine !== null &&
-              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <
+              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], new_mine) <=
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
             this.mine_loc = new_mine;
           } else {
@@ -165,7 +166,6 @@ export class PilgrimManager {
           }
         }
       }
-      //do that num moves thing
     }
 
     if (this.stage == CONSTANTS.BUILD) {
@@ -195,8 +195,6 @@ export class PilgrimManager {
       if (SPECS.UNITS[closest_enemy[1].unit].ATTACK_DAMAGE !== null){
         const move = move_away(self, enemies);
         if (move != null){
-          self.log("Closest enemy at: " + closest_enemy[1])
-          self.log("Action: " + move)
           return self.move(...move);
         }
       }
@@ -219,6 +217,9 @@ export class PilgrimManager {
           return null;
         }
       } else {
+        self.log("Base location: " + this.base_loc)
+        self.log("Church location: " + this.church_loc)
+        self.log("Castle location: " + this.castle_loc)
         this.base_loc = this.church_loc;
         this.stage = CONSTANTS.MINE;
         return self.buildUnit(SPECS.CHURCH, this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y);
@@ -235,7 +236,7 @@ export class PilgrimManager {
         if (r !== null && r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
           return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
         } else {
-          if (base_loc == church_loc){ // our base has disappeared :( go to castle
+          if (this.base_loc == this.church_loc){ // our base has disappeared :( go to castle
             this.church_loc = null;
             this.churchid = null;
             this.base_loc = this.castle_loc;
