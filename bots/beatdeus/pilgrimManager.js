@@ -183,7 +183,7 @@ export class PilgrimManager {
       if (r.team !== null && r.team != self.me.team){
         if (d < closest_enemy[0])
           closest_enemy = [d, r];
-        if (SPECS.UNITS[r.unit].ATTACK_DAMAGE != null)
+        if (SPECS.UNITS[r.unit].ATTACK_DAMAGE != null && SPECS.UNITS[r.unit].ATTACK_DAMAGE > 0)
           enemies.push(r);
       } else if (r.team !== null && r.team == self.me.team && d > max_ally){
         max_ally = d;

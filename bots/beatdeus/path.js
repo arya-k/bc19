@@ -1,6 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
-import {dist, is_valid, has_adjacent} from './utils.js'
+import {dist, is_valid, has_adjacent_attacker} from './utils.js'
 
 function Point(x, y){
   this.x = x;
