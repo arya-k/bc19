@@ -59,8 +59,8 @@ function find_mine(self, all_resources, priority = null) {
   let closest_invisible = [1<<14, null];
 
   for (const depot of resources){
-    // let d = dist([self.me.x, self.me.y], depot);
-    let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
+    let d = dist([self.me.x, self.me.y], depot);
+    // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
     if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
       if (d < closest_visible[0]){
         closest_visible = [d, depot];

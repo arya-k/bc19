@@ -7,10 +7,12 @@ import {num_moves} from './path.js'
 const HORDE_SIZE = 10;
 
 // redo clump ordering to be a little smarter
-// spawn more pilgrims to clumps whenever we run low on resources
+// if castles are at clusters, build workers for the clusters
 // plan hordes
 // track horde sizes
 // send the hordes out to attack.
+
+// DONE spawn more pilgrims to clumps whenever we run low on resources
 
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
@@ -126,7 +128,7 @@ function find_resource_clusters(map, fuel_map, karb_map) {
   return clusters;
 }
 
-function get_best_cluster(clusters, castle_locations) {
+function sort_clusters(clusters, castle_locations) {
   let mean_x = 0;
   let mean_y = 0;
 
@@ -154,7 +156,7 @@ function get_best_cluster(clusters, castle_locations) {
   })
 
   // then return the largest one:
-  return clusters[0];
+  return clusters;
 }
 
 function get_best_cluster_castle(self, x, y, castle_locations) {
@@ -232,22 +234,10 @@ export class CastleManager {
     if (step == 2) { // we've just gotten castle location information.
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
       this.attack_targets = sort_enemy_attack_order(self, this.castle_locations, this.enemy_castle_locations);
-
-      this.best_cluster = get_best_cluster(this.resource_clusters, this.castle_locations)
-
-      if (this.best_cluster === undefined) {
-        self.log("ERROR! BROKEN MAP.");
-        return;
-      }
-
-      this.best_castle = get_best_cluster_castle(self, this.best_cluster.x, this.best_cluster.y, this.castle_locations);
-
-      if (this.best_castle[0] == self.me.x && this.best_castle[1] == self.me.y) {
-        // build a pilgrim + prophet:
-        this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
-        this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(this.best_cluster.x, this.best_cluster.y)]);
-      }
+      this.resource_clusters = sort_clusters(this.resource_clusters, this.castle_locations);
     }
+
+    let building_locations = getClearLocations(self, 2);
 
     let myRobots = []; // gather my robots
     let enemy_crusader = null; // should spawn preacher
@@ -264,8 +254,6 @@ export class CastleManager {
         }
       }
     }
-
-    let building_locations = getClearLocations(self, 2);
 
     // if we see a crusader, it's gonna be in groups, so we should just build a preacher.
     if (enemy_crusader !== null &&
@@ -297,9 +285,24 @@ export class CastleManager {
       if (self.karbonite > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) &&
           self.fuel > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL))
         if (!myRobots.some(function(r) { return r.unit == SPECS.PROPHET })) // no prophets exist.
-          if (!this.build_signal_queue.some(function (bs) { return bs[0] != SPECS.PROPHET }))
-            this.build_signal_queue.unshift([SPECS.PROPHET, null]);
+          if (!this.build_signal_queue.some(function (bs) { return bs[0] != SPECS.PROPHET })) // we're not already building a prophet
+            if (building_locations.length > 0) // there's room to build it.
+              return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
 
+
+    // if you can build pilgrims, you should probably do that:
+    if ((step + 2) % 4 == 0) { // only do it every 4 terms or so.
+      if (self.karbonite > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) && 
+          self.fuel > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL)) {
+        let best_cluster = this.resource_clusters.pop()
+        let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations);
+
+        if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) { // build a pilgrim + prophet:
+          this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
+          this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
+        }
+      }
+    }
 
     // now, do any cached activities.
     if (this.castle_talk_queue.length > 0)
