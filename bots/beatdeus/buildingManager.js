@@ -244,7 +244,7 @@ function sort_enemy_attack_order(self, c_locs, e_locs) {
 
   let to_ret = []
   for (const tp of timed_pairs)
-    to_ret.push(tp[1]);
+    to_ret.push([tp[0], tp[1]]);
   return to_ret;
 }
 
@@ -280,10 +280,7 @@ export class CastleManager {
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
       this.attack_targets = sort_enemy_attack_order(self, this.castle_locations, this.enemy_castle_locations);
       this.resource_clusters = sort_clusters(this.resource_clusters, this.castle_locations, this.enemy_castle_locations);
-
-      for (const rc of this.resource_clusters) {
-        self.log("CLUSTER @ " + [rc.x, rc.y])
-      }
+      this.attack_index == 0;
     }
 
     let building_locations = getClearLocations(self, 2);
@@ -338,6 +335,7 @@ export class CastleManager {
             if (building_locations.length > 0) // there's room to build it.
               return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
 
+
     // if you can build pilgrims, you should probably do that:
     if (step >= 2 && (step + 2) % 3 == 0) { // only do it every 3 turns or so.
       if (this.nearby_numresources > 0 && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
@@ -355,6 +353,16 @@ export class CastleManager {
           this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
           this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
         }
+      }
+    }
+
+    // if as of yet, we don't have to build anything, let's contribute to the attacking horde:
+    if (this.build_signal_queue.length == 0) {
+      if (self.karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
+          self.fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
+          building_locations.length > 0) {
+        // WE CAN BUILD THE THINGS
+        // self.log("WE COULD BUILD THE THINGS")
       }
     }
 
