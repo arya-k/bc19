@@ -309,7 +309,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     // self.log(self.me.y)
     let n = nonNuisanceBehavior(self,base_location);
     if (n !== null){
-      return self.move(n[0],n[1]);
+      return self.move(n[0],n[1]);x
     }
     else{
       return null;
