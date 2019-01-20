@@ -1,0 +1,24 @@
+EXPLORATION
+
+-Goals: establish fuel and karbonite pilgrims
+        annoy the enemy (preacher)
+-Begins: start of the game
+-ALWAYS: build 1 preacher to storm the enemy
+-THEN: build enough (pilgrim + crusader) pairs
+-ALWAYS: pilgrim -> karbonite (in order to save up for a church)
+-ENDS: closest 1/3 fuel and 1/3 karbonite is seized
+
+BUILDUP
+
+-Goals: build churches (crusaders sit around/patrol)
+        build defenses (1 preacher per castle)
+-Begins: enough in global fund for at least 1 pilgrim to build a church
+-Each castle: try to build 1 preacher
+-Each pilgrim: find OR build a church (if building church, signal to the church the enemyCastle location).
+-First church: castletalk that we are in buildup
+
+
+ATTACK
+
+-Goals: Attack parties (crusader rush) to destroy enemy stuffs
+-Begins: if global karbonite > 70 for 3 consecutive turns (every castle should have a preacher and every pilgrim should have a church nearby)
