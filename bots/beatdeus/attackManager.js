@@ -62,10 +62,12 @@ function nonNuisanceBehavior(self, base_loc) {
 
   if (path_end_point.p === null) { // you already good. Move towards the base if you're too far.
     if (dist([self.me.x, self.me.y], base_loc) >= 25) {
-      return move_towards(self, [self.me.x, self.me.y], base_loc) // head towards base
-    } else {
-      return null;
+      let move = move_towards(self, [self.me.x, self.me.y], base_loc) // head towards base
+      if (move !== null) {
+        return [move.x - self.me.x, move.y - self.me.y];
+      }
     }
+    return null;
   } else {
     while (path_end_point.p.p !== null)
       path_end_point = path_end_point.p;
