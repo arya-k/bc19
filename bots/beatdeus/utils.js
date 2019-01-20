@@ -69,11 +69,22 @@ export function getAttackOrder(self) {
 
   const my_loc = [self.me.x, self.me.y]
 
+
+  let max_radius = null
+  let min_radius = null
+
+  if (self.me.unit == SPECS.CHURCH) {
+    max_radius = SPECS.UNITS[self.me.unit].VISION_RADIUS;
+    min_radius = 1;
+  } else {
+    max_radius = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1];
+    min_radius = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0];
+  }
+
   let units = self.getVisibleRobots().filter(function(r) {
     if (self.isVisible(r) && r.team !== self.me.team) {
       let d = dist(my_loc, [r.x, r.y]);
-      if (d <= SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1] &&
-          d >= SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0]) {
+      if (d <= max_radius && d >= min_radius) {
         return true;
       }
     }
