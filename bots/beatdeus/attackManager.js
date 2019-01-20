@@ -236,7 +236,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       } else {
         return null;
       }
-    } else if (self.me.karbonite > 0 || self.me.fuel > 0) {
+    } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1)) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
       // self.log("nonNuisanceBehavior")
@@ -300,7 +300,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   } 
 
   //give resources if possible (given that you are already at base)
-  else if (self.me.karbonite > 0 || self.me.fuel > 0) {
+  else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1)) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
   } 
 
