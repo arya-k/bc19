@@ -196,7 +196,6 @@ export class PilgrimManager {
       }
     }
 
-
     if (this.stage == CONSTANTS.DEPOSIT){
       if (self.me.karbonite == 0 && self.me.fuel == 0) {
         this.stage = CONSTANTS.MINE;
@@ -344,14 +343,15 @@ export class PilgrimManager {
     }
 
     if (this.stage == CONSTANTS.MINE) {
-      if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
-        if ((self.fuel_map[self.me.y][self.me.x] && self.me.fuel >= SPECS.UNITS[self.me.unit].FUEL_CAPACITY) || 
-            (self.karbonite_map[self.me.y][self.me.x] && self.me.karbonite >= SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY)) {
-          self.stage = CONSTANTS.DEPOSIT;
+      if (this.mine_loc !== null) {
+        if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
+          if ((self.fuel_map[self.me.y][self.me.x] && self.me.fuel >= SPECS.UNITS[self.me.unit].FUEL_CAPACITY) || 
+              (self.karbonite_map[self.me.y][self.me.x] && self.me.karbonite >= SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY)) {
+            self.stage = CONSTANTS.DEPOSIT;
+          }
+          else
+            return self.mine();
         }
-        else
-          return self.mine();
-      } else if (this.mine_loc !== null) {
         if (this.new_mine !== null) {
           if (self.fuel_map[this.new_mine[1]][this.new_mine[0]])
             this.mine_loc = find_mine(self, this.resources, 'fuel', true);
@@ -374,6 +374,8 @@ export class PilgrimManager {
       }
       return null; // nothing to do, just camp out.
     }
+
+    self.log("8")
   }
 }
 
