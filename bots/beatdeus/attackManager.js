@@ -54,8 +54,7 @@ function attack_behaviour_aggressive(self, mode_location, base_location){
 
   if (mode_location !== null) {
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
-      let move = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], mode_location, SPECS.UNITS[self.me.unit].SPEED,
-                            SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0], SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1])
+      let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
@@ -126,8 +125,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
-      let move = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], [r.x, r.y], SPECS.UNITS[self.me.unit].SPEED,
-                              SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0], SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1])
+      let move = move_towards(self, [self.me.x, self.me.y], [r.x, r.y])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
@@ -139,8 +137,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   if (mode_location !== null) {
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
-      let move = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], mode_location, SPECS.UNITS[self.me.unit].SPEED,
-                            SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0], SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1])
+      let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
@@ -151,7 +148,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     }
   } else {
     if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
-      let move = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], base_location, SPECS.UNITS[self.me.unit].SPEED, 1, 2)
+      let move = move_towards(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
@@ -162,7 +159,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else {
       let n = nonNuisanceBehavior(self);
       if (n !== null){
-        return self.move(n[0]-self.me.x,n[1]-self.me.y);
+        return self.move(n[0],n[1]);
       }
       else{
         return null;
@@ -173,30 +170,28 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
 function defensive_behaviour_passive(self, mode_location, base_location) {
   //If the robot sees an enemy, wait for the enemy to come so the enemy will get hit first. Never leave base
-
+  // self.log("here1")
   let targets = getAttackOrder(self)
   //self.log('here1')
   if (targets.length>0){
     return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
-  //self.log('here2')
+  // self.log('here2')
   if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
-    let move = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], base_location, SPECS.UNITS[self.me.unit].SPEED, 1, 2)
+    let move = move_towards(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
     if (move !== null) {
-      return self.move(move[0] - self.me.x, move[1] - self.me.y);
+      return self.move(move.x - self.me.x, move.y - self.me.y);
     } else {
       return null;
     }
   } 
-
   else if (self.me.karbonite > 0 || self.me.fuel > 0) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
   } 
-
   else {
     let n = nonNuisanceBehavior(self);
     if (n !== null){
-      return self.move(n[0]-self.me.x,n[1]-self.me.y);
+      return self.move(n[0],n[1]);
     }
     else{
       return null;
@@ -222,7 +217,6 @@ export class CrusaderManager {
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = null;
     this.base_location = null;
-
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
       if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
@@ -239,6 +233,7 @@ export class CrusaderManager {
   }
 
   turn(step, self) {
+    // self.log('here-crus')
     updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
@@ -294,6 +289,7 @@ export class ProphetManager {
   }
 
   turn(step, self) {
+    // self.log('here-prop')
     updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
@@ -349,6 +345,7 @@ export class PreacherManager {
   }
 
   turn(step, self) {
+    self.log('here-prea')
     updateVisitedMap(self, this);
     let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     if (action == CONSTANTS.ELIMINATED_ENEMY) {
