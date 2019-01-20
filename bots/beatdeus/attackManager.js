@@ -42,7 +42,7 @@ function nonNuisanceBehavior(self, base_loc) {
   self.log(self.fuel_map[self.me.y][self.me.x])
   self.log(self.karbonite_map[self.me.y][self.me.x])
   self.log(self.map[self.me.y][self.me.x])
-  self.log(is_passable(self,current.x,current.y))
+  self.log(is_passable(self,self.me.x,self.me.y))
 
   while (queue.length > 0) {
     current = queue.shift();
