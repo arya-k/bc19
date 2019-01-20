@@ -225,8 +225,6 @@ export class PilgrimManager {
           if (this.new_mine !== null && this.new_mine != this.mine_loc &&
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <=
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
-            self.log("I'm at " + [self.me.x, self.me.y])
-            self.log("New fuel spot: " + this.new_mine)
             this.stage = CONSTANTS.MINE;
             this.mine_loc = this.new_mine;
           } else {
@@ -247,8 +245,6 @@ export class PilgrimManager {
           if (this.new_mine !== null && this.new_mine != this.mine_loc &&
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <=
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
-            self.log("I'm at " + [self.me.x, self.me.y])
-            self.log("New karbonite spot: " + this.new_mine)
             this.stage = CONSTANTS.MINE;
             this.mine_loc = this.new_mine;
           } else {
@@ -296,12 +292,8 @@ export class PilgrimManager {
           Math.abs(self.me.y - this.church_loc[1]) > 1) {
         let move_node = move_towards(self, [self.me.x, self.me.y], this.church_loc)
         if (move_node !== null) {
-          if (enemies.length != 0){
-            for (let enemy of enemies) {
-              let d = dist([enemy.x, enemy.y], move_node);
-              if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
-                return null; // that move will make you vulnerable, do nothing.
-            }
+          if (isDangerous(self, [move_node.x, move_node.y])){
+            return null; // that move will make you vulnerable, do nothing.
           }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         } else {
@@ -342,12 +334,8 @@ export class PilgrimManager {
       if (homesick){
         let move_node = move_towards(self, [self.me.x, self.me.y], this.base_loc); // get adjacent
         if (move_node !== null) {
-          if (enemies.length != 0){
-            for (let enemy of enemies) {
-              let d = dist([enemy.x, enemy.y], move_node);
-              if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
-                return null; // that move will make you vulnerable, do nothing.
-            }
+          if (isDangerous(self, [move_node.x, move_node.y])){
+            return null; // that move will make you vulnerable, do nothing.
           }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
         }
@@ -364,8 +352,6 @@ export class PilgrimManager {
         else
           return self.mine();
       } else if (this.mine_loc !== null) {
-        
-        
         if (this.new_mine !== null) {
           if (self.fuel_map[this.new_mine[1]][this.new_mine[0]])
             this.mine_loc = find_mine(self, this.resources, 'fuel', true);
@@ -379,14 +365,9 @@ export class PilgrimManager {
         if (this.mine_loc === null)
           return null;
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
-
         if (move_node !== null) {
-          if (enemies.length != 0){
-            for (let enemy of enemies) {
-              let d = dist([enemy.x, enemy.y], move_node);
-              if (d <= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[1] && d >= SPECS.UNITS[enemy.unit].ATTACK_RADIUS[0])
-                return null; // that move will make you vulnerable, do nothing.
-            }
+          if (isDangerous(self, [move_node.x, move_node.y])){
+            return null; // that move will make you vulnerable, do nothing.
           }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
         }
@@ -403,4 +384,18 @@ function choosePriority(self) {
   else
     priority = 'fuel';
   return priority;
+}
+
+function isDangerous(self, p) {
+  for (const r of self.getVisibleRobots()){
+    if (r.team !== null && r.team != self.me.team && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE != 0){
+      let d = dist([r.x, r.y], [p[0], p[1]]);
+      let radius = SPECS.UNITS[r.unit].ATTACK_RADIUS;
+      if (r.unit == SPECS.PREACHER)
+        radius[1] = 50;
+      if (d <= radius[1] && d >= radius[0])
+        return true;
+    }
+  }
+  return false;
 }
