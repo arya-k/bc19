@@ -1,6 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
-import {move_towards, move_to, emptySpaceMove} from './path.js'
+import {move_towards, move_to, emptySpaceMove, no_swarm} from './path.js'
 import {COMM8,COMM16} from './comm.js'
 import {getAttackOrder, has_adjacent_castle, getNearbyRobots, dist} from './utils.js'
 
@@ -54,6 +54,7 @@ function attack_behaviour_aggressive(self, mode_location, base_location){
   }
 
   //If nobody is visible, just pursue the mode_location (which in this case would be the enemy)
+  const vis_map = self.getVisibleRobotMap();
   if (mode_location !== null) {
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
       let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
