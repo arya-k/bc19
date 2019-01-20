@@ -6,10 +6,9 @@ import {num_moves} from './path.js'
 
 const HORDE_SIZE = 5;
 
-// TODO: contribute to future attacks.
-
 // FUTURE: clear out enemy resource spots.
 
+// DONE: contribute to future attacks.
 // DONE redo clump ordering to be a little smarter (remove the ones AT the enemy locations lol)
 // DONE if castles are at clusters, build workers for the clusters
 // DONE spawn more pilgrims to clumps whenever we run low on resources
@@ -397,6 +396,20 @@ export class CastleManager {
             }
           this.attacked = step; // keep track of when we last told units to attack
           self.log("TIME TO ATTACK")
+          self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
+        }
+      } else if (this.attacked !== 0 && (step - this.attacked) > 10) { // our horde has already destroyed the enemy :)
+        let count = 0;
+        let max_radius = 0;
+        for (const r of myRobots)
+          if (this.attack_party.has(r.id)) {
+            count++;
+            max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
+          }
+
+        if (count > 0) {
+          this.attacked = step;
+          self.log("TIME TO ATTACK") // use up our horde, trying to attack other people
           self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
         }
       }
