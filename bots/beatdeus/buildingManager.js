@@ -4,11 +4,11 @@ import {dist, is_valid, getNearbyRobots, getClearLocations, getAttackOrder} from
 import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
 
-const HORDE_SIZE = 10;
+const HORDE_SIZE = 5;
 
-// plan hordes
-// track horde sizes
-// send the hordes out to attack.
+// TODO: contribute to future attacks.
+
+// FUTURE: clear out enemy resource spots.
 
 // DONE redo clump ordering to be a little smarter (remove the ones AT the enemy locations lol)
 // DONE if castles are at clusters, build workers for the clusters
@@ -280,8 +280,21 @@ export class CastleManager {
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
       this.attack_targets = sort_enemy_attack_order(self, this.castle_locations, this.enemy_castle_locations);
       this.resource_clusters = sort_clusters(this.resource_clusters, this.castle_locations, this.enemy_castle_locations);
-      this.attack_index == 0;
+      this.attack_index = 0; // we attack the closest enemy first
+      this.attack_party = new Set(); // keep track of my robot_ids
+      this.attacked = 0;
     }
+
+    // see if we've killed one of the enemies:
+    for (const r of self.getVisibleRobots()) {
+      if (r.castle_talk == COMM8.SWITCH_ENEMY_TARGET) {
+        self.log("ENEMY CASTLE IS DEAD")
+        this.attack_index += 1;
+      } else if (r.castle_talk == COMM8.ENEMY_CASTLE_DEAD && this.attack_party.has(r.id)) {
+        this.castle_talk_queue.unshift(COMM8.SWITCH_ENEMY_TARGET);
+      }
+    }
+
 
     let building_locations = getClearLocations(self, 2);
 
@@ -357,12 +370,35 @@ export class CastleManager {
     }
 
     // if as of yet, we don't have to build anything, let's contribute to the attacking horde:
-    if (this.build_signal_queue.length == 0) {
-      if (self.karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
-          self.fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
-          building_locations.length > 0) {
-        // WE CAN BUILD THE THINGS
-        // self.log("WE COULD BUILD THE THINGS")
+    if (step >= 2 && this.build_signal_queue.length == 0) {
+      if (this.attack_targets[this.attack_index][0][0] == self.me.x &&
+          this.attack_targets[this.attack_index][0][1] == self.me.y) { // is it our turn to attack?
+
+        // first check if the horde is large enough:
+        let count = 0;
+        for (const r of myRobots)
+          if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET)
+            count++;
+
+        if (count < HORDE_SIZE) { // if it isn't, try to build more
+          if (self.karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
+            self.fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
+            building_locations.length > 0) {
+            self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
+            this.build_signal_queue.unshift([SPECS.PROPHET, null]);
+            this.build_signal_queue.unshift([SPECS.CRUSADER, null]);
+          }
+        } else if (step - this.attacked > 10){ // if it is big enough
+          let max_radius = 0 // figure out how far you have to signal
+          for (const r of myRobots)
+            if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER) {
+              this.attack_party.add(r.id) // keep track of the attack party
+              max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
+            }
+          this.attacked = step; // keep track of when we last told units to attack
+          self.log("TIME TO ATTACK")
+          self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
+        }
       }
     }
 
@@ -373,11 +409,14 @@ export class CastleManager {
     if (this.build_signal_queue.length > 0) {
       let building_locations = getClearLocations(self, 2);
       if (building_locations.length > 0) {
-        let bs = this.build_signal_queue.pop();
-        if (bs[1] !== null)
-          self.signal(bs[1], dist([self.me.x, self.me.y], building_locations[0]));
-        if (bs[0] !== null)
-          return self.buildUnit(bs[0], building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
+        if (self.karbonite > SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_KARBONITE &&
+            self.fuel > (SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_FUEL + 2)) {
+          let bs = this.build_signal_queue.pop();
+          if (bs[1] !== null)
+            self.signal(bs[1], dist([self.me.x, self.me.y], building_locations[0]));
+          if (bs[0] !== null)
+            return self.buildUnit(bs[0], building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
+        }
       }
     }
   }
