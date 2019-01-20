@@ -212,7 +212,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
   //Pursue mode_location 
   if (mode_location !== null) {
     let vis_map = self.getVisibleRobotMap()
-    if (vis_map[mode_location[1]][mode_location[0]] == -1) {
+    if (vis_map[mode_location[1]][mode_location[0]] != 0) {
       // self.log('move_towards2')
       let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
       if (move !== null) {
@@ -236,7 +236,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       } else {
         return null;
       }
-    } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1)) {
+    } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
       // self.log("nonNuisanceBehavior")
@@ -300,7 +300,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   } 
 
   //give resources if possible (given that you are already at base)
-  else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1)) {
+  else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
   } 
 
