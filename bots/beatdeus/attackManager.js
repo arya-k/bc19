@@ -133,10 +133,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
   //pursue any visible enemy robots
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
-      self.log("move_towards1")
+      // self.log("move_towards1")
       let move = move_towards(self, [self.me.x, self.me.y], [r.x, r.y])
       if (move !== null) {
-        self.log(move.x, move.y)
+        // self.log(move.x, move.y)
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
       else{
@@ -148,10 +148,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
   //Pursue mode_location 
   if (mode_location !== null) {
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
-      self.log('move_towards2')
+      // self.log('move_towards2')
       let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
       if (move !== null) {
-        self.log(move.x, move.y)
+        // self.log(move.x, move.y)
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
         return null;
@@ -164,7 +164,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
     if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
-      self.log("move_towards3")
+      // self.log("move_towards3")
       let move = move_towards(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
@@ -174,7 +174,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else if (self.me.karbonite > 0 || self.me.fuel > 0) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
-      self.log("nonNuisanceBehavior")
+      // self.log("nonNuisanceBehavior")
       let n = nonNuisanceBehavior(self);
       if (n !== null){
         return self.move(n[0],n[1]);
@@ -245,14 +245,11 @@ export class CrusaderManager {
   }
 
   turn(step, self) {
-    self.log('here-crus')
+    // self.log('here-crus')
     for (const r of self.getVisibleRobots()) {
-      if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
+      if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
-        this.mode_location = COMM16.DECODE_ATTACK(r.signal)
-      } else if (COMM16.type(r.signal) == COMM16.DISTRESS_HEADER) {
-        this.mode = CONSTANTS.DEFENSE
-        this.mode_location = COMM16.DECODE_DISTRESS(r.signal)
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
     }
 
@@ -262,13 +259,19 @@ export class CrusaderManager {
 
     if (this.mode == CONSTANTS.DEFENSE) {
       let action = defensive_behaviour_passive(self, this.mode_location, this.base_location)
-      return action;
+      if (action !== null){
+        return action
+      }
+      else{
+        return null
+      }
     }
 
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
       } else {
         return action
@@ -299,14 +302,16 @@ export class ProphetManager {
   }
 
   turn(step, self) {
-    self.log('here-prop')
+    // self.log('here-prop')
     for (const r of self.getVisibleRobots()) {
-      if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
+      if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
-        this.mode_location = COMM16.DECODE_ATTACK(r.signal)
-      } else if ((r.signal & COMM16.HEADER_MASK) == COMM16.DISTRESS_HEADER) {
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+      }
+      else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.mode = CONSTANTS.DEFENSE
-        this.mode_location = COMM16.DECODE_DISTRESS(r.signal)
+        this.base_location = COMM16.DECODE_BASELOC(r.signal)
+        this.mode_location = null
       }
     }
 
@@ -353,7 +358,7 @@ export class PreacherManager {
   }
 
   turn(step, self) {
-    self.log('here-prea')
+    // self.log('here-prea')
     let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     if (action == CONSTANTS.ELIMINATED_ENEMY) {
       this.mode_location = null;
