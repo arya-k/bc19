@@ -125,8 +125,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
+      self.log("move_towards1")
       let move = move_towards(self, [self.me.x, self.me.y], [r.x, r.y])
       if (move !== null) {
+        self.log(move.x, move.y)
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
       else{
@@ -137,8 +139,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   if (mode_location !== null) {
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
+      self.log('move_towards2')
       let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
       if (move !== null) {
+        self.log(move.x, move.y)
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
         return null;
@@ -148,6 +152,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     }
   } else {
     if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
+      self.log("move_towards3")
       let move = move_towards(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
@@ -157,6 +162,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else if (self.me.karbonite > 0 || self.me.fuel > 0) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
+      self.log("nonNuisanceBehavior")
       let n = nonNuisanceBehavior(self);
       if (n !== null){
         return self.move(n[0],n[1]);
@@ -233,7 +239,7 @@ export class CrusaderManager {
   }
 
   turn(step, self) {
-    // self.log('here-crus')
+    self.log('here-crus')
     updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
@@ -289,7 +295,7 @@ export class ProphetManager {
   }
 
   turn(step, self) {
-    // self.log('here-prop')
+    self.log('here-prop')
     updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
