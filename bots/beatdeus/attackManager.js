@@ -134,8 +134,14 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else if (self.me.karbonite > 0 || self.me.fuel > 0) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
-      return null; // nothing to do, just camp out.
-    }
+      let n = nonNuisanceBehavior(self);
+      if (n !== null){
+        return self.move(n[0]-self.me.x,n[1]-self.me.y);
+      }
+      else{
+        return null;
+      }
+     }
   }
 }
 
@@ -154,10 +160,20 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     } else {
       return null;
     }
-  } else if (self.me.karbonite > 0 || self.me.fuel > 0) {
+  } 
+
+  else if (self.me.karbonite > 0 || self.me.fuel > 0) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
-  } else {
-    return null; // nothing to do, just camp out.
+  } 
+
+  else {
+    let n = nonNuisanceBehavior(self);
+    if (n !== null){
+      return self.move(n[0]-self.me.x,n[1]-self.me.y);
+    }
+    else{
+      return null;
+    }
   }
 }
 
@@ -219,6 +235,7 @@ class CrusaderManager {
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode_location = null;
       } else {
         return action
@@ -250,7 +267,6 @@ class ProphetManager {
   }
 
   turn(step, self) {
-    let action = defensive_behaviour_passive(self,this.mode_location,this.base_location)
     updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
@@ -275,6 +291,7 @@ class ProphetManager {
       let action = attack_behaviour_passive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         this.mode_location = null;
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
       } else {
         return action
       }
@@ -308,6 +325,7 @@ export class PreacherManager {
     updateVisitedMap(self, this);
     let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     if (action == CONSTANTS.ELIMINATED_ENEMY) {
+      self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
       this.mode_location = null;
       action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     }
