@@ -66,7 +66,9 @@ function find_mine(self, all_resources, priority = null, strict = false) {
   for (const depot of resources){
     let d = dist([self.me.x, self.me.y], depot);
     // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
-    if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
+    if (d == 0)
+      return depot;
+    else if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
       if (d < closest_visible[0]){
         closest_visible = [d, depot];
       }
@@ -97,7 +99,9 @@ function find_mine(self, all_resources, priority = null, strict = false) {
     for (const depot of resources){
       let d = dist([self.me.x, self.me.y], depot);
       // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
-      if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
+      if (d == 0)
+        return depot;
+      else if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0) {
         if (d < closest_visible[0]){
           closest_visible = [d, depot];
         }
@@ -198,16 +202,18 @@ export class PilgrimManager {
         this.stage = CONSTANTS.BUILD;
       } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
                   self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
-        this.new_mine = null;
         this.stage = CONSTANTS.DEPOSIT;
       } else if (self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY && 
                   self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
+        if (this.new_mine !== null && self.getVisibleRobotMap()[this.new_mine[1]][this.new_mine[0]] > 0) {
+          this.stage = CONSTANTS.DEPOSIT;
+        }
         if (this.new_mine == null && !self.fuel_map[self.me.y][self.me.x]){
           this.new_mine = find_mine(self, this.resources, 'fuel', true);
           if (this.new_mine !== null && !self.fuel_map[this.new_mine[1]][this.new_mine[0]])
             this.new_mine = null;
           if (this.new_mine !== null &&
-              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <=
+              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
             this.mine_loc = this.new_mine;
           } else {
@@ -216,19 +222,28 @@ export class PilgrimManager {
         }
       } else if (self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY && 
                   self.me.karbonite < SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY){
+        if (this.new_mine !== null && self.getVisibleRobotMap()[this.new_mine[1]][this.new_mine[0]] > 0) {
+          this.stage = CONSTANTS.DEPOSIT;
+        }
         if (this.new_mine == null && !self.karbonite_map[self.me.y][self.me.x]){
           this.new_mine = find_mine(self, this.resources, 'karbonite', true);
-
           if (this.new_mine !== null && !self.karbonite_map[this.new_mine[1]][this.new_mine[0]])
             this.new_mine = null;
           if (this.new_mine !== null &&
-              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <=
+              num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
             this.mine_loc = this.new_mine;
           } else {
             this.stage = CONSTANTS.DEPOSIT;
           }
         }
+      }
+    }
+
+    if (this.stage == CONSTANTS.DEPOSIT){
+      if (self.karbonite == 0 && self.fuel == 0) {
+        this.stage = CONSTANTS.MINE;
+        this.mine_loc = find_mine(self, this.resources, choosePriority(self));
       }
     }
 
@@ -340,9 +355,11 @@ export class PilgrimManager {
       } else if (this.mine_loc !== null) {
         
         this.mine_loc = find_mine(self, this.resources, choosePriority(self));
+
         if (this.mine_loc === null)
           return null;
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
+
         if (move_node !== null) {
           if (enemies.length != 0){
             for (let enemy of enemies) {
