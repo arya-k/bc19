@@ -115,9 +115,6 @@ export class PilgrimManager {
           this.church_loc = COMM16.DECODE_BASELOC(r.signal);
           this.resources = find_depots(self, this.church_loc);
           this.mine_loc = find_mine(self, this.resources);
-          self.log("Church location: " + this.church_loc)
-          self.log("Mine location: " + this.mine_loc)
-          self.log("________________________________")
         }
       }
     }
