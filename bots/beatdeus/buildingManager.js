@@ -4,9 +4,11 @@ import {dist, is_valid, getNearbyRobots, getClearLocations, getAttackOrder} from
 import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
 
-const HORDE_SIZE = 5;
+const HORDE_SIZE = 10;
 
 // TODO: rebuild dead pilgrims
+// TODO: improve fleeing.
+// TODO: fix signalling to incorrect target
 
 // FUTURE: clear out enemy resource spots.
 // FUTURE: return pilgrims to spots that they were killed trying to get to
@@ -380,51 +382,37 @@ export class CastleManager {
     }
 
     // if as of yet, we don't have to build anything, let's contribute to the attacking horde:
-    if (step >= 2 && this.build_signal_queue.length == 0) {
-      if (this.attack_targets[this.attack_index][0][0] == self.me.x &&
-          this.attack_targets[this.attack_index][0][1] == self.me.y) { // is it our turn to attack?
+    // if (step >= 2 && this.build_signal_queue.length == 0) {
+    //   if (this.attack_targets[this.attack_index][0][0] == self.me.x &&
+    //       this.attack_targets[this.attack_index][0][1] == self.me.y) { // is it our turn to attack?
 
-        // first check if the horde is large enough:
-        let count = 0;
-        for (const r of myRobots)
-          if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET)
-            count++;
+    //     // first check if the horde is large enough:
+    //     let count = 0;
+    //     for (const r of myRobots)
+    //       if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET)
+    //         count++;
 
-        if (count < HORDE_SIZE) { // if it isn't, try to build more
-          if (self.karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
-            self.fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
-            building_locations.length > 0) {
-            self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
-            this.build_signal_queue.unshift([SPECS.PROPHET, null]);
-            this.build_signal_queue.unshift([SPECS.CRUSADER, null]);
-          }
-        } else if (step - this.attacked > 10){ // if it is big enough
-          let max_radius = 0 // figure out how far you have to signal
-          for (const r of myRobots)
-            if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET) {
-              this.attack_party.add(r.id) // keep track of the attack party
-              max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
-            }
-          this.attacked = step; // keep track of when we last told units to attack
-          self.log("TIME TO ATTACK") // use up our horde, trying to attack other people
-          self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
-        }
-      } else if (this.attacked !== 0 && (step - this.attacked) > 10) { // our horde has already destroyed the enemy :)
-        let count = 0;
-        let max_radius = 0;
-        for (const r of myRobots)
-          if (this.attack_party.has(r.id)) {
-            count++;
-            max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
-          }
-
-        if (count > 0) {
-          this.attacked = step;
-          self.log("TIME TO ATTACK") // use up our horde, trying to attack other people
-          self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
-        }
-      }
-    }
+    //     if (count < HORDE_SIZE) { // if it isn't, try to build more
+    //       if (self.karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
+    //         self.fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
+    //         building_locations.length > 0) {
+    //         self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
+    //         this.build_signal_queue.unshift([SPECS.PROPHET, null]);
+    //         this.build_signal_queue.unshift([SPECS.CRUSADER, null]);
+    //       }
+    //     } else if (step - this.attacked > 10){ // if it is big enough
+    //       let max_radius = 0 // figure out how far you have to signal
+    //       for (const r of myRobots)
+    //         if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET) {
+    //           this.attack_party.add(r.id) // keep track of the attack party
+    //           max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
+    //         }
+    //       this.attacked = step; // keep track of when we last told units to attack
+    //       self.log("TIME TO ATTACK " + (this.attack_targets[this.attack_index][1])) // use up our horde, trying to attack other people
+    //       self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
+    //     }
+    //   }
+    // }
 
     // now, do any cached activities.
     if (this.castle_talk_queue.length > 0)
