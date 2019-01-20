@@ -46,12 +46,16 @@ function find_depots(self, church_loc) {
 
 function find_mine(self, all_resources, priority = 'karbonite') {
   let resources = null;
-  if (priority == null)
+  if (priority !== null)
     resources = all_resources[1];
-  else if (priority.toLowerCase().includes('k'))
+  else if (priority.toLowerCase().includes('k')) {
     resources = all_resources[0].karbonite;
-  else if (priority.toLowerCase().includes('f'))
+    resources = resources.concat(all_resources[0].fuel);
+  }
+  else if (priority.toLowerCase().includes('f')) {
     resources = all_resources[0].fuel;
+    resources = resources.concat(all_resources[0].karbonite);
+  }
   else
     self.log("SOMETHING WONG");
 
@@ -76,7 +80,6 @@ function find_mine(self, all_resources, priority = 'karbonite') {
   if (closest_visible[1] !== null)
     return closest_visible[1];
   return closest_invisible[1];
-
 }
 
 // pilgrim
@@ -165,6 +168,9 @@ export class PilgrimManager {
                   self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
         if (this.new_mine == null && !self.fuel_map[self.me.y][self.me.x]){
           this.new_mine = find_mine(self, this.resources, 'fuel');
+
+          if (this.new_mine !== null && !self.fuel_map[this.new_mine[1]][this.new_mine[0]])
+            this.new_mine = null;
           if (this.new_mine !== null &&
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <=
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
@@ -177,6 +183,9 @@ export class PilgrimManager {
                   self.me.karbonite < SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY){
         if (this.new_mine == null && !self.karbonite_map[self.me.y][self.me.x]){
           this.new_mine = find_mine(self, this.resources, 'karbonite');
+
+          if (this.new_mine !== null && !self.karbonite_map[this.new_mine[1]][this.new_mine[0]])
+            this.new_mine = null;
           if (this.new_mine !== null &&
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.new_mine) <=
               num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], this.base_loc)){
