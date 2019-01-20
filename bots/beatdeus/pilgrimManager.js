@@ -335,7 +335,8 @@ export class PilgrimManager {
             (self.karbonite_map[self.me.y][self.me.x] && self.me.karbonite >= SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY)) {
           self.stage = CONSTANTS.DEPOSIT;
         }
-        return self.mine();
+        else
+          return self.mine();
       } else if (this.mine_loc !== null) {
         
         this.mine_loc = find_mine(self, this.resources, choosePriority(self));
