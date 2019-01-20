@@ -11,6 +11,7 @@ function nonNuisanceBehavior(self) {
   const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
   const x = self.me.x, y = self.me.y;
   if (fuel_map[y][x] || karbonite_map[y][x] || has_adjacent_castle(self, [self.me.x, self.me.y])){
+    // self.log("empty")
     return emptySpaceMove(self);
   }
   const nearbyRobots = getNearbyRobots(self, [self.me.x, self.me.y], 1)
@@ -41,8 +42,7 @@ function attack_behaviour_aggressive(self, mode_location, base_location){
   //pursue visible enemies without swarming
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
-      // let move = no_swarm(self,[self.me.x,self.me.y],[r.x,r.y])
-      let move = null;
+      let move = no_swarm(self,[self.me.x,self.me.y],[r.x,r.y])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
@@ -102,8 +102,8 @@ function attack_behaviour_passive(self, mode_location, base_location){
 
   //Pursue the enemy without swarming
   else if (dist([self.me.x,self.me.y],[mode_location[0],mode_location[1]])>SPECS.UNITS[self.me.unit].VISION_RADIUS){
-    // let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
-    let move = null;
+    let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
+    // let move = null;
     if (move !== null) {
       return self.move(mode_location[0] - self.me.x, mode_location[1] - self.me.y);
     }
@@ -303,6 +303,7 @@ export class ProphetManager {
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+        self.log("alkdsf")
       }
       else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.mode = CONSTANTS.DEFENSE
