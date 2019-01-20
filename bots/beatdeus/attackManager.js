@@ -83,8 +83,7 @@ function attack_behaviour_aggressive(self, mode_location, base_location){
   //pursue visible enemies without swarming
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
-      // let move = no_swarm(self,[self.me.x,self.me.y],[r.x,r.y])
-      let move = null;
+      let move = no_swarm(self,[self.me.x,self.me.y],[r.x,r.y])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
@@ -144,10 +143,10 @@ function attack_behaviour_passive(self, mode_location, base_location){
 
   //Pursue the enemy without swarming
   else if (dist([self.me.x,self.me.y],[mode_location[0],mode_location[1]])>SPECS.UNITS[self.me.unit].VISION_RADIUS){
-    // let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
-    let move = null;
+    let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
+    // let move = null;
     if (move !== null) {
-      return self.move(mode_location[0] - self.me.x, mode_location[1] - self.me.y);
+      return self.move(move.x - self.me.x, move.y - self.me.y);
     }
   }
 
