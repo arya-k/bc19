@@ -473,7 +473,25 @@ export class ChurchManager {
     self.castleTalk(COMM8.NEW_CASTLE)
 
     this.resource_count = local_cluster_count(self);
-    this.build_queue = [SPECS.PROPHET, SPECS.PROPHET]
+    this.build_queue = []
+
+    let pilgrimCount = 1;
+    let prophetCount = 1;
+    let preacherCount = 0;
+    while (true) {
+      if ((prophetCount * 2) + 1 < pilgrimCount) {
+        this.build_queue.unshift(SPECS.PROPHET)
+        prophetCount++;
+      } else if ((preacherCount * 4) + 1 < pilgrimCount) {
+        this.build_queue.unshift(SPECS.PREACHER)
+        preacherCount++;
+      } else if (pilgrimCount < this.resource_count) {
+        this.build_queue.unshift(SPECS.PILGRIM)
+        pilgrimCount++;
+      } else {
+        break;
+      }
+    }
   }
 
   turn(step, self) {
