@@ -143,7 +143,7 @@ GridNode.prototype.getCost = function(nbr) {
   }
 };
 
-export function Graph(pass_map, vis_map, speed, no_swarm = false) {
+export function Graph(pass_map, vis_map, speed) {
   this.nodes = [];
   this.grid = [];
   this.speed = speed;
@@ -151,16 +151,7 @@ export function Graph(pass_map, vis_map, speed, no_swarm = false) {
     this.grid[y] = [];
     for (var x = 0; x < pass_map.length; x++) {
       let isWall = !pass_map[y][x] || vis_map[y][x] > 0;
-      var node;
-      if (isWall)
-        node = new GridNode(x, y, isWall);
-      else if (no_swarm) {
-        if (has_adjacent_attacker(self, [x, y])) {
-          node = new GridNode(x, y, true);
-        }
-      } else
-        node = new GridNode(x, y, isWall);
-
+      var node = new GridNode(x, y, isWall);
       this.grid[y][x] = node;
       this.nodes.push(node);
     }
@@ -456,8 +447,23 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
     attack_radius_max = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1];
   }
 
+  var graph = new Graph(pass_map, vis_map, speed);
+  for (var y = 0; y < pass_map.length; y++) {
+    for (var x = 0; x < pass_map.length; x++) {
+      let id = vis_map[y][x];
+      if (id > 0){
+        let r = self.getRobot(id);
+        if (r.team !== null && r.team == self.me.team && SPECS.UNITS[self.me.unit].SPEED > 0 && 
+            SPECS.UNITS[self.me.unit].ATTACK_DAMAGE !== null){
+          for (let dir of CIRCLES[2]){
+            let p = [x + dir[0], y + dir[1]];
+            graph.grid[p[1]][p[0]].isWall = true;
+          }
+        }
+      }
+    }
+  }
 
-  var graph = new Graph(pass_map, vis_map, speed, true);
   var openHeap = getHeap();
 
   var start = graph.grid[a[1]][a[0]]
