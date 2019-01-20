@@ -404,6 +404,7 @@ export class CastleManager {
               max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
             }
           this.attacked = step; // keep track of when we last told units to attack
+          self.log("TIME TO ATTACK") // use up our horde, trying to attack other people
           self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
         }
       } else if (this.attacked !== 0 && (step - this.attacked) > 10) { // our horde has already destroyed the enemy :)
