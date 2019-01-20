@@ -1,7 +1,7 @@
 import {SPECS} from 'battlecode';
-import {CONSTANTS,COMM8,COMM16,CIRCLES} from './constants.js'
+import {CONSTANTS, CIRCLES} from './constants.js'
 import {move_towards, move_to} from './path.js'
-
+import {COMM8,COMM16} from './comm.js'
 function dist(a, b) {
   return (a[0]-b[0])**2 + (a[1]-b[1])**2
 }
@@ -149,6 +149,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   //If the robot sees an enemy, wait for the enemy to come so the enemy will get hit first. Never leave base
 
   let targets = getAttackOrder(self)
+  self.log()
   if (targets.length>0){
     return self.attack(targets[0].x-self.me.x,targets[1].y-self.me.y)
   }
@@ -190,7 +191,7 @@ function updateVisitedMap(self, obj) {
   }
 }
 
-class CrusaderManager {
+export class CrusaderManager {
   constructor(self) {
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = null;
@@ -245,7 +246,7 @@ class CrusaderManager {
 }
 
 
-class ProphetManager {
+export class ProphetManager {
   constructor(self) {
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = null;
