@@ -6,6 +6,8 @@ import {num_moves} from './path.js'
 
 const HORDE_SIZE = 5;
 
+// TODO: rebuild dead pilgrims
+
 // FUTURE: clear out enemy resource spots.
 // FUTURE: return pilgrims to spots that they were killed trying to get to
 
@@ -358,7 +360,7 @@ export class CastleManager {
 
 
     // if you can build pilgrims, you should probably do that:
-    if (step >= 2 && step % 2 == 0) { // only do it every 3 turns or so.
+    if (step >= 2 && step % 3 == 0) { // only do it every 3 turns or so.
       if (this.nearby_numresources > 0 && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
           self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
         this.nearby_numresources--;

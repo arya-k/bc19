@@ -26,10 +26,12 @@ function nonNuisanceBehavior(self, base_loc) {
   for (const r of self.getVisibleRobots()) {
     if (r.team == self.me.team) {
       if (r.unit == SPECS.CHURCH || r.unit == SPECS.CASTLE) { // castle or church
+        nono_map[r.y][r.x] = true;
         for (const dir of CIRCLES[2])
           if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
             nono_map[r.y + dir[1]][r.x + dir[0]] = true;
       } else if (r.id !== self.me.id) {
+        nono_map[r.y][r.x] = true;
         for (const dir of CIRCLES[1])
           if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
             nono_map[r.y + dir[1]][r.x + dir[0]] = true;
