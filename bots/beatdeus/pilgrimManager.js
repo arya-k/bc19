@@ -278,6 +278,8 @@ export class PilgrimManager {
         return self.mine();
       } else if (this.mine_loc !== null) {
         this.mine_loc = find_mine(self, this.resources);
+        if (this.mine_loc === null)
+          return null;
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
         if (enemies.length != 0){
           for (let enemy of enemies) {

@@ -11,9 +11,10 @@ function nonNuisanceBehavior(self) {
   const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
   const x = self.me.x, y = self.me.y;
   if (fuel_map[y][x] || karbonite_map[y][x] || has_adjacent_castle(self, [self.me.x, self.me.y])){
-    self.log("empty")
+    self.log("PROBLEMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM SPACE")
     return emptySpaceMove(self);
   }
+  self.log("WHY DO YOU NEVER GET HERE")
   const nearbyRobots = getNearbyRobots(self, [self.me.x, self.me.y], 1)
   if (nearbyRobots.length != 0){
     let best = [null, CIRCLES[1].length + 1]
