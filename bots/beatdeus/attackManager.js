@@ -11,6 +11,7 @@ function nonNuisanceBehavior(self) {
   const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
   const x = self.me.x, y = self.me.y;
   if (fuel_map[y][x] || karbonite_map[y][x] || has_adjacent_castle(self, [self.me.x, self.me.y])){
+    self.log("empty")
     return emptySpaceMove(self);
   }
   const nearbyRobots = getNearbyRobots(self, [self.me.x, self.me.y], 1)
