@@ -304,9 +304,9 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
   //Don't be annoying; get off resources spots and waffle
   else {
-    self.log('no nuis');
-    self.log(self.me.x)
-    self.log(self.me.y)
+    // self.log('no nuis');
+    // self.log(self.me.x)
+    // self.log(self.me.y)
     let n = nonNuisanceBehavior(self,base_location);
     if (n !== null){
       return self.move(n[0],n[1]);
