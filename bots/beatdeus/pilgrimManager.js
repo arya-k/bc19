@@ -86,7 +86,6 @@ export class PilgrimManager {
     this.stage = CONSTANTS.MINE
     this.castle_loc = null; // the castle that spawned it.
     this.church_loc = null;
-    this.churchid = null;
     this.mine_loc = null;
     this.resources = null;
 
@@ -97,13 +96,16 @@ export class PilgrimManager {
             this.castle_loc = [r.x, r.y];
           } else if (r.unit == SPECS.CHURCH){
             this.church_loc = [r.x, r.y];
-            this.churchid = r.id;
           }
         }
       }
     }
-    if (this.church_loc != null)
+    if (this.church_loc != null){
       this.base_loc = this.church_loc;
+      this.castle_loc = this.church_loc;
+      this.resources = find_depots(self, this.church_loc);
+      this.mine_loc = find_mine(self, this.resources);
+    }
     else
       this.base_loc = this.castle_loc;
   }
@@ -118,11 +120,12 @@ export class PilgrimManager {
         }
       }
     }
+
     if (this.mine_loc === null) {
       return null; // there's nothing to do.
     }
 
-    if (dist(this.church_loc, this.castle_loc) <= 8){// if church_loc is close to castle, no point building it
+    if (this.castle_loc !== null && dist(this.church_loc, this.castle_loc) <= 8){// if church_loc is close to castle, no point building it
       this.church_loc = this.castle_loc;
       this.base_loc = this.castle_loc;
     }
@@ -251,7 +254,6 @@ export class PilgrimManager {
         } else {
           if (this.base_loc == this.church_loc){ // our base has disappeared :( go to castle
             this.church_loc = null;
-            this.churchid = null;
             this.base_loc = this.castle_loc;
           }
           homesick = true; 
