@@ -516,32 +516,3 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
   }
   return null; 
 }
-
-export function emptySpaceMove(self) {// finds the move towards the nearest non resource space
-  let visited = new Set()
-  let queue = [new Point(self.me.x,self.me.y)]
-  let map = self.map, vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
-
-  while (queue.length > 0) {
-    let current = queue.shift()
-
-    if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
-
-    if (!fuel_map[current.y][current.x] && !karbonite_map[current.y][current.x]){
-      if (!has_adjacent_castle(self, [current.x, current.y])){
-        while(current.parent.parent !== null)
-          current = current.parent;
-        return [current.x - self.me.x, current.y - self.me.y];
-      }
-    }
-
-    visited.add((current.y<<6) + current.x) // mark as visited
-
-    for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]) {
-      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) { //passable
-        if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] < 1) // no robots
-          queue.push(new Point(current.x + dir[0], current.y + dir[1], current))
-      }
-    }
-  }
-}
