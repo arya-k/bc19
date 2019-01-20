@@ -44,17 +44,13 @@ function find_depots(self, church_loc) {
   return [split_resource_map, resource_map];
 }
 
-function find_mine(self, all_resources, priority = 'karbonite') {
-  let resources = [];
-  if (priority !== null)
-    resources.push(all_resources[1]);
-  else if (priority.toLowerCase().includes('k')) {
-    resources.push(all_resources[0].karbonite);
-    resources.push(all_resources[0].fuel);
+function find_mine(self, all_resources, priority = 'karbonite', strict = false) {
+  let resources = null;
+  if (priority.toLowerCase().includes('k')) {
+    resources = all_resources[0].karbonite;
   }
   else if (priority.toLowerCase().includes('f')) {
-    resources.push(all_resources[0].fuel);
-    resources.push(all_resources[0].karbonite);
+    resources = all_resources[0].fuel;
   }
   else
     self.log("SOMETHING WONG");
@@ -62,7 +58,7 @@ function find_mine(self, all_resources, priority = 'karbonite') {
   let closest_visible = [1<<14, null];
   let closest_invisible = [1<<14, null];
 
-  for (const depot of resources[0]){
+  for (const depot of resources){
     let d = dist([self.me.x, self.me.y], depot);
     // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
     if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
@@ -81,31 +77,38 @@ function find_mine(self, all_resources, priority = 'karbonite') {
     return closest_visible[1];
   if (closest_invisible[1] !== null)
     return closest_invisible[1];
-  if (resources.length == 1)
+  if (strict)
     return null;
+  else {
+    if (priority.toLowerCase().includes('k')) {
+      resources = all_resources[0].fuel;
+    }
+    else if (priority.toLowerCase().includes('f')) {
+      resources = all_resources[0].karbonite;
+    }
+    closest_visible = [1<<14, null];
+    closest_invisible = [1<<14, null];
 
-  closest_visible = [1<<14, null];
-  closest_invisible = [1<<14, null];
-
-  for (const depot of resources[1]){
-    let d = dist([self.me.x, self.me.y], depot);
-    // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
-    if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
-      if (d < closest_visible[0]){
-        closest_visible = [d, depot];
+    for (const depot of resources){
+      let d = dist([self.me.x, self.me.y], depot);
+      // let d = num_moves(self.map, self.getVisibleRobotMap(), SPECS.UNITS[self.me.unit].SPEED, [self.me.x, self.me.y], depot);
+      if (self.getVisibleRobotMap()[depot[1]][depot[0]] == 0){
+        if (d < closest_visible[0]){
+          closest_visible = [d, depot];
+        }
+      }
+      else if (self.getVisibleRobotMap()[depot[1]][depot[0]] == -1) {
+        if (d < closest_invisible[0]){
+          closest_invisible = [d, depot];
+        }
       }
     }
-    else if (self.getVisibleRobotMap()[depot[1]][depot[0]] == -1) {
-      if (d < closest_invisible[0]){
-        closest_invisible = [d, depot];
-      }
-    }
+    if (closest_visible[1] !== null)
+      return closest_visible[1];
+    if (closest_invisible[1] !== null)
+      return closest_invisible[1];
   }
-
-  if (closest_visible[1] !== null)
-    return closest_visible[1];
-  if (closest_invisible[1] !== null)
-    return closest_invisible[1];
+  return null;
 }
 
 // pilgrim
@@ -201,7 +204,7 @@ export class PilgrimManager {
       } else if (self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY && 
                   self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
         if (this.new_mine == null && !self.fuel_map[self.me.y][self.me.x]){
-          this.new_mine = find_mine(self, this.resources, 'fuel');
+          this.new_mine = find_mine(self, this.resources, 'fuel', true);
 
           if (this.new_mine !== null && !self.fuel_map[this.new_mine[1]][this.new_mine[0]])
             this.new_mine = null;
@@ -216,7 +219,7 @@ export class PilgrimManager {
       } else if (self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY && 
                   self.me.karbonite < SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY){
         if (this.new_mine == null && !self.karbonite_map[self.me.y][self.me.x]){
-          this.new_mine = find_mine(self, this.resources, 'karbonite');
+          this.new_mine = find_mine(self, this.resources, 'karbonite', true);
 
           if (this.new_mine !== null && !self.karbonite_map[this.new_mine[1]][this.new_mine[0]])
             this.new_mine = null;
