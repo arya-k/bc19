@@ -287,7 +287,6 @@ export class PilgrimManager {
 
     if (this.stage == CONSTANTS.MINE) {
       if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
-        self.log([self.me.x, self.me.y])
         return self.mine();
       } else if (this.mine_loc !== null) {
         this.mine_loc = find_mine(self, this.resources);
