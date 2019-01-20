@@ -2,7 +2,7 @@ import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
 
 export function is_passable(self, x, y){
-  return (self.me.x == x && self.me.y == y) || self.getVisibleRobotMap[y][x]<=0
+  return (self.me.x == x && self.me.y == y) || self.getVisibleRobotMap()[y][x]<=0
 }
 export function dist(a, b) {
   return ((a[0]-b[0])**2) + ((a[1]-b[1])**2) // return the r^2 distance
