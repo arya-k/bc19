@@ -10,10 +10,10 @@ function Point(x, y, p) {
   this.p = p
 }
 
-function is_nono(self,x,y){
-  //Returns true if this x and y is a nuisance; false if not
-
+function is_nono(self,x,y,base_loc){
+  //Ret, base_locationurns true if this x and y is a nuisance; false if not
   let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
+  nono_map[base_loc[1]][base_loc[0]] = true;
   for (const r of self.getVisibleRobots()) {
     if (r.team == self.me.team) {
       if (r.unit == SPECS.CHURCH || r.unit == SPECS.CASTLE) { // castle or church
@@ -44,6 +44,7 @@ function nonNuisanceBehavior(self, base_loc) {
   let path_end_point = null;
 
   let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
+  nono_map[base_loc[1]][base_loc[0]] = true;
   for (const r of self.getVisibleRobots()) {
     if (r.team == self.me.team) {
       if (r.unit == SPECS.CHURCH || r.unit == SPECS.CASTLE) { // castle or church
@@ -230,7 +231,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
       // self.log("move_towards3")
       let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
-      if (move !== null && !(is_nono(self,move.x,move.y))) {
+      if (move !== null && !(is_nono(self,move.x,move.y, base_location))) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
         return null;
@@ -290,7 +291,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   // self.log('here2')
   if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
     let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-    if (move !== null && !(is_nono(self,move.x,move.y))) {
+    if (move !== null && !(is_nono(self,move.x,move.y, base_location))) {
       return self.move(move.x - self.me.x, move.y - self.me.y);
     } else {
       return null;
