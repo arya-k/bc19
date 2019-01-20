@@ -221,7 +221,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       } else {
         return null;
       }
-    } else {
+    }else {
       return CONSTANTS.ELIMINATED_ENEMY;
     }
   } 
@@ -460,6 +460,7 @@ export class PreacherManager {
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER) {
         this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
+        self.log(this.mode_location)
       }
       else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
