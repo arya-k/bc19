@@ -228,7 +228,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
-    if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
+    if (dist([self.me.x,self.me.y],base_location) >= 25) {
       // self.log("move_towards3")
       let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
       if (move !== null && !(is_nono(self,move.x,move.y, base_location))) {
