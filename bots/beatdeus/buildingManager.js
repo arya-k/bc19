@@ -290,11 +290,20 @@ export class CastleManager {
       if (r.castle_talk == COMM8.SWITCH_ENEMY_TARGET) {
         self.log("ENEMY CASTLE IS DEAD")
         this.attack_index += 1;
-      } else if (r.castle_talk == COMM8.ENEMY_CASTLE_DEAD && this.attack_party.has(r.id)) {
-        this.castle_talk_queue.unshift(COMM8.SWITCH_ENEMY_TARGET);
       }
     }
 
+    let reportEnemyDead = false;
+    for (const r of self.getVisibleRobots())
+      if (r.castle_talk == COMM8.ENEMY_CASTLE_DEAD && this.attack_party.has(r.id))
+        if (this.attack_targets[this.attack_index][0][0] == self.me.x &&
+            this.attack_targets[this.attack_index][0][1] == self.me.y) // is it our turn to attack?
+          reportEnemyDead = true;
+
+    if (reportEnemyDead) {
+      this.castle_talk_queue.unshift(COMM8.SWITCH_ENEMY_TARGET);
+      self.log("CLAIMING DEAD")
+    }
 
     let building_locations = getClearLocations(self, 2);
 
@@ -349,7 +358,7 @@ export class CastleManager {
 
 
     // if you can build pilgrims, you should probably do that:
-    if (step >= 2 && (step + 2) % 3 == 0) { // only do it every 3 turns or so.
+    if (step >= 2 && step % 2 == 0) { // only do it every 3 turns or so.
       if (this.nearby_numresources > 0 && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
           self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
         this.nearby_numresources--;
@@ -390,12 +399,11 @@ export class CastleManager {
         } else if (step - this.attacked > 10){ // if it is big enough
           let max_radius = 0 // figure out how far you have to signal
           for (const r of myRobots)
-            if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER) {
+            if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET) {
               this.attack_party.add(r.id) // keep track of the attack party
               max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
             }
           this.attacked = step; // keep track of when we last told units to attack
-          self.log("TIME TO ATTACK")
           self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
         }
       } else if (this.attacked !== 0 && (step - this.attacked) > 10) { // our horde has already destroyed the enemy :)
