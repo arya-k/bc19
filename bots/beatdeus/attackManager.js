@@ -10,6 +10,28 @@ function Point(x, y, p) {
   this.p = p
 }
 
+function is_nono(self,x,y){
+  //Returns true if this x and y is a nuisance; false if not
+
+  let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
+  for (const r of self.getVisibleRobots()) {
+    if (r.team == self.me.team) {
+      if (r.unit == SPECS.CHURCH || r.unit == SPECS.CASTLE) { // castle or church
+        nono_map[r.y][r.x] = true;
+        for (const dir of CIRCLES[2])
+          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
+            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
+      } else if (r.id !== self.me.id) {
+        nono_map[r.y][r.x] = true;
+        for (const dir of CIRCLES[1])
+          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
+            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
+      }
+    }
+  }
+  return nono_map[y][x]
+}
+
 function nonNuisanceBehavior(self, base_loc) {
   // - if it's sitting on a resource spot, don't
   // - if the castle you are closest to has <2 free spots available, and you are adjacent to the castle, move (i.e. move if the castle has <2 building spots) use get clear locations here
@@ -38,12 +60,6 @@ function nonNuisanceBehavior(self, base_loc) {
     }
   }
 
-  self.log(nono_map[self.me.y][self.me.x])
-  self.log(self.fuel_map[self.me.y][self.me.x])
-  self.log(self.karbonite_map[self.me.y][self.me.x])
-  self.log(self.map[self.me.y][self.me.x])
-  self.log(is_passable(self,self.me.x,self.me.y))
-
   while (queue.length > 0) {
     current = queue.shift();
 
@@ -66,7 +82,6 @@ function nonNuisanceBehavior(self, base_loc) {
   }
 
   if (path_end_point === null || path_end_point.p === null) { // you already good. Move towards the base if you're too far.
-    self.log('we good')
     if (dist([self.me.x, self.me.y], base_loc) >= 25) {
       // self.log("move towards")
       let move = move_towards(self, [self.me.x, self.me.y], base_loc) // head towards base
@@ -76,12 +91,9 @@ function nonNuisanceBehavior(self, base_loc) {
     }
     return null;
   } else {
-    self.log("parenting")
     while (path_end_point.p.p !== null){
       path_end_point = path_end_point.p;
     }
-    self.log(path_end_point.x)
-    self.log(path_end_point.y)
     return [path_end_point.x - self.me.x, path_end_point.y - self.me.y];
   }
 }
@@ -218,7 +230,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
       // self.log("move_towards3")
       let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
-      if (move !== null) {
+      if (move !== null && !(is_nono(self,move.x,move.y))) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
         return null;
@@ -278,7 +290,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   // self.log('here2')
   if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
     let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-    if (move !== null) {
+    if (move !== null && !(is_nono(self,move.x,move.y))) {
       return self.move(move.x - self.me.x, move.y - self.me.y);
     } else {
       return null;
