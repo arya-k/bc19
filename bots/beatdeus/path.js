@@ -546,16 +546,20 @@ export function nonNuisanceBehavior(self) {
   const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
   const x = self.me.x, y = self.me.y;
   if (fuel_map[y][x] || karbonite_map[y][x] || has_adjacent_castle(self, [self.me.x, self.me.y])){
-  return emptySpaceMove(self);
+    return emptySpaceMove(self);
   }
-  const nearbyRobots = getNearbyRobots(self, 1)
-  let dict = {
-    map: self.map,
-  }
+  const nearbyRobots = getNearbyRobots(self, [self.me.x, self.me.y], 1)
   if (nearbyRobots.length != 0){
+    let best = [null, CIRCLES[1].length + 1]
     for (let dir in CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
       let p = [self.me.x + dir[0], self.me.y + dir[1]];
-      if ()
+      let temp = getNearbyRobots(self, p, 1);
+      if (temp.length == 0) {
+        if (!fuel_map[p[1]][p[0]] && !karbonite_map[p[1]][p[0]] && !has_adjacent_castle(self, p)){
+          return dir;
+        }
+      }
     }
+    return null;
   }
 }
