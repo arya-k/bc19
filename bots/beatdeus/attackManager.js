@@ -1,7 +1,9 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
-import {move_towards, move_to} from './path.js'
+import {move_towards, move_to,nonNuisanceBehavior} from './path.js'
 import {COMM8,COMM16} from './comm.js'
+import {getAttackOrder} from './utils.js'
+
 function dist(a, b) {
   return (a[0]-b[0])**2 + (a[1]-b[1])**2
 }
@@ -9,11 +11,9 @@ function dist(a, b) {
 function attack_behaviour_aggressive(self, mode_location, base_location){
   //Always pursue mode_location, and kill anyone seen
   let targets = getAttackOrder(self)
-
   if (targets.length>0){
-    return self.attack(targets[0].x-self.me.x,targets[1].y-self.me.y)
+    return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
-
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
       let move = no_swarm(self,[self.me.x,self.me.y],[r.x,r.y])
@@ -70,7 +70,7 @@ function attack_behaviour_passive(self, mode_location, base_location){
         }
       }
     }
-    return self.attack(targets[0].x-self.me.x,targets[1].y-self.me.y)
+    return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
   else if (dist([self.me.x,self.me.y],[mode_location[0],mode_location[1]])>SPECS.UNITS[self.me.unit].VISION_RADIUS){
     let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
@@ -95,7 +95,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
   let targets = getAttackOrder(self)
 
   if (targets.length>0){
-    return self.attack(targets[0].x-self.me.x,targets[1].y-self.me.y)
+    return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
 
   for (const r of self.getVisibleRobots()) {
@@ -149,15 +149,15 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   //If the robot sees an enemy, wait for the enemy to come so the enemy will get hit first. Never leave base
 
   let targets = getAttackOrder(self)
-  self.log()
+  //self.log('here1')
   if (targets.length>0){
-    return self.attack(targets[0].x-self.me.x,targets[1].y-self.me.y)
+    return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
-
+  //self.log('here2')
   if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
     let move = move_towards(self.map, self.getVisibleRobotMap(), [self.me.x, self.me.y], base_location, SPECS.UNITS[self.me.unit].SPEED, 1, 2)
     if (move !== null) {
-      return self.move(move.x - self.me.x, move.y - self.me.y);
+      return self.move(move[0] - self.me.x, move[1] - self.me.y);
     } else {
       return null;
     }
