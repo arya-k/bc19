@@ -2,7 +2,7 @@ import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
 import {move_towards, move_to, no_swarm} from './path.js'
 import {COMM8,COMM16} from './comm.js'
-import {getAttackOrder, has_adjacent_castle, getNearbyRobots, dist, is_valid, is_passable} from './utils.js'
+import {getAttackOrder, has_adjacent_castle, getNearbyRobots, dist, is_valid} from './utils.js'
 
 function Point(x, y, p) {
   this.x = x,
@@ -355,7 +355,7 @@ export class ProphetManager {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
-      else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
+      else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER && step < 3){
         this.mode = CONSTANTS.DEFENSE
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
         this.mode_location = null
