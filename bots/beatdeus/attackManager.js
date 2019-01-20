@@ -19,7 +19,7 @@ function nonNuisanceBehavior(self, base_loc) {
   let current;
   let visited = new Set()
   let queue = [new Point(self.me.x, self.me.y, null)];
-  let path_end_point;
+  let path_end_point = null;
   let vis_map = self.getVisibleRobotMap()
 
   let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
@@ -60,7 +60,7 @@ function nonNuisanceBehavior(self, base_loc) {
     }
   }
 
-  if (path_end_point.p === null) { // you already good. Move towards the base if you're too far.
+  if (path_end_point === null || path_end_point.p === null) { // you already good. Move towards the base if you're too far.
     if (dist([self.me.x, self.me.y], base_loc) >= 25) {
       self.log("move towards")
       let move = move_towards(self, [self.me.x, self.me.y], base_loc) // head towards base
