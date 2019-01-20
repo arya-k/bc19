@@ -11,6 +11,7 @@ function nonNuisanceBehavior(self) {
   const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
   const x = self.me.x, y = self.me.y;
   if (fuel_map[y][x] || karbonite_map[y][x] || has_adjacent_castle(self, [self.me.x, self.me.y])){
+    self.log("empty")
     return emptySpaceMove(self);
   }
   self.log("WAFFFLEEEEEEEEEEEEEEEEEEE")
@@ -30,11 +31,6 @@ function nonNuisanceBehavior(self) {
     }
     return null;
   }
-}
-
-
-function dist(a, b) {
-  return (a[0]-b[0])**2 + (a[1]-b[1])**2
 }
 
 function attack_behaviour_aggressive(self, mode_location, base_location){
@@ -208,19 +204,6 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   }
 }
 
-function createVisitedMap(self, obj) {
-  let dim = self.map.length;
-  obj.visitedMap = [...Array(dim)].map(e => Array(dim).fill(false)); // create a 2d array (dim x dim)
-}
-
-function updateVisitedMap(self, obj) {
-  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]) {
-    if (self.map[self.me.y + dir[1]] && (self.map[self.me.y + dir[1]][self.me.x + dir[0]] !== undefined)) {
-      obj.visitedMap[self.me.y + dir[1]][self.me.x + dir[0]] = true;
-    }
-  }
-}
-
 export class CrusaderManager {
   constructor(self) {
     this.mode = CONSTANTS.DEFENSE
@@ -238,12 +221,10 @@ export class CrusaderManager {
         }
       }
     }
-    createVisitedMap(self, this);
   }
 
   turn(step, self) {
     self.log('here-crus')
-    updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
         this.mode = CONSTANTS.ATTACK
@@ -294,12 +275,10 @@ export class ProphetManager {
         }
       }
     }
-    createVisitedMap(self, this);
   }
 
   turn(step, self) {
     self.log('here-prop')
-    updateVisitedMap(self, this);
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
         this.mode = CONSTANTS.ATTACK
@@ -350,12 +329,10 @@ export class PreacherManager {
         }
       }
     }
-    createVisitedMap(self, this);
   }
 
   turn(step, self) {
     self.log('here-prea')
-    updateVisitedMap(self, this);
     let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     if (action == CONSTANTS.ELIMINATED_ENEMY) {
       self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
