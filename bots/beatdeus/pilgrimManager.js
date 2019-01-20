@@ -166,7 +166,7 @@ export class PilgrimManager {
     }
 
 
-    if (this.castle_loc !== null && dist(this.church_loc, this.castle_loc) <= 8){// if church_loc is close to castle, no point building it
+    if (this.base_loc !== null && dist(this.church_loc, this.base_loc) <= 8){// if church_loc is close to castle, no point building it
       this.church_loc = this.castle_loc;
       this.base_loc = this.castle_loc;
     }
@@ -178,17 +178,10 @@ export class PilgrimManager {
     }
     
     if (this.base_loc != this.church_loc) { //if there's a church that's closer to the castle that's not your own, make that new base location
-      let vis_map = self.getVisibleRobotMap();
-      for (const dir in CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
-        let p = [self.me.x + dir[0], self.me.y + dir[1]];
-        if (!is_valid(...p, vis_map.length))
-          continue;
-        let id = vis_map[p[1]][p[0]];
-        if (id > 0) {
-          let r = self.getRobot(id);
-          if (r.unit == SPECS.CHURCH){
-            self.base_loc = [r.x, r.y];
-          }
+      for (let r of self.getVisibleRobots()) {
+        if (r.team !== null && r.team == self.me.team && r.unit == SPECS.CHURCH &&
+            dist(this.church_loc, [r.x, r.y]) < dist(this.church_loc, this.base_loc)){
+          self.base_loc = [r.x, r.y];
         }
       }
     }
@@ -231,13 +224,6 @@ export class PilgrimManager {
             this.stage = CONSTANTS.DEPOSIT;
           }
         }
-      }
-    }
-
-    if (this.stage == CONSTANTS.DEPOSIT) {
-      if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
-          self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && this.base_loc != this.church_loc) {
-        this.stage = CONSTANTS.BUILD;
       }
     }
 
@@ -293,7 +279,7 @@ export class PilgrimManager {
         return null;
       } else {
         this.base_loc = this.church_loc;
-        this.stage = CONSTANTS.MINE;
+        this.stage = CONSTANTS.DEPOSIT;
         this.new_mine = null;
         return self.buildUnit(SPECS.CHURCH, this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y);
       }
