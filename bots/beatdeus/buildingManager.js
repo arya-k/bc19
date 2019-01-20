@@ -7,6 +7,7 @@ import {num_moves} from './path.js'
 const HORDE_SIZE = 5;
 
 // FUTURE: clear out enemy resource spots.
+// FUTURE: return pilgrims to spots that they were killed trying to get to
 
 // DONE: contribute to future attacks.
 // DONE redo clump ordering to be a little smarter (remove the ones AT the enemy locations lol)
@@ -315,8 +316,8 @@ export class CastleManager {
 
     // if we see a crusader, it's gonna be in groups, so we should just build a preacher.
     if (enemy_crusader !== null &&
-        self.fuel >= SPECS.UNITS[SPECS.PREACHER].FUEL_CAPACITY &&
-        self.karbonite >= SPECS.UNITS[SPECS.PREACHER].KARBONITE_CAPACITY &&
+        self.fuel >= SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_FUEL &&
+        self.karbonite >= SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_KARBONITE &&
         building_locations.length > 0 ) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemy_crusader.x, enemy_crusader.y), dist([self.me.x, self.me.y], building_locations[0]))
       return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
@@ -330,11 +331,10 @@ export class CastleManager {
 
     // active defense: if we can't whack them, build units that CAN whack them:
     if ((enemy_crusader !== null || enemy_attacker !== null) &&
-        self.fuel >= SPECS.UNITS[SPECS.PROPHET].FUEL_CAPACITY &&
-        self.karbonite >= SPECS.UNITS[SPECS.PROPHET].KARBONITE_CAPACITY &&
+        self.fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL &&
+        self.karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE &&
         building_locations.length > 0 ) {
       let r = enemy_crusader !== null ? enemy_crusader : enemy_attacker;
-      self.signal(COMM16.ENCODE_ENEMYSIGHTING(r.x, r.y), dist([self.me.x, self.me.y], building_locations[0]))
       return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
     }
 
@@ -420,7 +420,6 @@ export class CastleManager {
       self.castleTalk(this.castle_talk_queue.pop()); // not performant: doesn't matter
 
     if (this.build_signal_queue.length > 0) {
-      let building_locations = getClearLocations(self, 2);
       if (building_locations.length > 0) {
         if (self.karbonite > SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_KARBONITE &&
             self.fuel > (SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_FUEL + 2)) {
@@ -432,5 +431,77 @@ export class CastleManager {
         }
       }
     }
+  }
+}
+
+export class ChurchManager {
+  constructor(self) {
+    self.log("CHURCH @ " + [self.me.x, self.me.y])
+
+    this.resource_count = local_cluster_count(self);
+    this.build_queue = []
+
+    // fill the build queue:
+    let pilgrimCount = 1;
+    let prophetCount = 1; // 1 for every pilgrim
+    let preacherCount = 0; // 1 for every 2 pilgrims
+    while (true) {
+      if (prophetCount < pilgrimCount) {
+        prophetCount++;
+        this.build_queue.unshift(SPECS.PROPHET);
+      } else if ((2 * preacherCount) + 1 < pilgrimCount) {
+        preacherCount++;
+        this.build_queue.unshift(SPECS.PREACHER)
+      } else if (pilgrimCount < this.resource_count) {
+        pilgrimCount++;
+        this.build_queue.unshift(SPECS.PILGRIM)
+      } else {
+        break;
+      }
+    }
+  }
+
+  turn(step, self) {
+    let building_locations = getClearLocations(self, 2);
+
+    let enemy_crusader = null; // should spawn preacher
+    let enemy_attacker = null; // non-crusader. should spawn prophet.
+    for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CHURCH].VISION_RADIUS)) {
+      let r = self.getRobot(r_id);
+      if (r.team !== self.me.team) {
+        if (r.unit == SPECS.CRUSADER){
+          enemy_crusader = r;
+        } else if (r.unit == SPECS.PROPHET || r.unit == SPECS.PREACHER) {
+          enemy_attacker = r;
+        }
+      }
+    }
+
+    // if its a crusader, try a preacher:
+    if (enemy_crusader !== null &&
+        self.fuel >= SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_FUEL &&
+        self.karbonite >= SPECS.UNITS[SPECS.PREACHER].CONSTRUCTION_KARBONITE &&
+        building_locations.length > 0 ) {
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemy_crusader.x, enemy_crusader.y), dist([self.me.x, self.me.y], building_locations[0]))
+      return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+    }
+
+    // if its not a crusader or we can't afford a preacher, try a prophet:
+    if ((enemy_crusader !== null || enemy_attacker !== null) &&
+        self.fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL &&
+        self.karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE &&
+        building_locations.length > 0 ) {
+      let r = enemy_crusader !== null ? enemy_crusader : enemy_attacker;
+      return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+    }
+
+    if (this.build_queue.length > 0) {
+      if (building_locations.length > 0 && 
+          self.karbonite > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_KARBONITE &&
+          self.fuel > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_FUEL) {
+        return self.buildUnit(this.build_queue.pop(), building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+      }
+    }
+
   }
 }
