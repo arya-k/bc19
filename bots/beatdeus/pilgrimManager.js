@@ -28,7 +28,7 @@ function find_depots(self, church_loc) {
       split_resource_map.karbonite.push([current[0], current[1]]);
       resource_map.push([current[0], current[1]]);
     }
-    else if (current[0] != church_loc[0] && current[1] != church_loc[1])
+    else if (current[0] != church_loc[0] || current[1] != church_loc[1])
       continue;
     
     for (const dir of CIRCLES[8]){ // add nbrs
@@ -115,6 +115,9 @@ export class PilgrimManager {
           this.church_loc = COMM16.DECODE_BASELOC(r.signal);
           this.resources = find_depots(self, this.church_loc);
           this.mine_loc = find_mine(self, this.resources);
+          self.log("Church location: " + this.church_loc)
+          self.log("Mine location: " + this.mine_loc)
+          self.log("________________________________")
         }
       }
     }
