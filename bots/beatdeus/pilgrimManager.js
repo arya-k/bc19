@@ -379,7 +379,7 @@ export class PilgrimManager {
 
 function choosePriority(self) {
   let priority = null;
-  if (self.fuel > 200 || self.karbonite < 50)
+  if (self.fuel > 300 || self.karbonite < 60)
     priority = 'karbonite';
   else
     priority = 'fuel';

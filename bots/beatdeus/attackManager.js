@@ -32,7 +32,7 @@ function is_nono(self,x,y,base_loc){
   return nono_map[y][x]
 }
 
-function nonNuisanceBehavior(self, base_loc) {
+function nonNuisanceBehavior(self, base_loc, waffle = true) {
   // - if it's sitting on a resource spot, don't
   // - if the castle you are closest to has <2 free spots available, and you are adjacent to the castle, move (i.e. move if the castle has <2 building spots) use get clear locations here
   // - if you are adjacent to other units, WAFFLE
@@ -52,7 +52,7 @@ function nonNuisanceBehavior(self, base_loc) {
         for (const dir of CIRCLES[2])
           if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
             nono_map[r.y + dir[1]][r.x + dir[0]] = true;
-      } else if (r.id !== self.me.id) {
+      } else if (r.id !== self.me.id && waffle) {
         nono_map[r.y][r.x] = true;
         for (const dir of CIRCLES[1])
           if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
@@ -240,7 +240,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
       // self.log("nonNuisanceBehavior")
-      let n = nonNuisanceBehavior(self,base_location);
+      let n = nonNuisanceBehavior(self,base_location, false);
       if (n !== null){
         return self.move(n[0],n[1]);
       }
