@@ -7,7 +7,6 @@ import {num_moves} from './path.js'
 const HORDE_SIZE = 10;
 
 // TODO: rebuild dead pilgrims
-// TODO: improve fleeing.
 // TODO: fix signalling to incorrect target
 
 // FUTURE: clear out enemy resource spots.
@@ -267,6 +266,8 @@ export class CastleManager {
 
     this.resource_clusters = find_resource_clusters(self, self.map, self.fuel_map, self.karbonite_map)
     this.nearby_numresources = local_cluster_count(self);
+
+    this.castle_claims = 0;
   }
 
   turn(step, self) {
@@ -294,6 +295,10 @@ export class CastleManager {
       if (r.castle_talk == COMM8.SWITCH_ENEMY_TARGET) {
         self.log("ENEMY CASTLE IS DEAD")
         this.attack_index += 1;
+      } else if (r.castle_talk == COMM8.CLAIM_CASTLE) {
+        this.castle_claims++;
+      } else if (r.castle_talk == COMM8.NEW_CASTLE) {
+        this.castle_claims--;
       }
     }
 
@@ -304,10 +309,8 @@ export class CastleManager {
             this.attack_targets[this.attack_index][0][1] == self.me.y) // is it our turn to attack?
           reportEnemyDead = true;
 
-    if (reportEnemyDead) {
+    if (reportEnemyDead)
       this.castle_talk_queue.unshift(COMM8.SWITCH_ENEMY_TARGET);
-      self.log("CLAIMING DEAD")
-    }
 
     let building_locations = getClearLocations(self, 2);
 
@@ -361,20 +364,30 @@ export class CastleManager {
               return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
 
 
+
+    let available_fuel = self.fuel - (this.castle_claims * SPECS.UNITS[SPECS.CASTLE].CONSTRUCTION_FUEL)
+    let available_karbonite = self.karbonite - (this.castle_claims * SPECS.UNITS[SPECS.CASTLE].CONSTRUCTION_KARBONITE)
+
     // if you can build pilgrims, you should probably do that:
-    if (step >= 2 && step % 3 == 0) { // only do it every 3 turns or so.
-      if (this.nearby_numresources > 0 && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
+    if (step >= 2) { // only do it every 3 turns or so.
+      let pilgrimCount = 0;
+      for (const r of myRobots)
+        if (r.unit == SPECS.PILGRIM)
+          if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50)
+            pilgrimCount++;
+
+      if (pilgrimCount < this.nearby_numresources && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
           self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
-        this.nearby_numresources--;
         this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(self.me.x, self.me.y)])
-      } else if (self.karbonite > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) && 
-          self.fuel > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL) && 
+      } else if (available_karbonite > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) && 
+          available_fuel > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL) && 
           this.resource_clusters.length > 0) {
         let best_cluster = this.resource_clusters.pop()
         let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations);
 
         if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) { // build a pilgrim + prophet:
           self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y])
+          this.castle_talk_queue.unshift(COMM8.CLAIM_CASTLE)
           this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
           this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
         }
@@ -382,37 +395,58 @@ export class CastleManager {
     }
 
     // if as of yet, we don't have to build anything, let's contribute to the attacking horde:
-    // if (step >= 2 && this.build_signal_queue.length == 0) {
-    //   if (this.attack_targets[this.attack_index][0][0] == self.me.x &&
-    //       this.attack_targets[this.attack_index][0][1] == self.me.y) { // is it our turn to attack?
+    if (step >= 2 && this.build_signal_queue.length == 0) {
+      // if (this.attack_targets[this.attack_index][0][0] == self.me.x &&
+      //     this.attack_targets[this.attack_index][0][1] == self.me.y) { // is it our turn to attack?
 
-    //     // first check if the horde is large enough:
-    //     let count = 0;
-    //     for (const r of myRobots)
-    //       if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET)
-    //         count++;
+      //   // first check if the horde is large enough:
+      //   let count = 0;
+      //   for (const r of myRobots)
+      //     if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET)
+      //       count++;
 
-    //     if (count < HORDE_SIZE) { // if it isn't, try to build more
-    //       if (self.karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
-    //         self.fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
-    //         building_locations.length > 0) {
-    //         self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
-    //         this.build_signal_queue.unshift([SPECS.PROPHET, null]);
-    //         this.build_signal_queue.unshift([SPECS.CRUSADER, null]);
-    //       }
-    //     } else if (step - this.attacked > 10){ // if it is big enough
-    //       let max_radius = 0 // figure out how far you have to signal
-    //       for (const r of myRobots)
-    //         if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET) {
-    //           this.attack_party.add(r.id) // keep track of the attack party
-    //           max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
-    //         }
-    //       this.attacked = step; // keep track of when we last told units to attack
-    //       self.log("TIME TO ATTACK " + (this.attack_targets[this.attack_index][1])) // use up our horde, trying to attack other people
-    //       self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
-    //     }
-    //   }
-    // }
+      //   if (count < HORDE_SIZE) { // if it isn't, try to build more
+      //     if (self.karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
+      //       self.fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
+      //       building_locations.length > 0) {
+      //       self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
+      //       this.build_signal_queue.unshift([SPECS.PROPHET, null]);
+      //       this.build_signal_queue.unshift([SPECS.CRUSADER, null]);
+      //     }
+      //   } else if (step - this.attacked > 10){ // if it is big enough
+      //     let max_radius = 0 // figure out how far you have to signal
+      //     for (const r of myRobots)
+      //       if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET) {
+      //         this.attack_party.add(r.id) // keep track of the attack party
+      //         max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
+      //       }
+      //     this.attacked = step; // keep track of when we last told units to attack
+      //     self.log("TIME TO ATTACK " + (this.attack_targets[this.attack_index][1])) // use up our horde, trying to attack other people
+      //     self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
+      //   }
+      } else if (this.attacked - step > 10) {
+
+      //   self.log("GOING TO TRY TO HELP OTHERS")
+
+      //   let count = 0;
+      //   let max_radius = 0;
+      //   for (const r of myRobots)
+      //     if (this.attack_party.has(r.id)) {
+      //       count++;
+      //       max_radius = Math.max(max_radius,dist([self.me.x, self.me.y], [r.x, r.y]))
+      //     }
+
+      //   if (count != 0) {
+      //     self.log("I HAVE SOME UNITS LEFT")
+      //   }
+
+      //   if (count > 3 && (step - this.attacked > 10)) {
+      //     this.attacked = step; // keep track of when we last told units to attack
+      //     self.log("TIME TO ATTACK " + (this.attack_targets[this.attack_index][1])) // use up our horde, trying to attack other people
+      //     self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
+      //   }
+      // }
+    }
 
     // now, do any cached activities.
     if (this.castle_talk_queue.length > 0)
@@ -436,33 +470,16 @@ export class CastleManager {
 export class ChurchManager {
   constructor(self) {
     self.log("CHURCH @ " + [self.me.x, self.me.y])
+    self.castleTalk(COMM8.NEW_CASTLE)
 
     this.resource_count = local_cluster_count(self);
-    this.build_queue = []
-
-    // fill the build queue:
-    let pilgrimCount = 1;
-    let prophetCount = 1; // 1 for every pilgrim
-    let preacherCount = 0; // 1 for every 2 pilgrims
-    while (true) {
-      if (prophetCount < pilgrimCount) {
-        prophetCount++;
-        this.build_queue.unshift(SPECS.PROPHET);
-      } else if ((2 * preacherCount) + 1 < pilgrimCount) {
-        preacherCount++;
-        this.build_queue.unshift(SPECS.PREACHER)
-      } else if (pilgrimCount < this.resource_count) {
-        pilgrimCount++;
-        this.build_queue.unshift(SPECS.PILGRIM)
-      } else {
-        break;
-      }
-    }
+    this.build_queue = [SPECS.PROPHET]
   }
 
   turn(step, self) {
     let building_locations = getClearLocations(self, 2);
 
+    let pilgrimCount = 0
     let enemy_crusader = null; // should spawn preacher
     let enemy_attacker = null; // non-crusader. should spawn prophet.
     for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CHURCH].VISION_RADIUS)) {
@@ -472,6 +489,10 @@ export class ChurchManager {
           enemy_crusader = r;
         } else if (r.unit == SPECS.PROPHET || r.unit == SPECS.PREACHER) {
           enemy_attacker = r;
+        }
+      } else if (r.team == self.me.team && r.unit == SPECS.PILGRIM) {
+        if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50) {
+          pilgrimCount++;
         }
       }
     }
@@ -492,6 +513,11 @@ export class ChurchManager {
         building_locations.length > 0 ) {
       let r = enemy_crusader !== null ? enemy_crusader : enemy_attacker;
       return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+    }
+
+    // if we need to build more pilgrims, do that:
+    if (this.build_queue.length == 0 && pilgrimCount < this.resource_count) {
+      this.build_queue.unshift(SPECS.PILGRIM)
     }
 
     if (this.build_queue.length > 0) {

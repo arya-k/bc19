@@ -7,6 +7,8 @@ export const COMM8 = {
     ENEMY_DEAD: 10,
     ENEMY_CASTLE_DEAD: 11,
     SWITCH_ENEMY_TARGET: 12,
+    CLAIM_CASTLE: 13,
+    NEW_CASTLE: 14,
 
     // message type declarations
     X_HEADER: 0b10<<6,
