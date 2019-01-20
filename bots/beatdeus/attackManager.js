@@ -1,8 +1,8 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
-import {move_towards, move_to} from './path.js'
+import {move_towards, move_to, emptySpaceMove} from './path.js'
 import {COMM8,COMM16} from './comm.js'
-import {getAttackOrder} from './utils.js'
+import {getAttackOrder, has_adjacent_castle, getNearbyRobots} from './utils.js'
 
 function nonNuisanceBehavior(self) {
   // - if it's sitting on a resource spot, don't
