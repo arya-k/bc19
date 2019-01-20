@@ -210,13 +210,13 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //Pursue mode_location 
   if (mode_location !== null) {
-    self.log(self.getVisibleRobotMap()[mode_location[1]][mode_location[0]])
+    // self.log(self.getVisibleRobotMap()[mode_location[1]][mode_location[0]])
     let vis_map = self.getVisibleRobotMap()
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
       // self.log('move_towards2')
       let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
       if (move !== null) {
-        self.log("go from " + [self.me.x,self.me.y] + " to " + [move.x, move.y])
+        // self.log("go from " + [self.me.x,self.me.y] + " to " + [move.x, move.y])
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
         return null;
@@ -462,7 +462,7 @@ export class PreacherManager {
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER) {
         this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
-        self.log(this.mode_location)
+        // self.log(this.mode_location)
       }
       else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
