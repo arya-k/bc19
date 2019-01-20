@@ -44,9 +44,14 @@ function find_depots(self, church_loc) {
   return [split_resource_map, resource_map];
 }
 
-function find_mine(self, all_resources, priority = 'karbonite', strict = false) {
+function find_mine(self, all_resources, priority = null, strict = false) {
   let resources = null;
-  if (priority.toLowerCase().includes('k')) {
+
+  if (priority === null){
+    strict = true;
+    resources = all_resources[1];
+  }
+  else if (priority.toLowerCase().includes('k')) {
     resources = all_resources[0].karbonite;
   }
   else if (priority.toLowerCase().includes('f')) {
@@ -116,6 +121,7 @@ export class PilgrimManager {
   constructor(self) {
     // this is the init function
     this.stage = CONSTANTS.MINE
+    this.base_loc = null;
     this.castle_loc = null; // the castle that spawned it.
     this.church_loc = null;
     this.mine_loc = null;
@@ -137,7 +143,7 @@ export class PilgrimManager {
       this.base_loc = this.church_loc;
       this.castle_loc = this.church_loc;
       this.resources = find_depots(self, this.church_loc);
-      this.mine_loc = find_mine(self, this.resources);
+      this.mine_loc = find_mine(self, this.resources, choosePriority(self));
     }
     else
       this.base_loc = this.castle_loc;
@@ -149,7 +155,7 @@ export class PilgrimManager {
         if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER) {
           this.church_loc = COMM16.DECODE_BASELOC(r.signal);
           this.resources = find_depots(self, this.church_loc);
-          this.mine_loc = find_mine(self, this.resources);
+          this.mine_loc = find_mine(self, this.resources, choosePriority(self));
         }
       }
     }
@@ -158,7 +164,7 @@ export class PilgrimManager {
       this.church_loc = this.castle_loc;
       this.base_loc = this.castle_loc;
       this.resources = find_depots(self, this.church_loc);
-      this.mine_loc = find_mine(self, this.resources);
+      this.mine_loc = find_mine(self, this.resources, choosePriority(self));
     }
 
     if (this.mine_loc === null) {
@@ -198,7 +204,6 @@ export class PilgrimManager {
                   self.me.fuel < SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) {
         if (this.new_mine == null && !self.fuel_map[self.me.y][self.me.x]){
           this.new_mine = find_mine(self, this.resources, 'fuel', true);
-
           if (this.new_mine !== null && !self.fuel_map[this.new_mine[1]][this.new_mine[0]])
             this.new_mine = null;
           if (this.new_mine !== null &&
@@ -231,6 +236,7 @@ export class PilgrimManager {
       if (self.karbonite < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE ||
           self.fuel < SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) {
         this.stage = CONSTANTS.MINE; // can no longer afford church
+        this.mine_loc = find_mine(self, this.resources, choosePriority(self));
       }
     }
 
@@ -279,6 +285,7 @@ export class PilgrimManager {
         return null;
       } else {
         this.base_loc = this.church_loc;
+        this.castle_loc = this.church_loc;
         this.stage = CONSTANTS.DEPOSIT;
         this.new_mine = null;
         return self.buildUnit(SPECS.CHURCH, this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y);
@@ -291,14 +298,17 @@ export class PilgrimManager {
           Math.abs(self.me.y - this.base_loc[1]) <= 1) {
         homesick = false;
         this.stage = CONSTANTS.MINE;
+        this.mine_loc = find_mine(self, this.resources, choosePriority(self));
         let r = self.getRobot(self.getVisibleRobotMap()[this.base_loc[1]][this.base_loc[0]])
-        if (r !== null && r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH)) {
+        if (r !== null && r.team == self.me.team && (r.unit == SPECS.CASTLE || r.unit == SPECS.CHURCH) && r.x == this.base_loc[0] && r.y == this.base_loc[1]) {
           this.new_mine = null;
           return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
         } else {
           if (this.base_loc == this.church_loc){ // our base has disappeared :( go to castle
             this.church_loc = null;
             this.base_loc = this.castle_loc;
+            if (this.base_loc === null)
+              return null;
           }
           homesick = true; 
         }
@@ -321,9 +331,14 @@ export class PilgrimManager {
 
     if (this.stage == CONSTANTS.MINE) {
       if (self.me.x == this.mine_loc[0] && self.me.y == this.mine_loc[1]) {
+        if ((self.fuel_map[self.me.y][self.me.x] && self.me.fuel >= SPECS.UNITS[self.me.unit].FUEL_CAPACITY) || 
+            (self.karbonite_map[self.me.y][self.me.x] && self.me.karbonite >= SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY)) {
+          self.stage = CONSTANTS.DEPOSIT;
+        }
         return self.mine();
       } else if (this.mine_loc !== null) {
-        this.mine_loc = find_mine(self, this.resources);
+        
+        this.mine_loc = find_mine(self, this.resources, choosePriority(self));
         if (this.mine_loc === null)
           return null;
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
@@ -341,4 +356,13 @@ export class PilgrimManager {
       return null; // nothing to do, just camp out.
     }
   }
+}
+
+function choosePriority(self) {
+  let priority = null;
+  if (self.fuel > 200 || self.karbonite < 50)
+    priority = 'karbonite';
+  else
+    priority = 'fuel';
+  return priority;
 }
