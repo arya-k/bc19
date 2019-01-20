@@ -267,7 +267,7 @@ export class CastleManager {
     this.resource_clusters = find_resource_clusters(self, self.map, self.fuel_map, self.karbonite_map)
     this.nearby_numresources = local_cluster_count(self);
 
-    this.castle_claims = 0;
+    this.church_claims = 0;
   }
 
   turn(step, self) {
@@ -296,9 +296,9 @@ export class CastleManager {
         self.log("ENEMY CASTLE IS DEAD")
         this.attack_index += 1;
       } else if (r.castle_talk == COMM8.CLAIM_CASTLE) {
-        this.castle_claims++;
+        this.church_claims++;
       } else if (r.castle_talk == COMM8.NEW_CASTLE) {
-        this.castle_claims--;
+        this.church_claims--;
       }
     }
 
@@ -365,8 +365,8 @@ export class CastleManager {
 
 
 
-    let available_fuel = self.fuel - (this.castle_claims * SPECS.UNITS[SPECS.CASTLE].CONSTRUCTION_FUEL)
-    let available_karbonite = self.karbonite - (this.castle_claims * SPECS.UNITS[SPECS.CASTLE].CONSTRUCTION_KARBONITE)
+    let available_fuel = self.fuel - (this.church_claims * 300)
+    let available_karbonite = self.karbonite - (this.church_claims * 100)
 
     // if you can build pilgrims, you should probably do that:
     if (step >= 2) { // only do it every 3 turns or so.
@@ -473,7 +473,7 @@ export class ChurchManager {
     self.castleTalk(COMM8.NEW_CASTLE)
 
     this.resource_count = local_cluster_count(self);
-    this.build_queue = [SPECS.PROPHET]
+    this.build_queue = [SPECS.PROPHET, SPECS.PROPHET]
   }
 
   turn(step, self) {
