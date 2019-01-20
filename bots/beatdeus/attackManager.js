@@ -105,7 +105,7 @@ function attack_behaviour_passive(self, mode_location, base_location){
     let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
     // let move = null;
     if (move !== null) {
-      return self.move(mode_location[0] - self.me.x, mode_location[1] - self.me.y);
+      return self.move(move.x - self.me.x, move.y - self.me.y);
     }
   }
 
