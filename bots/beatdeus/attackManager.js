@@ -2,7 +2,7 @@ import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
 import {move_towards, move_to, emptySpaceMove} from './path.js'
 import {COMM8,COMM16} from './comm.js'
-import {is_valid, getAttackOrder, has_adjacent_castle, getNearbyRobots} from './utils.js'
+import {getAttackOrder, has_adjacent_castle, getNearbyRobots, dist} from './utils.js'
 
 function nonNuisanceBehavior(self) {
   // - if it's sitting on a resource spot, don't
@@ -14,14 +14,11 @@ function nonNuisanceBehavior(self) {
     self.log("empty")
     return emptySpaceMove(self);
   }
-  self.log("WAFFFLEEEEEEEEEEEEEEEEEEE")
   const nearbyRobots = getNearbyRobots(self, [self.me.x, self.me.y], 1)
   if (nearbyRobots.length != 0){
     let best = [null, CIRCLES[1].length + 1]
     for (let dir in CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
       let p = [self.me.x + dir[0], self.me.y + dir[1]];
-      if (!is_valid(p, vis_map.length))
-        continue;
       let temp = getNearbyRobots(self, p, 1);
       if (temp.length == 0) {
         if (!fuel_map[p[1]][p[0]] && !karbonite_map[p[1]][p[0]] && !has_adjacent_castle(self, p)){
@@ -35,10 +32,14 @@ function nonNuisanceBehavior(self) {
 
 function attack_behaviour_aggressive(self, mode_location, base_location){
   //Always pursue mode_location, and kill anyone seen
+
+  //attack enemy if possible
   let targets = getAttackOrder(self)
   if (targets.length>0){
     return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
+
+  //pursue visible enemies without swarming
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
       let move = no_swarm(self,[self.me.x,self.me.y],[r.x,r.y])
@@ -51,6 +52,7 @@ function attack_behaviour_aggressive(self, mode_location, base_location){
     }
   }
 
+  //If nobody is visible, just pursue the mode_location (which in this case would be the enemy)
   if (mode_location !== null) {
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
       let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
@@ -69,11 +71,14 @@ function attack_behaviour_aggressive(self, mode_location, base_location){
 function attack_behaviour_passive(self, mode_location, base_location){
   //Pursue mode_location, but strategically move away when engaging enemies. Try to hit without getting hit
   //This method is only effective with prophets
+
+  //attack enemy, but MAKE SURE crusader is between prophet and enemy
   let targets = getAttackOrder(self)
   if (targets.length != 0){
     let crusaders = []
     let enemies = []
     //if there is a single enemy robot without a crusader in front, move away
+    //since this method is called by prophets, it must be certain that they are protected by crusaders
     for (const p of self.getVisibleRobots()){
       if (p.unit == SPECS.UNITS[SPECS.CRUSADER]){
         crusaders.push([p.x,p.y])
@@ -96,6 +101,8 @@ function attack_behaviour_passive(self, mode_location, base_location){
     }
     return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
+
+  //Pursue the enemy without swarming
   else if (dist([self.me.x,self.me.y],[mode_location[0],mode_location[1]])>SPECS.UNITS[self.me.unit].VISION_RADIUS){
     let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
     if (move !== null) {
@@ -105,6 +112,8 @@ function attack_behaviour_passive(self, mode_location, base_location){
       return null;
     }
   }
+
+  //Enemy has been killed
   else if (dist([self.me.x,self.me.y],[mode_location[0],mode_location[1]])<=SPECS.UNITS[self.me.unit].VISION_RADIUS){
     return CONSTANTS.ELIMINATED_ENEMY
   }
@@ -114,14 +123,13 @@ function attack_behaviour_passive(self, mode_location, base_location){
 function defensive_behaviour_aggressive(self, mode_location, base_location) {
   //If the robot sees an enemy, it will chase it, kill it, and come back to base
 
-  // If you see the enemy, engage (moving towards if you need to).
-  // Once you've killed the enemy, return to castle/church and deposit resources.
+  //attack enemy if possible
   let targets = getAttackOrder(self)
-
   if (targets.length>0){
     return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
 
+  //pursue any visible enemy robots
   for (const r of self.getVisibleRobots()) {
     if (r.unit !== null && r.team != self.me.team) {
       self.log("move_towards1")
@@ -136,6 +144,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     }
   }
 
+  //Pursue mode_location 
   if (mode_location !== null) {
     if (vis_map[mode_location[1]][mode_location[0]] == -1) {
       self.log('move_towards2')
@@ -149,7 +158,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else {
       return CONSTANTS.ELIMINATED_ENEMY;
     }
-  } else {
+  } 
+
+  //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
+  else {
     if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
       self.log("move_towards3")
       let move = move_towards(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
@@ -176,11 +188,15 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 function defensive_behaviour_passive(self, mode_location, base_location) {
   //If the robot sees an enemy, wait for the enemy to come so the enemy will get hit first. Never leave base
   // self.log("here1")
+
+  //attack if possible
   let targets = getAttackOrder(self)
   //self.log('here1')
   if (targets.length>0){
     return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
+
+  //go back to base if possible
   // self.log('here2')
   if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
     let move = move_towards(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
@@ -190,9 +206,13 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
       return null;
     }
   } 
+
+  //give resources if possible (given that you are already at base)
   else if (self.me.karbonite > 0 || self.me.fuel > 0) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
   } 
+
+  //Don't be annoying; get off resources spots and waffle
   else {
     let n = nonNuisanceBehavior(self);
     if (n !== null){
@@ -229,7 +249,7 @@ export class CrusaderManager {
       if (COMM16.type(r.signal) == COMM16.ATTACK_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ATTACK(r.signal)
-      } else if ((r.signal & COMM16.HEADER_MASK) == COMM16.DISTRESS_HEADER) {
+      } else if (COMM16.type(r.signal) == COMM16.DISTRESS_HEADER) {
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = COMM16.DECODE_DISTRESS(r.signal)
       }
@@ -335,7 +355,6 @@ export class PreacherManager {
     self.log('here-prea')
     let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     if (action == CONSTANTS.ELIMINATED_ENEMY) {
-      self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
       this.mode_location = null;
       action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     }
