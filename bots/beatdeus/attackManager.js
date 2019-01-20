@@ -289,11 +289,12 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
   //go back to base if possible
   // self.log('here2')
-  if (Math.abs(self.me.x - base_location[0]) > 1 || Math.abs(self.me.y - base_location[1]) > 1) {
+  if (dist([self.me.x,self.me.y],base_location) >= 25) {
     let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-    if (move !== null && !(is_nono(self,move.x,move.y, base_location))) {
+    if (move !== null) {
       return self.move(move.x - self.me.x, move.y - self.me.y);
-    } else {
+    }
+    else{
       return null;
     }
   } 
@@ -310,7 +311,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     // self.log(self.me.y)
     let n = nonNuisanceBehavior(self,base_location);
     if (n !== null){
-      return self.move(n[0],n[1]);x
+      return self.move(n[0],n[1]);
     }
     else{
       return null;
@@ -406,10 +407,10 @@ export class ProphetManager {
       else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER && step < 3){
         this.mode = CONSTANTS.DEFENSE
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
+        //self.log([self.me.x, self.me.y] + " NEWBASE @ " + COMM16.DECODE_BASELOC(r.signal))
         this.mode_location = null
       }
     }
-
     if (this.base_location == null) {
       this.mode = CONSTANTS.ATTACK
     }
