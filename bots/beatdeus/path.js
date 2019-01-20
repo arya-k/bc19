@@ -1,6 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
-import {dist, is_valid, getClearLocations, has_adjacent_attacker, adjacent_castle} from './utils.js'
+import {dist, is_valid, getClearLocations, getNearbyRobots, has_adjacent_attacker, has_adjacent_castle} from './utils.js'
 
 function Point(x, y, parent = null){
   this.x = x;
@@ -520,37 +520,42 @@ export function emptySpaceMove(self) {// finds the move towards the nearest non 
     let current = queue.shift()
 
     if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
-    if (!fuel_map[current.y][current.x] && !karbonite_map[current.y][current.x])
 
-    visited.add((current.y<<6) + current.x) // mark as visited
-
-    // if any adjacent spots don't have fuel, karbonite or robots:
-    for (const dir of CIRCLES[2]) {
-      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) { // passable
-        if (!fuel_map[current.y + dir[1]][current.x + dir[0]]) { // no fuel
-          if (!karbonite_map[current.y + dir[1]][current.x + dir[0]]) { // no karbonite
-            if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] < 1) { // 
-              return [current.x + dir[0], current.y + dir[1]];
-            }
-          }
-        }
+    if (!fuel_map[current.y][current.x] && !karbonite_map[current.y][current.x]){
+      if (!has_adjacent_castle(self, [current.x, current.y])){
+        while(current.parent.x != self.me.x && current.parent.y != self.me.y)
+          current = current.parent;
+        return [current.x - self.me.x, current.y - self.me.y];
       }
     }
 
-    for (const dir of CIRCLES[SPECS.UNITS[SPECS.PILGRIM].SPEED]) {
-      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) {
-        queue.push(new Point(current.x + dir[0], current.y + dir[1]))
+    visited.add((current.y<<6) + current.x) // mark as visited
+
+    for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]) {
+      if (map[current.y + dir[1]] && map[current.y + dir[1]][current.x + dir[0]]) { //passable
+        if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] < 1) // no robots
+          queue.push(new Point(current.x + dir[0], current.y + dir[1], current))
       }
     }
   }
 }
 export function nonNuisanceBehavior(self) {
- // - if it's sitting on a resource spot, don't
- // - if the castle you are closest to has <2 free spots available, and you are adjacent to the castle, move (i.e. move if the castle has <2 building spots) use get clear locations here
- // - if you are adjacent to other units, WAFFLE
- const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
- const x = self.me.x, y = self.me.y;
- if (fuel_map[y][x] || karbonite_map[y][x]){
+  // - if it's sitting on a resource spot, don't
+  // - if the castle you are closest to has <2 free spots available, and you are adjacent to the castle, move (i.e. move if the castle has <2 building spots) use get clear locations here
+  // - if you are adjacent to other units, WAFFLE
+  const vis_map = self.getVisibleRobotMap(), fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
+  const x = self.me.x, y = self.me.y;
+  if (fuel_map[y][x] || karbonite_map[y][x] || has_adjacent_castle(self, [self.me.x, self.me.y])){
   return emptySpaceMove(self);
- }
+  }
+  const nearbyRobots = getNearbyRobots(self, 1)
+  let dict = {
+    map: self.map,
+  }
+  if (nearbyRobots.length != 0){
+    for (let dir in CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
+      let p = [self.me.x + dir[0], self.me.y + dir[1]];
+      if ()
+    }
+  }
 }

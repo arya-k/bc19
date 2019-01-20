@@ -288,7 +288,7 @@ export class CastleManager {
     let myRobots = []; // gather my robots
     let enemy_crusader = null; // should spawn preacher
     let enemy_attacker = null; // non-crusader. should spawn prophet.
-    for (const r_id of getNearbyRobots(self, SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
+    for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
       let r = self.getRobot(r_id);
       if (r.team === self.me.team) {
         myRobots.push(r);

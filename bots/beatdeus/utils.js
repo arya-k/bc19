@@ -10,15 +10,16 @@ export function is_valid(x, y, dim) {
   return (x >=0 && x < dim && y >= 0 && y < dim);
 }
 
-export function getNearbyRobots(self, r_squared) {
+export function getNearbyRobots(self, p, r_squared) {
   // returns the ids of all the robots within the range r_squared
   let ret = []
   const vis_map = self.getVisibleRobotMap()
+  let x = p[0], y = p[1];
 
   for (const dir of CIRCLES[r_squared]) {
-    if (is_valid(self.me.x + dir[0], self.me.y + dir[1], self.map.length)) {
-      if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] > 0) {
-        ret.push(vis_map[self.me.y + dir[1]][self.me.x + dir[0]])
+    if (is_valid(x + dir[0], y + dir[1], self.map.length)) {
+      if (vis_map[y + dir[1]][x + dir[0]] > 0) {
+        ret.push(vis_map[y + dir[1]][x + dir[0]])
       }
     }
   }
@@ -102,7 +103,7 @@ export function has_adjacent_attacker(self, p) {
   return false;
 }
 
-export function adjacent_castle(self, p) {
+export function has_adjacent_castle(self, p) {
   const vis_map = self.getVisibleRobotMap();
   for (const dir of CIRCLES[2]) {
     let x = p[0] + dir[0]; 
