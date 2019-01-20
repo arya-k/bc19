@@ -523,7 +523,7 @@ export function emptySpaceMove(self) {// finds the move towards the nearest non 
 
     if (!fuel_map[current.y][current.x] && !karbonite_map[current.y][current.x]){
       if (!has_adjacent_castle(self, [current.x, current.y])){
-        while(current.parent.x != self.me.x && current.parent.y != self.me.y)
+        while(current.parent.parent !== null)
           current = current.parent;
         return [current.x - self.me.x, current.y - self.me.y];
       }

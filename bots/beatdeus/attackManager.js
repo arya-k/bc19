@@ -2,7 +2,7 @@ import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
 import {move_towards, move_to, emptySpaceMove} from './path.js'
 import {COMM8,COMM16} from './comm.js'
-import {getAttackOrder, has_adjacent_castle, getNearbyRobots} from './utils.js'
+import {is_valid, getAttackOrder, has_adjacent_castle, getNearbyRobots} from './utils.js'
 
 function nonNuisanceBehavior(self) {
   // - if it's sitting on a resource spot, don't
@@ -13,11 +13,14 @@ function nonNuisanceBehavior(self) {
   if (fuel_map[y][x] || karbonite_map[y][x] || has_adjacent_castle(self, [self.me.x, self.me.y])){
     return emptySpaceMove(self);
   }
+  self.log("WAFFFLEEEEEEEEEEEEEEEEEEE")
   const nearbyRobots = getNearbyRobots(self, [self.me.x, self.me.y], 1)
   if (nearbyRobots.length != 0){
     let best = [null, CIRCLES[1].length + 1]
     for (let dir in CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
       let p = [self.me.x + dir[0], self.me.y + dir[1]];
+      if (!is_valid(p, vis_map.length))
+        continue;
       let temp = getNearbyRobots(self, p, 1);
       if (temp.length == 0) {
         if (!fuel_map[p[1]][p[0]] && !karbonite_map[p[1]][p[0]] && !has_adjacent_castle(self, p)){
