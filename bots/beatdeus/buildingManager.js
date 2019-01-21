@@ -393,8 +393,8 @@ export class CastleManager {
 
         if (count < HORDE_SIZE) { // if it isn't, try to build more
           let robotToBuild = crusaderCount > prophetCount ? SPECS.PROPHET : SPECS.CRUSADER;
-          if (available_karbonite > (3 * SPECS.UNITS[robotToBuild].CONSTRUCTION_KARBONITE) &&
-            available_fuel > (3 * SPECS.UNITS[robotToBuild].CONSTRUCTION_FUEL) && 
+          if (available_karbonite > (4 * SPECS.UNITS[robotToBuild].CONSTRUCTION_KARBONITE) &&
+            available_fuel > (4 * SPECS.UNITS[robotToBuild].CONSTRUCTION_FUEL) && 
             building_locations.length > 0) {
             self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
             this.build_signal_queue.unshift([robotToBuild, null]);
