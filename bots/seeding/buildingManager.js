@@ -4,7 +4,7 @@ import {dist, is_valid, getNearbyRobots, getClearLocations, getAttackOrder} from
 import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
 
-const HORDE_SIZE = 10;
+const HORDE_SIZE = 50;
 
 // TODO: rebuild dead pilgrims
 // TODO: fix signalling to incorrect target
@@ -399,7 +399,7 @@ export class CastleManager {
             self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
             this.build_signal_queue.unshift([robotToBuild, null]);
           }
-        } else if (step - this.attacked > 10 && available_fuel > 500){ // if it is big enough
+        } else if (step - this.attacked > 10 && available_fuel > 2000){ // if it is big enough
           let max_radius = 0 // figure out how far you have to signal
           for (const r of myRobots)
             if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET) {
