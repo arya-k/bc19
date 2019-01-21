@@ -369,36 +369,8 @@ export class CastleManager {
             if (building_locations.length > 0) // there's room to build it.
               return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
 
-
-
-    let available_fuel = self.fuel - (this.church_claims * 350)
+    let available_fuel = self.fuel - (this.church_claims * 450)
     let available_karbonite = self.karbonite - (this.church_claims * 100)
-
-    // if you can build pilgrims, you should probably do that:
-    if (step >= 2) { // only do it every 3 turns or so.
-      let pilgrimCount = 0;
-      for (const r of myRobots)
-        if (r.unit == SPECS.PILGRIM)
-          if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50)
-            pilgrimCount++;
-
-      if (pilgrimCount < this.nearby_numresources && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
-          self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
-        this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(self.me.x, self.me.y)])
-      } else if (available_karbonite > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) && 
-          available_fuel > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL) && 
-          this.resource_clusters.length > 0) {
-        let best_cluster = this.resource_clusters.pop()
-        let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations);
-
-        if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) { // build a pilgrim + prophet:
-          self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y])
-          this.castle_talk_queue.unshift(COMM8.CLAIM_CASTLE)
-          this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
-          this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
-        }
-      }
-    }
 
     // if as of yet, we don't have to build anything, let's contribute to the attacking horde:
     if (step >= 2 && this.build_signal_queue.length == 0) {
@@ -412,8 +384,8 @@ export class CastleManager {
             count++;
 
         if (count < HORDE_SIZE) { // if it isn't, try to build more
-          if (this.available_karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
-            this.available_fuel > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
+          if (available_karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
+            available_fuel - (this.church_claims * 300) > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
             building_locations.length > 0) {
             self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
             this.build_signal_queue.unshift([SPECS.PROPHET, null]);
@@ -451,6 +423,32 @@ export class CastleManager {
       //     self.log("TIME TO ATTACK " + (this.attack_targets[this.attack_index][1])) // use up our horde, trying to attack other people
       //     self.signal(COMM16.ENCODE_ENEMYCASTLE(...this.attack_targets[this.attack_index][1]), max_radius)
       //   }
+      }
+    }
+
+    // if you can build pilgrims, you should probably do that:
+    if (step >= 2) { // only do it every 3 turns or so.
+      let pilgrimCount = 0;
+      for (const r of myRobots)
+        if (r.unit == SPECS.PILGRIM)
+          if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50)
+            pilgrimCount++;
+
+      if (pilgrimCount < this.nearby_numresources && self.fuel > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL &&
+          self.karbonite > SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE) {
+        this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(self.me.x, self.me.y)])
+      } else if (available_karbonite > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) && 
+          available_fuel > (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL) && 
+          this.resource_clusters.length > 0) {
+        let best_cluster = this.resource_clusters.pop()
+        let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations);
+
+        if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) { // build a pilgrim + prophet:
+          self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y])
+          this.castle_talk_queue.unshift(COMM8.CLAIM_CASTLE)
+          this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
+          this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)]);
+        }
       }
     }
 
