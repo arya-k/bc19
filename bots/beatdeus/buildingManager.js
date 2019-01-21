@@ -317,7 +317,11 @@ export class CastleManager {
     let building_locations = getClearLocations(self, 2);
 
     let myRobots = []; // gather my robots
+
     let preacherCount = 0;
+    let prophetCount = 0;
+    let crusaderCount = 0;
+
     let enemy_crusader = null; // should spawn preacher
     let enemy_attacker = null; // non-crusader. should spawn prophet.
     for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
@@ -326,6 +330,10 @@ export class CastleManager {
         myRobots.push(r);
         if (r.unit == SPECS.PREACHER) {
           preacherCount++;
+        } else if (r.unit == SPECS.PROPHET) {
+          prophetCount++;
+        } else if (r.unit == SPECS.CRUSADER) {
+          crusaderCount++;
         }
       } else if (r.team !== self.me.team) {
         if (r.unit == SPECS.CRUSADER){
@@ -384,14 +392,14 @@ export class CastleManager {
             count++;
 
         if (count < HORDE_SIZE) { // if it isn't, try to build more
-          if (available_karbonite > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_KARBONITE) &&
-            available_fuel - (this.church_claims * 300) > (SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CRUSADER].CONSTRUCTION_FUEL) && 
+          let robotToBuild = crusaderCount > prophetCount ? SPECS.PROPHET : SPECS.CRUSADER;
+          if (available_karbonite > (2 * SPECS.UNITS[robotToBuild].CONSTRUCTION_KARBONITE) &&
+            available_fuel > (2 * SPECS.UNITS[robotToBuild].CONSTRUCTION_FUEL) && 
             building_locations.length > 0) {
             self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
-            this.build_signal_queue.unshift([SPECS.PROPHET, null]);
-            this.build_signal_queue.unshift([SPECS.CRUSADER, null]);
+            this.build_signal_queue.unshift([robotToBuild, null]);
           }
-        } else if (step - this.attacked > 10){ // if it is big enough
+        } else if (step - this.attacked > 10 && available_fuel > 500){ // if it is big enough
           let max_radius = 0 // figure out how far you have to signal
           for (const r of myRobots)
             if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET) {
