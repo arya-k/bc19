@@ -369,7 +369,7 @@ export class CastleManager {
     }
 
     // passive defense: single prophet after 10 rounds if we can do it comfortably.
-    if (step >= 10) // we'll build it sooner if we're attacked.
+    if (step >= 3) // we'll build it sooner if we're attacked.
       if (self.karbonite > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) &&
           self.fuel > (2 * SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL))
         if (!myRobots.some(function(r) { return r.unit == SPECS.PROPHET })) // no prophets exist.
@@ -393,8 +393,8 @@ export class CastleManager {
 
         if (count < HORDE_SIZE) { // if it isn't, try to build more
           let robotToBuild = crusaderCount > prophetCount ? SPECS.PROPHET : SPECS.CRUSADER;
-          if (available_karbonite > (2 * SPECS.UNITS[robotToBuild].CONSTRUCTION_KARBONITE) &&
-            available_fuel > (2 * SPECS.UNITS[robotToBuild].CONSTRUCTION_FUEL) && 
+          if (available_karbonite > (3 * SPECS.UNITS[robotToBuild].CONSTRUCTION_KARBONITE) &&
+            available_fuel > (3 * SPECS.UNITS[robotToBuild].CONSTRUCTION_FUEL) && 
             building_locations.length > 0) {
             self.log("CASTLE @ " + [self.me.x, self.me.y] + " BUILDING UNITS TO ATTACK (" + count + "/" + HORDE_SIZE + ")")
             this.build_signal_queue.unshift([robotToBuild, null]);
@@ -513,6 +513,8 @@ export class ChurchManager {
 
     let pilgrimCount = 0
     let preacherCount = 0;
+    let prophetCount = 0;
+
     let enemy_crusader = null; // should spawn preacher
     let enemy_attacker = null; // non-crusader. should spawn prophet.
     for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CHURCH].VISION_RADIUS)) {
@@ -529,6 +531,8 @@ export class ChurchManager {
         }
       } else if (r.team == self.me.team && r.unit == SPECS.PREACHER) {
         preacherCount++;
+      } else if (r.team == self.me.team && r.unit == SPECS.PROPHET) {
+        prophetCount++;
       }
     }
 
@@ -546,7 +550,7 @@ export class ChurchManager {
     }
 
     // if its not a crusader or we can't afford a preacher, try a prophet:
-    if ((enemy_crusader !== null || enemy_attacker !== null) &&
+    if ((enemy_crusader !== null || enemy_attacker !== null) && (prophetCount < 4) &&
         self.fuel >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL &&
         self.karbonite >= SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE &&
         building_locations.length > 0 ) {
