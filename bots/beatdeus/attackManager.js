@@ -1,6 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
-import {move_towards, move_to, no_swarm} from './path.js'
+import {move_towards, move_to, no_swarm, move_away} from './path.js'
 import {COMM8,COMM16} from './comm.js'
 import {getAttackOrder, has_adjacent_castle, getNearbyRobots, dist, is_valid, is_passable} from './utils.js'
 
@@ -157,10 +157,10 @@ function attack_behaviour_passive(self, mode_location, base_location){
     }
     for (const r of targets){
       for (const c of crusaders){
-        if (dist(c,[r.x,r.y])>dist([r.x,r.y],[self.me.x,self.me.y])){
+        if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
           let move = move_away(self,enemies)
           if (move !== null) {
-            return self.move(move.x - self.me.x, move.y - self.me.y);
+            return self.move(move[0],move[1]);
           } else {
             return null;
           }
@@ -270,16 +270,19 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
       if (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER]){
         crusaders.push([p.x,p.y])
       }
-      if (p.team != self.me.team){
+      if (self.isVisible(p) && p.team != self.me.team){
         enemies.push(p)
       }
     }
+    // self.log([self.me.x,self.me.y])
+    // self.log(crusaders)
     for (const r of targets){
       for (const c of crusaders){
         if (dist(c,[r.x,r.y])>dist([r.x,r.y,self.me.x,self.me.y])){
           let move = move_away(self,enemies)
           if (move !== null) {
-            return self.move(move.x - self.me.x, move.y - self.me.y);
+            // self.log(move)
+            return self.move(move[0],move[1]);
           } else {
             return null;
           }
