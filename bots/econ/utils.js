@@ -100,19 +100,3 @@ export function getAttackOrder(self) {
 
   return units;
 }
-
-export function has_adjacent_attacker(self, p) {
-  const vis_map = self.getVisibleRobotMap();
-  for (const dir of CIRCLES[2]) {
-    let x = p[0] + dir[0]; 
-    let y = p[1] + dir[1];
-    if (is_valid(x, y, self.map.length)) {
-      if (vis_map[y][x] > 0){
-        let temp = SPECS.UNITS[self.getRobot(vis_map[y][x]).unit];
-        if (temp.ATTACK_DAMAGE !== null && temp.SPEED != 0)
-          return true;
-      }
-    }
-  }
-  return false;
-}

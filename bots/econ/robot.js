@@ -1,7 +1,5 @@
 import {BCAbstractRobot, SPECS} from 'battlecode';
-import {CastleManager, ChurchManager} from './buildingManager.js';
-// import {PilgrimManager} from './pilgrimManager.js'
-// import {CrusaderManager, ProphetManager, PreacherManager} from './attackManager.js'
+import {CastleManager} from './buildingManager.js';
 
 class NoneManager {turn(step, self){return null}}
 
