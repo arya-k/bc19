@@ -32,43 +32,56 @@ function is_nono(self,x,y,base_loc){
   return (nono_map[y][x] && ((x+y)%2 == 0));
 }
 
-function nonNuisanceBehavior(self, base_loc, waffle = true) {
-  // - if it's sitting on a resource spot, don't
-  // - if the castle you are closest to has <2 free spots available, and you are adjacent to the castle, move (i.e. move if the castle has <2 building spots) use get clear locations here
-  // - if you are adjacent to other units, WAFFLE
+function local_cluster_info(self, base_loc) {
+  let minicurrent, minix, miniy;
 
-  // start with a BFS to WAFFLE, avoid blocking castles and sitting on resource spots
+  let maxr = 0
+  let visited = new Set()
+  let miniqueue = [(base_loc[1]<<6)|base_loc[0]];
+
+  while (miniqueue.length > 0) {
+    minicurrent = miniqueue.shift();
+    minix = minicurrent&63
+    miniy = (minicurrent&4032)>>6
+
+    if (visited.has(minicurrent)){ continue; }
+
+    if (self.fuel_map[miniy][minix] || self.karbonite_map[miniy][minix]) {
+      maxr = Math.max(maxr, dist(base_loc, [minix, miniy]))
+    } else if (miniy !== base_loc[1] || minix !== base_loc[0]) {
+      continue; // don't continue exploring a non-fuel or karb. spot
+    }
+
+    visited.add(minicurrent);
+    for (const dir of CIRCLES[8]) {
+      if (is_valid(minix+dir[0], miniy+dir[1], self.map.length)) {
+        miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
+      }
+    }
+  }
+
+  return maxr;
+}
+
+function nonNuisanceBehavior(self, base_loc, waffle = true) {
+  // first find resource_r, the r^2 of the resource that is furthest from base,
+  // within the cluster.
+
+  let r_sq = local_cluster_info(self, base_loc)
+
   let current;
   let visited = new Set()
   let queue = [new Point(self.me.x, self.me.y, null)];
   let path_end_point = null;
-
-  let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
-  nono_map[base_loc[1]][base_loc[0]] = true;
-  for (const r of self.getVisibleRobots()) {
-    if (r.team == self.me.team) {
-      if (r.unit == SPECS.CHURCH || r.unit == SPECS.CASTLE) { // castle or church
-        nono_map[r.y][r.x] = true;
-        for (const dir of CIRCLES[2])
-          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
-            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
-      } else if (r.id !== self.me.id && waffle) {
-        nono_map[r.y][r.x] = true;
-        for (const dir of CIRCLES[1])
-          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
-            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
-      }
-    }
-  }
 
   while (queue.length > 0) {
     current = queue.shift();
 
     if (visited.has((current.y<<6)|current.x)){ continue; }
 
-    if (!nono_map[current.y][current.x] && !self.fuel_map[current.y][current.x] &&
-        !self.karbonite_map[current.y][current.x] && self.map[current.y][current.x] &&
-        is_passable(self,current.x,current.y) && (current.x + current.y) % 2 == 0) {
+    if (self.map[current.y][current.x] && is_passable(self,current.x,current.y) &&
+        dist(base_loc, [current.x, current.y]) > r_sq && 
+        (current.x + current.y) % 2 == 0) {
       path_end_point = current;
       break;
     }
@@ -84,13 +97,6 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
   }
 
   if (path_end_point === null || path_end_point.p === null) { // you already good. Move towards the base if you're too far.
-    if (dist([self.me.x, self.me.y], base_loc) >= 25) {
-      // self.log("move towards")
-      let move = move_towards(self, [self.me.x, self.me.y], base_loc) // head towards base
-      if (move !== null) {
-        return [move.x - self.me.x, move.y - self.me.y];
-      }
-    }
     return null;
   } else {
     while (path_end_point.p.p !== null){
@@ -98,6 +104,7 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
     }
     return [path_end_point.x - self.me.x, path_end_point.y - self.me.y];
   }
+
 }
 
 function attack_behaviour_aggressive(self, mode_location, base_location){
@@ -231,15 +238,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
-    if (dist([self.me.x,self.me.y],base_location) >= 25) {
-      // self.log("move_towards3")
-      let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
-      if (move !== null && !(is_nono(self,move.x,move.y, base_location))) {
-        return self.move(move.x - self.me.x, move.y - self.me.y);
-      } else {
-        return null;
-      }
-    } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
+    if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
       // self.log("nonNuisanceBehavior")
@@ -293,18 +292,6 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
   }
 
-  //go back to base if possible
-  // self.log('here2')
-  if (dist([self.me.x,self.me.y],base_location) >= 25) {
-    let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-    if (move !== null) {
-      return self.move(move.x - self.me.x, move.y - self.me.y);
-    }
-    else{
-      return null;
-    }
-  } 
-
   //give resources if possible (given that you are already at base)
   else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
@@ -338,6 +325,8 @@ export class CrusaderManager {
 
 export class ProphetManager {
   constructor(self) {
+    // self.log("PROPHET @ " + [self.me.x, self.me.y]);
+
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = null;
     this.base_location = null;
@@ -354,6 +343,7 @@ export class ProphetManager {
         }
       }
     }
+
   }
 
   turn(step, self) {
