@@ -205,11 +205,13 @@ export class PilgrimManager {
     if (this.stage == CONSTANTS.MINE) {
       if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
           self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && this.base_loc != this.church_loc) {
-        if ((this.resources[0].fuel.length != 0 && this.resources[0].karbonite.length != 0 && 
-            self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY && self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) ||
-            (this.resources[0].fuel.length != 0 && self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) ||
-            (this.resources[0].karbonite.length != 0 && self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY))
-          this.stage = CONSTANTS.BUILD;
+        if ((this.resources[0].fuel.length > 0 && self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) ||
+             this.resources[0].fuel.length == 0) {
+          if ((this.resources[0].karbonite.length > 0 && self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY) ||
+             this.resources[0].karbonite.length == 0) {
+            this.stage = CONSTANTS.BUILD;
+          }
+        }
       } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
                   self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
         this.stage = CONSTANTS.DEPOSIT;
