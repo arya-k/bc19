@@ -134,7 +134,7 @@ export class PilgrimManager {
 
     for (const r of self.getVisibleRobots()) {
       if (r.team === self.me.team){
-        if (dist([self.me.x, self.me.y], [r.x, r.y]) <= 2) {
+        if (r.x !== null && dist([self.me.x, self.me.y], [r.x, r.y]) <= 2) {
           if (r.unit == SPECS.CASTLE) {
             this.castle_loc = [r.x, r.y];
           } else if (r.unit == SPECS.CHURCH){
@@ -162,23 +162,22 @@ export class PilgrimManager {
           this.mine_loc = find_mine(self, this.resources, choosePriority(self));
         }
       }
+      if (this.church_loc === null && this.castle_loc !== null) {
+        this.church_loc = this.castle_loc;
+      }
     }
 
     if (this.mine_loc === null) {
-      this.church_loc = this.castle_loc;
-      this.base_loc = this.castle_loc;
+      if (this.castle_loc !== null) {
+        this.church_loc = this.castle_loc;
+        this.base_loc = this.castle_loc;
+      }
       this.resources = find_depots(self, this.church_loc);
       this.mine_loc = find_mine(self, this.resources, choosePriority(self));
     }
 
     if (this.mine_loc === null) {
       return null; // there's nothing to do.
-    }
-
-
-    if (this.base_loc !== null && dist(this.church_loc, this.base_loc) <= 8){// if church_loc is close to castle, no point building it
-      this.church_loc = this.castle_loc;
-      this.base_loc = this.castle_loc;
     }
 
     if (self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]] > 0){ // if you see a church where your church should be, it is built.
@@ -189,8 +188,8 @@ export class PilgrimManager {
     
     if (this.base_loc != this.church_loc) { //if there's a church that's closer to the castle that's not your own, make that new base location
       for (let r of self.getVisibleRobots()) {
-        if (r.team !== null && r.team == self.me.team && r.unit == SPECS.CHURCH &&
-            dist(this.church_loc, [r.x, r.y]) < dist(this.church_loc, this.base_loc)){
+        if (r.x !== null && r.team !== null && r.team == self.me.team && r.unit == SPECS.CHURCH &&
+            dist(this.church_loc, [r.x, r.y]) < dist(this.church_loc, this.base_loc)) {
           self.base_loc = [r.x, r.y];
         }
       }
@@ -206,7 +205,11 @@ export class PilgrimManager {
     if (this.stage == CONSTANTS.MINE) {
       if (self.karbonite >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
           self.fuel >= SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL && this.base_loc != this.church_loc) {
-        this.stage = CONSTANTS.BUILD;
+        if ((this.resources[0].fuel.length != 0 && this.resources[0].karbonite.length != 0 && 
+            self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY && self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) ||
+            (this.resources[0].fuel.length != 0 && self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY) ||
+            (this.resources[0].karbonite.length != 0 && self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY))
+          this.stage = CONSTANTS.BUILD;
       } else if ((self.me.karbonite >= SPECS.UNITS[SPECS.PILGRIM].KARBONITE_CAPACITY &&
                   self.me.fuel >= SPECS.UNITS[SPECS.PILGRIM].FUEL_CAPACITY)) {
         this.stage = CONSTANTS.DEPOSIT;
@@ -265,6 +268,8 @@ export class PilgrimManager {
     var enemies = [];
     var max_ally = 0;
     for (const r of self.getVisibleRobots()){
+      if (r.x === null)
+        continue;
       let d = dist([self.me.x, self.me.y], [r.x, r.y]);
       if (r.team !== null && r.team != self.me.team){
         if (d < closest_enemy[0])
@@ -374,8 +379,6 @@ export class PilgrimManager {
       }
       return null; // nothing to do, just camp out.
     }
-
-    self.log("8")
   }
 }
 
