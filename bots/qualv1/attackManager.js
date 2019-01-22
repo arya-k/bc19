@@ -29,7 +29,7 @@ function is_nono(self,x,y,base_loc){
       }
     }
   }
-  return (nono_map[y][x] && ((x+y)%2 == 0));
+  return nono_map[y][x]
 }
 
 function nonNuisanceBehavior(self, base_loc, waffle = true) {
@@ -67,8 +67,7 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
     if (visited.has((current.y<<6)|current.x)){ continue; }
 
     if (!nono_map[current.y][current.x] && !self.fuel_map[current.y][current.x] &&
-        !self.karbonite_map[current.y][current.x] && self.map[current.y][current.x] &&
-        is_passable(self,current.x,current.y) && (current.x + current.y) % 2 == 0) {
+        !self.karbonite_map[current.y][current.x] && self.map[current.y][current.x] && is_passable(self,current.x,current.y)) {
       path_end_point = current;
       break;
     }
@@ -327,11 +326,58 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
 export class CrusaderManager {
   constructor(self) {
-    self.log("CRUSADER @ " + [self.me.x, self.me.y]);
+    this.mode = CONSTANTS.DEFENSE
+    this.mode_location = null;
+    this.base_location = null;
+    const vis_map = self.getVisibleRobotMap()
+    for (const dir of CIRCLES[2]) {
+      if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
+        if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] > 0) {
+          let r = self.getRobot(vis_map[self.me.y + dir[1]][self.me.x + dir[0]]);
+          if (r.team == self.me.team && SPECS.UNITS[r.unit].SPEED == 0) { // castle or church
+            this.base_location = [r.x, r.y];
+            break;
+          }
+        }
+      }
+    }
   }
 
   turn(step, self) {
-    return null;
+    // self.log('here-crus')
+    for (const r of self.getVisibleRobots()) {
+      if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+      }
+    }
+
+    if (this.base_location == null) {
+      this.mode = CONSTANTS.ATTACK
+    }
+
+    if (this.mode == CONSTANTS.DEFENSE) {
+      let action = defensive_behaviour_passive(self, this.mode_location, this.base_location)
+      if (action !== null){
+        return action
+      }
+      else{
+        return null
+      }
+    }
+
+    if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
+      let action = attack_behaviour_aggressive(self, this.mode_location);
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        self.log("enemy castle dead")
+        self.log(self.me.x)
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        this.mode = CONSTANTS.DEFENSE
+        this.mode_location = null;
+      } else {
+        return action
+      }
+    }
   }
 }
 
@@ -357,17 +403,39 @@ export class ProphetManager {
   }
 
   turn(step, self) {
+    // self.log('here-prop')
     for (const r of self.getVisibleRobots()) {
-      if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER && step < 3){
+      if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+      }
+      else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER && step < 3){
         this.mode = CONSTANTS.DEFENSE
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
+        //self.log([self.me.x, self.me.y] + " NEWBASE @ " + COMM16.DECODE_BASELOC(r.signal))
         this.mode_location = null
       }
+    }
+    if (this.base_location == null) {
+      this.mode = CONSTANTS.ATTACK
     }
 
     if (this.mode == CONSTANTS.DEFENSE) {
       let action = defensive_behaviour_passive(self, this.mode_location, this.base_location)
       return action;
+    }
+
+    if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
+      let action = attack_behaviour_passive(self, this.mode_location);
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        this.mode_location = null;
+        this.mode = CONSTANTS.DEFENSE;
+        self.log("enemy castle dead")
+        self.log(self.me.x)
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+      } else {
+        return action
+      }
     }
   }
 }
@@ -375,10 +443,41 @@ export class ProphetManager {
 // PREACHER BEHAVIOR is just CRUSADER - the escort stuff
 export class PreacherManager {
   constructor(self) {
-    self.log("PREACHER @ " + [self.me.x, self.me.y])
+    this.mode_location = null;
+    this.base_location = null;
+
+    const vis_map = self.getVisibleRobotMap()
+    for (const dir of CIRCLES[2]) {
+      if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
+        if (vis_map[self.me.y + dir[1]][self.me.x + dir[0]] > 0) {
+          let r = self.getRobot(vis_map[self.me.y + dir[1]][self.me.x + dir[0]]);
+          if (r.team == self.me.team && SPECS.UNITS[r.unit].SPEED == 0) { // castle or church
+            this.base_location = [r.x, r.y];
+            break;
+          }
+        }
+      }
+    }
   }
 
   turn(step, self) {
-    return null;
+
+    for (const r of self.getVisibleRobots()) {
+      if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER) {
+        this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
+        // self.log(this.mode_location)
+      }
+      else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
+        this.base_location = COMM16.DECODE_BASELOC(r.signal)
+        this.mode_location = null
+      }
+    }
+    // self.log('here-prea')
+    let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+    if (action == CONSTANTS.ELIMINATED_ENEMY) {
+      this.mode_location = null;
+      action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+    }
+    return action;
   }
 }
