@@ -151,23 +151,32 @@ function attack_behaviour_passive(self, mode_location, base_location){
       if (p.unit == SPECS.UNITS[SPECS.CRUSADER]){
         crusaders.push([p.x,p.y])
       }
-      if (p.team != self.me.team){
+      if (self.isVisible(p) && p.team != self.me.team){
         enemies.push(p)
       }
     }
+    let escape = true;
+    outerloop:
     for (const r of targets){
       for (const c of crusaders){
         if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
-          let move = move_away(self,enemies)
-          if (move !== null) {
-            return self.move(move[0],move[1]);
-          } else {
-            return null;
-          }
+          escape = false;
+          break outerloop;
         }
       }
     }
-    return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+    if (escape){
+      let move = move_away(self,enemies)
+      if (move !== null) {
+        return self.move(move[0],move[1]);
+      }
+      else{
+        return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+      }
+    }
+    else{
+      return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+    }
   }
 
   //Pursue the enemy without swarming
@@ -274,22 +283,28 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
         enemies.push(p)
       }
     }
-    // self.log([self.me.x,self.me.y])
-    // self.log(crusaders)
+    let escape = true;
+    outerloop:
     for (const r of targets){
       for (const c of crusaders){
-        if (dist(c,[r.x,r.y])>dist([r.x,r.y,self.me.x,self.me.y])){
-          let move = move_away(self,enemies)
-          if (move !== null) {
-            // self.log(move)
-            return self.move(move[0],move[1]);
-          } else {
-            return null;
-          }
+        if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
+          escape = false;
+          break outerloop;
         }
       }
     }
-    return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+    if (escape){
+      let move = move_away(self,enemies)
+      if (move !== null) {
+        return self.move(move[0],move[1]);
+      }
+      else{
+        return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+      }
+    }
+    else{
+      return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+    }
   }
 
   //go back to base if possible
