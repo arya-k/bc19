@@ -5,6 +5,10 @@ import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
 
 const HORDE_SIZE = 50;
+let HORDE_QUANTITIES = {};
+HORDE_QUANTITIES[SPECS.PROPHET] =  25;
+HORDE_QUANTITIES[SPECS.CRUSADER] =  0;
+HORDE_QUANTITIES[SPECS.PREACHER] =  25;
 
 // TODO: rebuild dead pilgrims
 // TODO: fix signalling to incorrect target
@@ -388,11 +392,19 @@ export class CastleManager {
         // first check if the horde is large enough:
         let count = 0;
         for (const r of myRobots)
-          if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET)
+          if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PROPHET || r.unit == SPECS.PREACHER)
             count++;
 
         if (count < HORDE_SIZE) { // if it isn't, try to build more
-          let robotToBuild = crusaderCount > prophetCount ? SPECS.PROPHET : SPECS.CRUSADER;
+          let robotToBuild = null;
+          if (crusaderCount < HORDE_QUANTITIES[SPECS.CRUSADER]) {
+            robotToBuild = SPECS.CRUSADER;
+          } else if (prophetCount < HORDE_QUANTITIES[SPECS.PROPHET]) {
+            robotToBuild = SPECS.PROPHET;
+          } else if (preacherCount < HORDE_QUANTITIES[SPECS.PREACHER]) {
+            robotToBuild = SPECS.PREACHER;
+          }
+
           if (available_karbonite > (4 * SPECS.UNITS[robotToBuild].CONSTRUCTION_KARBONITE) &&
             available_fuel > (4 * SPECS.UNITS[robotToBuild].CONSTRUCTION_FUEL) && 
             building_locations.length > 0) {
