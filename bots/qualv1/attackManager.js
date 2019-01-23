@@ -10,6 +10,31 @@ function Point(x, y, p) {
   this.p = p
 }
 
+//Still needs a lot of work
+function prophet_move_away(self, enemies) {
+
+  let maxdir = [0,0];
+  let maxdist = 0;
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
+    let sum = 0;
+    let temp = [self.me.x + dir[0], self.me.y + dir[1]]
+    if (!is_valid(temp[0], temp[1], self.map.length) || !self.map[temp[1]][temp[0]] || self.getVisibleRobotMap()[temp[1]][temp[0]] != 0){
+      continue;
+    }
+    if (self.me.x == 26 && self.me.y == 0){
+      self.log(temp)
+    }
+    for (let enemy of enemies){
+      sum+=dist([enemy.x, enemy.y],temp)
+    }
+    if (sum > maxdist){
+      maxdist = sum
+      maxdir = dir
+    }
+  }
+  return maxdir
+}
+
 function is_nono(self,x,y,base_loc){
   //Ret, base_locationurns true if this x and y is a nuisance; false if not
   let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
