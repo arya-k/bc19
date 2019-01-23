@@ -34,6 +34,64 @@ export function local_cluster_info(self) {
   return [count, maxr];
 }
 
+function pick_church_location(new_f, new_k, map, fuel_map, karb_map, self) {
+  // now that you've found the cluster, find the best spot to put a church:
+  let churchx = 0;
+  let churchy = 0;
+  for (const spot of new_f) {
+    churchx += (spot&63);
+    churchy += ((spot&4032)>>6)
+  }
+  for (const spot of new_k) {
+    churchx += (spot&63);
+    churchy += ((spot&4032)>>6)
+  }
+
+  churchx = Math.floor(churchx / (new_f.length + new_k.length));
+  churchy = Math.floor(churchy / (new_f.length + new_k.length));
+
+  let max_r = 0;
+  for (const spot of new_f)
+    max_r = Math.max(max_r, dist([churchx, churchy], [spot&63, (spot&4032)>>6]));
+  for (const spot of new_k)
+    max_r = Math.max(max_r, dist([churchx, churchy], [spot&63, (spot&4032)>>6]));
+
+  // consider the point at the center.
+  let best_point = [churchx, churchy];
+  let best_score = 0;
+  if (!fuel_map[churchy][churchx] && 
+      !karb_map[churchy][churchx] &&
+      map[churchy][churchx]) {
+    for (const spot of new_f)
+      best_score += dist([churchx, churchy], [spot&63, (spot&4032)>>6]);
+    for (const spot of new_k)
+      best_score += dist([churchx, churchy], [spot&63, (spot&4032)>>6]);
+  } else {
+    best_score = 1<<12
+  }
+
+  // now, consider other points
+  for (const dir of CIRCLES[max_r + 2]) {
+    if (is_valid(churchx+dir[0], churchy+dir[1], map.length) && 
+        !fuel_map[churchy+dir[1]][churchx+dir[0]] &&
+        !karb_map[churchy+dir[1]][churchx+dir[0]] &&
+        map[churchy+dir[1]][churchx+dir[0]]) {
+      let score = 0;
+      for (const spot of new_f)
+        score += dist([churchx+dir[0], churchy+dir[1]], [spot&63, (spot&4032)>>6]);
+      for (const spot of new_k)
+        score += dist([churchx+dir[0], churchy+dir[1]], [spot&63, (spot&4032)>>6]);
+      
+      if (score < best_score) {
+        best_score = score;
+        best_point = [churchx+dir[0], churchy+dir[1]];
+      }
+    }
+  }
+
+  return best_point
+}
+
 export function find_resource_clusters(self, map, fuel_map, karb_map) {
   // returns [{x: [], y: [], fuel: [], karb: []}, ...] where (x,y) is ideal church location
   // and fuel and karb return the counts of fuel and karbonite.
@@ -42,7 +100,7 @@ export function find_resource_clusters(self, map, fuel_map, karb_map) {
 
   let visited = new Set()
   let queue = [0]; // start at the top left
-  let current, x, y, new_k, new_f, miniqueue, minicurrent, minix, miniy, churchx, churchy, foundvalidloc;
+  let current, x, y, new_k, new_f, miniqueue, minicurrent, minix, miniy, churchx, churchy;
 
   while (queue.length > 0) {
     current = queue.shift()
@@ -77,42 +135,8 @@ export function find_resource_clusters(self, map, fuel_map, karb_map) {
           }
         }
       }
-
-      // now that you've found the cluster, find the best spot to put a church:
-      churchx = 0;
-      churchy = 0;
-      for (const spot of new_f) {
-        churchx += (spot&63);
-        churchy += ((spot&4032)>>6)
-      }
-      for (const spot of new_k) {
-        churchx += (spot&63);
-        churchy += ((spot&4032)>>6)
-      }
-
-      churchx = Math.floor(churchx / (new_f.length + new_k.length));
-      churchy = Math.floor(churchy / (new_f.length + new_k.length));
-
-      // search in a circle of radius 2 to find the best place to put the church:
-      foundvalidloc = map[churchy][churchx] && (!fuel_map[churchy][churchx]) && (!karb_map[churchy][churchx]);
-      if (!foundvalidloc) {
-        for (let i = CIRCLES[4].length - 1; i >= 0; i--) {
-          if (map[churchy + CIRCLES[4][i][1]] && map[churchy + CIRCLES[4][i][1]][churchx + CIRCLES[4][i][0]]) {
-            if (!fuel_map[churchy + CIRCLES[4][i][1]][churchx + CIRCLES[4][i][0]]) {
-              if (!karb_map[churchy + CIRCLES[4][i][1]][churchx + CIRCLES[4][i][0]]) {
-                foundvalidloc = true;
-                churchx += CIRCLES[4][i][0];
-                churchy += CIRCLES[4][i][1];
-                break;
-              }
-            }
-          }
-        }
-      }
-
-      if (foundvalidloc && dist([churchx, churchy], [self.me.x, self.me.y]) > 8) {
-        clusters.push({x:churchx, y:churchy, fuel:new_f.length, karbonite:new_k.length})
-      }
+      [churchx, churchy] = pick_church_location(new_f, new_k, map, fuel_map, karb_map, self);
+      clusters.push({x:churchx, y:churchy, fuel:new_f.length, karbonite:new_k.length})
     }
 
     visited.add(current) // mark as visited
