@@ -32,42 +32,56 @@ function is_nono(self,x,y,base_loc){
   return nono_map[y][x]
 }
 
-function nonNuisanceBehavior(self, base_loc, waffle = true) {
-  // - if it's sitting on a resource spot, don't
-  // - if the castle you are closest to has <2 free spots available, and you are adjacent to the castle, move (i.e. move if the castle has <2 building spots) use get clear locations here
-  // - if you are adjacent to other units, WAFFLE
+function local_cluster_info(self, base_loc) {
+  let minicurrent, minix, miniy;
 
-  // start with a BFS to WAFFLE, avoid blocking castles and sitting on resource spots
+  let maxr = 0
+  let visited = new Set()
+  let miniqueue = [(base_loc[1]<<6)|base_loc[0]];
+
+  while (miniqueue.length > 0) {
+    minicurrent = miniqueue.shift();
+    minix = minicurrent&63
+    miniy = (minicurrent&4032)>>6
+
+    if (visited.has(minicurrent)){ continue; }
+
+    if (self.fuel_map[miniy][minix] || self.karbonite_map[miniy][minix]) {
+      maxr = Math.max(maxr, dist(base_loc, [minix, miniy]))
+    } else if (miniy !== base_loc[1] || minix !== base_loc[0]) {
+      continue; // don't continue exploring a non-fuel or karb. spot
+    }
+
+    visited.add(minicurrent);
+    for (const dir of CIRCLES[8]) {
+      if (is_valid(minix+dir[0], miniy+dir[1], self.map.length)) {
+        miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
+      }
+    }
+  }
+
+  return maxr;
+}
+
+function nonNuisanceBehavior(self, base_loc, waffle = true) {
+  // first find resource_r, the r^2 of the resource that is furthest from base,
+  // within the cluster.
+
+  let r_sq = local_cluster_info(self, base_loc)
+
   let current;
   let visited = new Set()
   let queue = [new Point(self.me.x, self.me.y, null)];
   let path_end_point = null;
-
-  let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
-  nono_map[base_loc[1]][base_loc[0]] = true;
-  for (const r of self.getVisibleRobots()) {
-    if (r.team == self.me.team) {
-      if (r.unit == SPECS.CHURCH || r.unit == SPECS.CASTLE) { // castle or church
-        nono_map[r.y][r.x] = true;
-        for (const dir of CIRCLES[2])
-          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
-            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
-      } else if (r.id !== self.me.id && waffle) {
-        nono_map[r.y][r.x] = true;
-        for (const dir of CIRCLES[1])
-          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
-            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
-      }
-    }
-  }
 
   while (queue.length > 0) {
     current = queue.shift();
 
     if (visited.has((current.y<<6)|current.x)){ continue; }
 
-    if (!nono_map[current.y][current.x] && !self.fuel_map[current.y][current.x] &&
-        !self.karbonite_map[current.y][current.x] && self.map[current.y][current.x] && is_passable(self,current.x,current.y)) {
+    if (self.map[current.y][current.x] && is_passable(self,current.x,current.y) &&
+        dist(base_loc, [current.x, current.y]) > r_sq && 
+        (current.x + current.y) % 2 == 0) {
       path_end_point = current;
       break;
     }
@@ -83,13 +97,6 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
   }
 
   if (path_end_point === null || path_end_point.p === null) { // you already good. Move towards the base if you're too far.
-    if (dist([self.me.x, self.me.y], base_loc) >= 25) {
-      // self.log("move towards")
-      let move = move_towards(self, [self.me.x, self.me.y], base_loc) // head towards base
-      if (move !== null) {
-        return [move.x - self.me.x, move.y - self.me.y];
-      }
-    }
     return null;
   } else {
     while (path_end_point.p.p !== null){
@@ -97,6 +104,7 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
     }
     return [path_end_point.x - self.me.x, path_end_point.y - self.me.y];
   }
+
 }
 
 function attack_behaviour_aggressive(self, mode_location, base_location){
@@ -155,14 +163,18 @@ function attack_behaviour_passive(self, mode_location, base_location){
         enemies.push(p)
       }
     }
-    let escape = true;
-    outerloop:
+    let escape = false;
     for (const r of targets){
+      let unsafe = true;
       for (const c of crusaders){
         if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
-          escape = false;
-          break outerloop;
+          unsafe = false;
+          break
         }
+      }
+      if (unsafe){
+        escape = true
+        break
       }
     }
     if (escape){
@@ -270,7 +282,6 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   let vis_map = self.getVisibleRobotMap()
   //attack enemy, but MAKE SURE crusader is between prophet and enemy
   let targets = getAttackOrder(self)
-  self.log([self.me.x,self.me.y])
   if (targets.length != 0){
     let crusaders = []
     let enemies = []
@@ -284,14 +295,18 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
         enemies.push(p)
       }
     }
-    let escape = true;
-    outerloop:
+    let escape = false;
     for (const r of targets){
+      let unsafe = true;
       for (const c of crusaders){
         if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
-          escape = false;
-          break outerloop;
+          unsafe = false;
+          break
         }
+      }
+      if (unsafe){
+        escape = true
+        break
       }
     }
     if (escape){
@@ -331,6 +346,10 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     // self.log(self.me.x)
     // self.log(self.me.y)
     let n = nonNuisanceBehavior(self,base_location);
+    if (self.me.x == 26 && self.me.y == 0){
+      self.log("here1")
+      self.log(n)
+    }
     if (n !== null){
       return self.move(n[0],n[1]);
     }
