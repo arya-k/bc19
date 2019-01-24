@@ -68,12 +68,13 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
   // within the cluster.
 
   let r_sq = local_cluster_info(self, base_loc)
-
   let current;
   let visited = new Set()
   let queue = [new Point(self.me.x, self.me.y, null)];
   let path_end_point = null;
-
+  // if (self.me.x == 37 && self.me.y == 4){
+  //   // self.log("r_sq = " + r_sq)
+  // }
   while (queue.length > 0) {
     current = queue.shift();
 
@@ -81,7 +82,7 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
 
     if (self.map[current.y][current.x] && is_passable(self,current.x,current.y) &&
         dist(base_loc, [current.x, current.y]) > r_sq && 
-        (current.x + current.y) % 2 == 0) {
+        (current.x + current.y) % 2 == (base_loc[0] + base_loc[1]) % 2) {
       path_end_point = current;
       break;
     }
@@ -105,6 +106,69 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
     return [path_end_point.x - self.me.x, path_end_point.y - self.me.y];
   }
 
+}
+
+function is_lattice(self, myposition, base_loc){
+  return is_valid(myposition[0], myposition[1], self.map.length) && 
+  self.map[myposition[1]][myposition[0]] && 
+  is_passable(self,myposition[0],myposition[1]) &&
+  dist(myposition,base_loc) > 1 && 
+  dist(myposition,base_loc) <= 25 && 
+  (myposition[0] + myposition[1]) % 2 == (base_loc[0] + base_loc[1]) % 2
+}
+
+function is_nonAdjacent(self, myposition, base_loc){
+  return is_valid(myposition[0], myposition[1], self.map.length) && 
+  self.map[myposition[1]][myposition[0]] && 
+  is_passable(self,myposition[0],myposition[1]) &&
+  dist(myposition,base_loc) > 1 && 
+  dist(myposition,base_loc) <= 25
+}
+
+function preacher_nonNuisanceBehavior(self, base_loc, waffle = true) {
+  // Since preachers have low vision, they can't reliably lattice
+  // This will be a less ambitious version of nonNuisanceBehavrious
+  let nonAdjacentPoints = []
+  let nonAdjacentLatticePoints = []
+  let mypos = [self.me.x, self.me.y]
+  if (is_lattice(self, mypos, base_loc)){
+    nonAdjacentLatticePoints.push(mypos)
+  }
+  else if (is_nonAdjacent(self, mypos, base_loc)){
+    nonAdjacentPoints.push(mypos)
+  }
+  // self.log('here1')
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
+    let current = [self.me.x + dir[0], self.me.y + dir[1]]
+    // self.log('here2')
+    if (is_lattice(self, current, base_loc)) {
+      if (nonAdjacentLatticePoints.length > 0 && dist(current, base_loc) > dist(base_loc,nonAdjacentLatticePoints[0])){
+        nonAdjacentLatticePoints.unshift(current)
+      }
+      else{
+        nonAdjacentLatticePoints.push(current) 
+      }
+    }
+    else if (is_nonAdjacent(self, current, base_loc)){
+      // self.log('here3')
+      if (nonAdjacentPoints.length > 0 && dist(current, base_loc) > dist(base_loc,nonAdjacentPoints[0])){
+        nonAdjacentPoints.unshift(current)
+      }
+      else{
+        nonAdjacentPoints.push(current) 
+      }
+    }
+    // self.log('here4')
+  }
+  if (nonAdjacentLatticePoints.length > 0){
+    return nonAdjacentLatticePoints[0]
+  }
+  else if (nonAdjacentPoints.length > 0){
+    return nonAdjacentPoints[0]
+  }
+  else{
+    return null
+  }
 }
 
 function attack_behaviour_aggressive(self, mode_location, base_location){
@@ -191,8 +255,15 @@ function attack_behaviour_passive(self, mode_location, base_location){
     }
   }
 
+  else{
+    let move = move_away(self,enemies)
+    if (move !== null) {
+      return self.move(move[0],move[1]);
+    }
+  }
+
   //Pursue the enemy without swarming
-  else if (vis_map[mode_location[1]][mode_location[0]]!=0){
+  if (vis_map[mode_location[1]][mode_location[0]]!=0){
     let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
     // let move = null;
     if (move !== null) {
@@ -263,9 +334,12 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
       // self.log("nonNuisanceBehavior")
-      let n = nonNuisanceBehavior(self,base_location, false);
-      if (n !== null){
-        return self.move(n[0],n[1]);
+      // if (self.me.x == 37 && self.me.y == 4){
+      //   self.log("nonuis")
+      // }
+      let n = preacher_nonNuisanceBehavior(self,base_location, false);
+      if (n !== null && (n[0] - self.me.x != 0 && n[1] - self.me.y != 0)){
+        return self.move(n[0] - self.me.x,n[1] - self.me.y);
       }
       else{
         return null;
@@ -353,10 +427,6 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     // self.log(self.me.x)
     // self.log(self.me.y)
     let n = nonNuisanceBehavior(self,base_location);
-    if (self.me.x == 26 && self.me.y == 0){
-      self.log("here1")
-      self.log(n)
-    }
     if (n !== null){
       return self.move(n[0],n[1]);
     }
