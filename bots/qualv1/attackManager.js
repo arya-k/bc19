@@ -10,31 +10,6 @@ function Point(x, y, p) {
   this.p = p
 }
 
-//Still needs a lot of work
-function prophet_move_away(self, enemies) {
-
-  let maxdir = [0,0];
-  let maxdist = 0;
-  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
-    let sum = 0;
-    let temp = [self.me.x + dir[0], self.me.y + dir[1]]
-    if (!is_valid(temp[0], temp[1], self.map.length) || !self.map[temp[1]][temp[0]] || self.getVisibleRobotMap()[temp[1]][temp[0]] != 0){
-      continue;
-    }
-    if (self.me.x == 26 && self.me.y == 0){
-      self.log(temp)
-    }
-    for (let enemy of enemies){
-      sum+=dist([enemy.x, enemy.y],temp)
-    }
-    if (sum > maxdist){
-      maxdist = sum
-      maxdir = dir
-    }
-  }
-  return maxdir
-}
-
 function is_nono(self,x,y,base_loc){
   //Ret, base_locationurns true if this x and y is a nuisance; false if not
   let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
@@ -307,19 +282,19 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   let vis_map = self.getVisibleRobotMap()
   //attack enemy, but MAKE SURE crusader is between prophet and enemy
   let targets = getAttackOrder(self)
-  if (targets.length != 0){
-    let crusaders = []
-    let enemies = []
-    //if there is a single enemy robot without a crusader in front, move away
-    //since this method is called by prophets, it must be certain that they are protected by crusaders
-    for (const p of self.getVisibleRobots()){
-      if (self.isVisible(p) && (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER])){
-        crusaders.push([p.x,p.y])
-      }
-      if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
-        enemies.push(p)
-      }
+  let crusaders = []
+  let enemies = []
+  //if there is a single enemy robot without a crusader in front, move away
+  //since this method is called by prophets, it must be certain that they are protected by crusaders
+  for (const p of self.getVisibleRobots()){
+    if (self.isVisible(p) && (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER])){
+      crusaders.push([p.x,p.y])
     }
+    if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
+      enemies.push(p)
+    }
+  }
+  if (targets.length != 0){
     let escape = false;
     for (const r of targets){
       let unsafe = true;
@@ -345,6 +320,13 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     }
     else{
       return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+    }
+  }
+
+  else{
+    let move = move_away(self,enemies)
+    if (move !== null) {
+      return self.move(move[0],move[1]);
     }
   }
 
