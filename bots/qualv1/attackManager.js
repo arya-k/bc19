@@ -543,7 +543,7 @@ export class ProphetManager {
         this.mode_location = null;
         this.mode = CONSTANTS.DEFENSE;
         self.log("enemy castle dead")
-        self.log(self.me.x)
+        // self.log(self.me.x)
         self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
       } else {
         return action
