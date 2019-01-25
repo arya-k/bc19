@@ -216,6 +216,7 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
   if (farthest_point !== null){
     return farthest_point
   }
+  //If all else, fails, just go to the base
   let move = move_to(self, [self.me.x, self.me.y], [base_loc[0],base_loc[1]])
   if (move !== null) {
     return [move.x, move.y]
@@ -642,15 +643,15 @@ export class PreacherManager {
     //save lattice means to put lattice point in private variable
     if (action == CONSTANTS.SAVE_LATTICE){
       //if lattice point is compromised, re compute it
-      if (this.lattice_point === null || self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] != 0){
+      if (this.lattice_point === null || (this.lattice_point !== null && self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] != 0)){
         this.lattice_point = find_lattice_point(self, this.base_location)
       }
       //if we are already at the lattice point, then simply do mnothing
-      if (self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
+      if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
         this.lattice_point = null
         return null
       }
-      let n = preacher_nonNuisanceBehavior(self,base_location, this.lattice_point);
+      let n = preacher_nonNuisanceBehavior(self, this.base_location, this.lattice_point);
       // self.log(""+n)
       if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
         return self.move(n[0] - self.me.x,n[1] - self.me.y);
