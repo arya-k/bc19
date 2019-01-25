@@ -451,17 +451,17 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     }
   }
 
-  // //go back to base if possible
-  // // self.log('here2')
-  // if (dist([self.me.x,self.me.y],base_location) >= 25) {
-  //   let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-  //   if (move !== null) {
-  //     return self.move(move.x - self.me.x, move.y - self.me.y);
-  //   }
-  //   else{
-  //     return null;
-  //   }
-  // } 
+  //go back to base if possible
+  // self.log('here2')
+  if (dist([self.me.x,self.me.y],base_location) >= 25) {
+    let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+    if (move !== null) {
+      return self.move(move.x - self.me.x, move.y - self.me.y);
+    }
+    else{
+      return null;
+    }
+  } 
 
   //give resources if possible (given that you are already at base)
   if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
