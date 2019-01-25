@@ -1,5 +1,7 @@
+import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
 import {is_valid, dist} from './utils.js'
+import {num_moves} from './path.js'
 
 export function local_cluster_info(self) {
   let minicurrent, minix, miniy;
@@ -24,7 +26,7 @@ export function local_cluster_info(self) {
     }
 
     visited.add(minicurrent);
-    for (const dir of CIRCLES[8]) {
+    for (const dir of CIRCLES[9]) {
       if (is_valid(minix+dir[0], miniy+dir[1], self.map.length)) {
         miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
       }
@@ -50,12 +52,6 @@ function pick_church_location(new_f, new_k, map, fuel_map, karb_map, self) {
   churchx = Math.floor(churchx / (new_f.length + new_k.length));
   churchy = Math.floor(churchy / (new_f.length + new_k.length));
 
-  let max_r = 0;
-  for (const spot of new_f)
-    max_r = Math.max(max_r, dist([churchx, churchy], [spot&63, (spot&4032)>>6]));
-  for (const spot of new_k)
-    max_r = Math.max(max_r, dist([churchx, churchy], [spot&63, (spot&4032)>>6]));
-
   // consider the point at the center.
   let best_point = [churchx, churchy];
   let best_score = 0;
@@ -67,11 +63,11 @@ function pick_church_location(new_f, new_k, map, fuel_map, karb_map, self) {
     for (const spot of new_k)
       best_score += dist([churchx, churchy], [spot&63, (spot&4032)>>6]);
   } else {
-    best_score = 1<<12
+    best_score = 1<<12; // infinity
   }
 
   // now, consider other points
-  for (const dir of CIRCLES[max_r + 2]) {
+  for (const dir of CIRCLES[16]) {
     if (is_valid(churchx+dir[0], churchy+dir[1], map.length) && 
         !fuel_map[churchy+dir[1]][churchx+dir[0]] &&
         !karb_map[churchy+dir[1]][churchx+dir[0]] &&
@@ -129,7 +125,7 @@ export function find_resource_clusters(self, map, fuel_map, karb_map) {
         }
 
         visited.add(minicurrent);
-        for (const dir of CIRCLES[8]) {
+        for (const dir of CIRCLES[9]) {
           if (is_valid(minix+dir[0], miniy+dir[1], map.length)) {
             miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
           }
@@ -169,35 +165,53 @@ export function get_best_cluster_castle(self, x, y, castle_locations) {
   return best_castle;
 }
 
-
-export function sort_clusters(clusters_in, castle_locations, enemy_castle_locations) {
-  let mean_x = 0;
-  let mean_y = 0;
-
-  for (const loc of castle_locations) {
-    mean_x += loc[0];
-    mean_y += loc[1];
-  }
-
-  mean_x = Math.floor(mean_x / castle_locations.length);
-  mean_y = Math.floor(mean_y / castle_locations.length);
-
-  // remove the clusters that we should NOT go to:
-  let clusters = clusters_in.filter(function (cl) {
-    for (const c of castle_locations)
-      if (dist(c, [cl.x, cl.y]) <= 8)
+export function determine_cluster_plan(clusters_in, attack_plan, horiSym, maplen, self) {
+  // clusters at castles are not considered:
+  let valid_clusters = clusters_in.filter(function (cl) {
+    for (const ap of attack_plan) {
+      if (dist([cl.x, cl.y], ap.me) <= 9 || dist([cl.x, cl.y], ap.enemy) <= 9)
         return false;
-
-    for (const c of enemy_castle_locations)
-      if (dist(c, [cl.x, cl.y]) <= 8)
-        return false;
-
+    }
     return true;
   })
 
+  // first we need to figure out if there are any clusters that we should fight over, near the center:
+  let clusters_on_our_side = valid_clusters.filter(function (cl) {
+    if (horiSym && attack_plan[0].me[1] <= (Math.ceil(maplen / 2) + 1)) // top
+      return cl.y <= (Math.ceil(maplen / 2) + 1);
+    else if (horiSym && attack_plan[0].me[1] >= (Math.ceil(maplen / 2) - 1)) // bottom
+      return cl.y >= (Math.ceil(maplen / 2) - 1);
+    else if (!horiSym && attack_plan[0].me[0] <= (Math.ceil(maplen / 2) + 1)) // left
+      return cl.x <= (Math.ceil(maplen / 2) + 1);
+    else if (!horiSym && attack_plan[0].me[0] >= (Math.ceil(maplen / 2) - 1)) // right
+      return cl.x >= (Math.ceil(maplen / 2) - 1);
+  })
+
+  // protect the clusters near the center (if any).
+  for (let cl of clusters_on_our_side) {
+    if ((horiSym && (Math.abs(cl.y - (maplen/2)) <= 1)) ||
+        (!horiSym && (Math.abs(cl.x - (maplen/2)) <= 1))) { // cluster near center:
+      cl.defend = true;
+    } else {
+      cl.defend = false;
+    }
+  }
+
+  let mean_x = 0, mean_y = 0;
+  for (const ap of attack_plan){
+    mean_x += ap.me[0];
+    mean_y += ap.me[1];
+  }
+  mean_x = Math.floor(mean_x / attack_plan.length);
+  mean_y = Math.floor(mean_y / attack_plan.length);
+
   // sort the array:
-  clusters.sort(function(a, b) {
-    if (a.fuel + a.karbonite > b.fuel + b.karbonite) {
+  clusters_on_our_side.sort(function(a, b) {
+    if (a.defend && !b.defend) {
+      return 1; // the ones that have to be defended are priority (a has to be defended)
+    } else if (!a.defend && b.defend) {
+      return -1; // b has do be defended
+    } else if (a.fuel + a.karbonite > b.fuel + b.karbonite) {
       return 1; // a comes first;
     } else if (a.fuel + a.karbonite < b.fuel + b.karbonite) {
       return -1; // b comes first;
@@ -206,10 +220,10 @@ export function sort_clusters(clusters_in, castle_locations, enemy_castle_locati
     } else if (Math.abs(a.fuel - a.karbonite) < Math.abs(b.fuel - b.karbonite)){
       return -1; // b has a better ratio
     } else {
-      return dist([a.x, a.y], [mean_x, mean_y]) < dist([b.x, b.y], [mean_x, mean_y]) ? 1 : -1;
+      return dist([a.x, a.y], [mean_x, mean_y]) > dist([b.x, b.y], [mean_x, mean_y]) ? 1 : -1;
     }
   })
 
   // then return the clusters:
-  return clusters;
+  return clusters_on_our_side;
 }

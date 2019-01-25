@@ -100,3 +100,8 @@ export function getAttackOrder(self) {
 
   return units;
 }
+
+export function canAfford(unit, self) {
+  return (self.fuel >= SPECS.UNITS[unit].CONSTRUCTION_FUEL &&
+          self.karbonite >= SPECS.UNITS[unit].CONSTRUCTION_KARBONITE);
+}
