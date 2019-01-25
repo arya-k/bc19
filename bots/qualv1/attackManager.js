@@ -453,7 +453,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
   //go back to base if possible
   // self.log('here2')
-  if (dist([self.me.x,self.me.y],base_location) >= 25) {
+  if (dist([self.me.x,self.me.y],base_location) >= 36) {
     let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
     if (move !== null) {
       return self.move(move.x - self.me.x, move.y - self.me.y);
