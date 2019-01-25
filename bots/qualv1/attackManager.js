@@ -82,6 +82,8 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
 
     if (self.map[current.y][current.x] && is_passable(self,current.x,current.y) &&
         dist(base_loc, [current.x, current.y]) > r_sq && 
+        !self.fuel_map[current.y][current.x] &&
+        !self.karbonite_map[current.y][current.x] &&
         (current.x + current.y) % 2 == (base_loc[0] + base_loc[1]) % 2) {
       path_end_point = current;
       break;
@@ -112,63 +114,91 @@ function is_lattice(self, myposition, base_loc){
   return is_valid(myposition[0], myposition[1], self.map.length) && 
   self.map[myposition[1]][myposition[0]] && 
   is_passable(self,myposition[0],myposition[1]) &&
-  dist(myposition,base_loc) > 1 && 
-  dist(myposition,base_loc) <= 25 && 
+  dist(myposition,base_loc) > 1 &&
+  !self.fuel_map[myposition[1]][myposition[0]] &&
+  !self.karbonite_map[myposition[1]][myposition[0]] &&
   (myposition[0] + myposition[1]) % 2 == (base_loc[0] + base_loc[1]) % 2
 }
 
-function is_nonAdjacent(self, myposition, base_loc){
+function is_nonResource(self, myposition, base_loc){
+  return is_valid(myposition[0], myposition[1], self.map.length) && 
+  self.map[myposition[1]][myposition[0]] && 
+  !self.fuel_map[myposition[1]][myposition[0]] &&
+  !self.karbonite_map[myposition[1]][myposition[0]] &&
+  is_passable(self,myposition[0],myposition[1]) &&
+  dist(myposition,base_loc) > 1
+}
+
+
+function is_available(self, myposition, base_loc){
   return is_valid(myposition[0], myposition[1], self.map.length) && 
   self.map[myposition[1]][myposition[0]] && 
   is_passable(self,myposition[0],myposition[1]) &&
-  dist(myposition,base_loc) > 1 && 
-  dist(myposition,base_loc) <= 25
+  dist(myposition,base_loc) > 1
 }
 
 function preacher_nonNuisanceBehavior(self, base_loc, waffle = true) {
   // Since preachers have low vision, they can't reliably lattice
-  // This will be a less ambitious version of nonNuisanceBehavrious
-  let nonAdjacentPoints = []
-  let nonAdjacentLatticePoints = []
+  // This will be a less ambitious version of nonNuisance
+  let closest_lattice_point = null
+  let farthest_nonRes_point = null
+  let farthest_point = null
   let mypos = [self.me.x, self.me.y]
+  let myspeed = SPECS.UNITS[self.me.unit].SPEED
   if (is_lattice(self, mypos, base_loc)){
-    nonAdjacentLatticePoints.push(mypos)
+    return null
   }
-  else if (is_nonAdjacent(self, mypos, base_loc)){
-    nonAdjacentPoints.push(mypos)
+  if (is_nonResource(self, mypos, base_loc)){
+    farthest_nonRes_point = [mypos[0],mypos[1]]
+  }
+  if (is_available(self, mypos, base_loc)){
+    farthest_point = [mypos[0],mypos[1]]
   }
   // self.log('here1')
-  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
     // self.log('here2')
     if (is_lattice(self, current, base_loc)) {
-      if (nonAdjacentLatticePoints.length > 0 && dist(current, base_loc) > dist(base_loc,nonAdjacentLatticePoints[0])){
-        nonAdjacentLatticePoints.unshift(current)
-      }
-      else{
-        nonAdjacentLatticePoints.push(current) 
+      if (closest_lattice_point === null || dist(current, base_loc) < dist(base_loc,closest_lattice_point)){
+        closest_lattice_point = [current[0],current[1]]
       }
     }
-    else if (is_nonAdjacent(self, current, base_loc)){
+
+    if (is_nonResource(self, current, base_loc) && dist(current,mypos) <= myspeed){
       // self.log('here3')
-      if (nonAdjacentPoints.length > 0 && dist(current, base_loc) > dist(base_loc,nonAdjacentPoints[0])){
-        nonAdjacentPoints.unshift(current)
+      if (farthest_nonRes_point === null || dist(current, base_loc) > dist(base_loc,farthest_nonRes_point)){
+        farthest_nonRes_point = [current[0],current[1]]
       }
-      else{
-        nonAdjacentPoints.push(current) 
+    }
+
+    if (is_available(self, current, base_loc) && dist(current,mypos) <= myspeed){
+      if (farthest_point === null || dist(current, base_loc) > dist(base_loc,farthest_point)){
+        farthest_point = [current[0],current[1]]
       }
     }
     // self.log('here4')
   }
-  if (nonAdjacentLatticePoints.length > 0){
-    return nonAdjacentLatticePoints[0]
+  if (self.me.x == 39 && self.me.y == 6){
+    self.log([closest_lattice_point, farthest_nonRes_point, farthest_point])
   }
-  else if (nonAdjacentPoints.length > 0){
-    return nonAdjacentPoints[0]
+  if (closest_lattice_point !== null){
+    if (dist(closest_lattice_point, mypos) > myspeed){
+      let move = move_to(self, mypos, closest_lattice_point)
+      if (move !== null){
+        return [move.x, move.y]
+      }
+    }
+    else{
+      return closest_lattice_point
+    }
   }
-  else{
-    return null
+  if (farthest_nonRes_point !== null){
+    return farthest_nonRes_point
   }
+  if (farthest_point !== null){
+    return farthest_point
+  }
+  return null
 }
 
 function attack_behaviour_aggressive(self, mode_location, base_location){
@@ -212,15 +242,15 @@ function attack_behaviour_passive(self, mode_location, base_location){
   //This method is only effective with prophets
 
   let vis_map = self.getVisibleRobotMap()
-  //attack enemy, but MAKE SURE crusader is between prophet and enemy
   let targets = getAttackOrder(self)
   if (targets.length != 0){
+    //attack enemy, but MAKE SURE crusader is between prophet and enemy
     let crusaders = []
     let enemies = []
     //if there is a single enemy robot without a crusader in front, move away
     //since this method is called by prophets, it must be certain that they are protected by crusaders
     for (const p of self.getVisibleRobots()){
-      if (self.isVisible(p) && p.unit == SPECS.UNITS[SPECS.CRUSADER]){
+      if (self.isVisible(p) && (p.unit == SPECS.UNITS[SPECS.PREACHER] || p.unit == SPECS.UNITS[SPECS.CRUSADER])){
         crusaders.push([p.x,p.y])
       }
       if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
@@ -252,13 +282,6 @@ function attack_behaviour_passive(self, mode_location, base_location){
     }
     else{
       return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
-    }
-  }
-
-  else{
-    let move = move_away(self,enemies)
-    if (move !== null) {
-      return self.move(move[0],move[1]);
     }
   }
 
@@ -294,9 +317,6 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
         // self.log(move.x, move.y)
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
-      else{
-        return null;
-      }
     }
   }
 
@@ -310,9 +330,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       if (move !== null) {
         // self.log("go from " + [self.me.x,self.me.y] + " to " + [move.x, move.y])
         return self.move(move.x - self.me.x, move.y - self.me.y);
-      } else {
-        return null;
-      }
+      } 
     }
 
     else {
@@ -322,10 +340,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
-    if (dist([self.me.x,self.me.y],base_location) >= 25) {
+    if (self.me.karbonite == SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY || self.me.fuel == SPECS.UNITS[self.me.unit].FUEL_CAPACITY) {
       // self.log("move_towards3")
       let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
-      if (move !== null && !(is_nono(self,move.x,move.y, base_location))) {
+      if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
         return null;
@@ -333,17 +351,25 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
-      // self.log("nonNuisanceBehavior")
-      // if (self.me.x == 37 && self.me.y == 4){
-      //   self.log("nonuis")
-      // }
+      if (self.me.x == 35 && self.me.y == 6){
+        // self.log('here3')
+      }
+      // self.log()
       let n = preacher_nonNuisanceBehavior(self,base_location, false);
-      if (n !== null && (n[0] - self.me.x != 0 && n[1] - self.me.y != 0)){
+      // self.log(""+n)
+      if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
         return self.move(n[0] - self.me.x,n[1] - self.me.y);
       }
       else{
-        return null;
+        return null
       }
+      // let n = nonNuisanceBehavior(self,base_location, false);
+      // if (n !== null && (n[0] != 0 && n[1] != 0)){
+      //   return self.move(n[0], n[1]);
+      // }
+      // else{
+      //   return null;
+      // }
      }
   }
 }
@@ -404,20 +430,20 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     }
   }
 
-  //go back to base if possible
-  // self.log('here2')
-  if (dist([self.me.x,self.me.y],base_location) >= 25) {
-    let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-    if (move !== null) {
-      return self.move(move.x - self.me.x, move.y - self.me.y);
-    }
-    else{
-      return null;
-    }
-  } 
+  // //go back to base if possible
+  // // self.log('here2')
+  // if (dist([self.me.x,self.me.y],base_location) >= 25) {
+  //   let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+  //   if (move !== null) {
+  //     return self.move(move.x - self.me.x, move.y - self.me.y);
+  //   }
+  //   else{
+  //     return null;
+  //   }
+  // } 
 
   //give resources if possible (given that you are already at base)
-  else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
+  if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
     return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
   } 
 
