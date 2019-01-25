@@ -163,12 +163,13 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
 
   let farthest_nonRes_point = null
   let farthest_point = null
+  let center = [parseInt(self.map.length/2), parseInt(self.map.length/2)]
   let mypos = [self.me.x, self.me.y]
   let myspeed = SPECS.UNITS[self.me.unit].SPEED
   if (is_lattice(self, mypos, base_loc) || (lattice_point !== null && self.me.x == lattice_point[0] && self.me.y == lattice_point[1])){
     return null
   }
-  if (lattice_point !== null && self.getVisibleRobotMap()[lattice_point[1]][lattice_point[0]] == 0){
+  if (lattice_point !== null && self.getVisibleRobotMap()[lattice_point[1]][lattice_point[0]] <= 0){
     if (dist(lattice_point, mypos) > myspeed){
       let move = move_to(self, mypos, lattice_point)
       if (move !== null){
@@ -191,25 +192,18 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
 
     if (is_nonResource(self, current, base_loc)){
       // self.log('here3')
-      if (farthest_nonRes_point === null || dist(current, base_loc) > dist(base_loc,farthest_nonRes_point)){
+      if (farthest_nonRes_point === null || dist(current, center) < dist(center,farthest_nonRes_point)){
         farthest_nonRes_point = [current[0],current[1]]
       }
     }
 
     if (is_available(self, current, base_loc)){
-      if (farthest_point === null || dist(current, base_loc) > dist(base_loc,farthest_point)){
+      if (farthest_point === null || dist(current, center) < dist(center,farthest_point)){
         farthest_point = [current[0],current[1]]
       }
     }
     // self.log('here4')
   }
-  if (self.me.x == 39 && self.me.y == 6){
-    self.log([closest_lattice_point, farthest_nonRes_point, farthest_point])
-  }
-  if (self.me.x == 39 && self.me.y == 8){
-    self.log([closest_lattice_point, farthest_nonRes_point, farthest_point])
-  }
-
   if (farthest_nonRes_point !== null){
     return farthest_nonRes_point
   }
@@ -349,7 +343,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
   if (mode_location !== null) {
     // self.log(self.getVisibleRobotMap()[mode_location[1]][mode_location[0]])
     let vis_map = self.getVisibleRobotMap()
-    if (vis_map[mode_location[1]][mode_location[0]] == -1) {
+    if (vis_map[mode_location[1]][mode_location[0]] != 0) {
       // self.log('move_towards2')
       let move = move_towards(self, [self.me.x, self.me.y], [mode_location[0], mode_location[1]])
       if (move !== null) {
@@ -641,9 +635,16 @@ export class PreacherManager {
 
     //save lattice means to put lattice point in private variable
     if (action == CONSTANTS.SAVE_LATTICE){
+      if (self.me.x == 34 && self.me.y == 7){
+        self.log(this.lattice_point)
+      }
+
       //if lattice point is compromised, re compute it
-      if (this.lattice_point === null || (this.lattice_point !== null && self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] != 0)){
+      if (this.lattice_point === null || (this.lattice_point !== null && self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] > 0)){
         this.lattice_point = find_lattice_point(self, this.base_location)
+      }
+      if (self.me.x == 34 && self.me.y == 7){
+        self.log(this.lattice_point)
       }
       //if we are already at the lattice point, then simply do mnothing
       if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
