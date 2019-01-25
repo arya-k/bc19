@@ -137,7 +137,24 @@ function is_available(self, myposition, base_loc){
   dist(myposition,base_loc) > 1
 }
 
-function preacher_nonNuisanceBehavior(self, base_loc, waffle = true) {
+function find_lattice_point(self, base_loc){
+  let closest_lattice_point = null
+  let mypos = [self.me.x, self.me.y]
+  if (is_lattice(self, mypos, base_loc)){
+    return null
+  }
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
+    let current = [self.me.x + dir[0], self.me.y + dir[1]]
+    if (is_lattice(self, current, base_loc)) {
+      if (closest_lattice_point === null || dist(current, base_loc) < dist(base_loc,closest_lattice_point)){
+        closest_lattice_point = [current[0],current[1]]
+      }
+    }
+  }
+  return closest_lattice_point
+}
+
+function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
   // Since preachers have low vision, they can't reliably lattice
   // This will be a less ambitious version of nonNuisance
   let closest_lattice_point = null
@@ -145,8 +162,19 @@ function preacher_nonNuisanceBehavior(self, base_loc, waffle = true) {
   let farthest_point = null
   let mypos = [self.me.x, self.me.y]
   let myspeed = SPECS.UNITS[self.me.unit].SPEED
-  if (is_lattice(self, mypos, base_loc)){
+  if (is_lattice(self, mypos, base_loc) || (lattice_point !== null && self.me.x == lattice_point[0] && self.me.y == lattice_point[1])){
     return null
+  }
+  if (lattice_point !== null && self.getVisibleRobotMap()[lattice_point[1]][lattice_point[0]] == 0){
+    if (dist(lattice_point, mypos) > myspeed){
+      let move = move_to(self, mypos, lattice_point)
+      if (move !== null){
+        return [move.x, move.y]
+      }
+    }
+    else{
+      return lattice_point
+    }
   }
   if (is_nonResource(self, mypos, base_loc)){
     farthest_nonRes_point = [mypos[0],mypos[1]]
@@ -157,12 +185,6 @@ function preacher_nonNuisanceBehavior(self, base_loc, waffle = true) {
   // self.log('here1')
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
-    // self.log('here2')
-    if (is_lattice(self, current, base_loc)) {
-      if (closest_lattice_point === null || dist(current, base_loc) < dist(base_loc,closest_lattice_point)){
-        closest_lattice_point = [current[0],current[1]]
-      }
-    }
 
     if (is_nonResource(self, current, base_loc) && dist(current,mypos) <= myspeed){
       // self.log('here3')
@@ -181,24 +203,23 @@ function preacher_nonNuisanceBehavior(self, base_loc, waffle = true) {
   if (self.me.x == 39 && self.me.y == 6){
     self.log([closest_lattice_point, farthest_nonRes_point, farthest_point])
   }
-  if (closest_lattice_point !== null){
-    if (dist(closest_lattice_point, mypos) > myspeed){
-      let move = move_to(self, mypos, closest_lattice_point)
-      if (move !== null){
-        return [move.x, move.y]
-      }
-    }
-    else{
-      return closest_lattice_point
-    }
+  if (self.me.x == 39 && self.me.y == 8){
+    self.log([closest_lattice_point, farthest_nonRes_point, farthest_point])
   }
+
   if (farthest_nonRes_point !== null){
     return farthest_nonRes_point
   }
   if (farthest_point !== null){
     return farthest_point
   }
-  return null
+  let move = move_to(self, [self.me.x, self.me.y], [base_loc[0],base_loc[1]])
+  if (move !== null) {
+    return [move.x, move.y]
+  }
+  else{
+    return null;
+  }
 }
 
 function attack_behaviour_aggressive(self, mode_location, base_location){
@@ -355,14 +376,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
         // self.log('here3')
       }
       // self.log()
-      let n = preacher_nonNuisanceBehavior(self,base_location, false);
-      // self.log(""+n)
-      if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
-        return self.move(n[0] - self.me.x,n[1] - self.me.y);
-      }
-      else{
-        return null
-      }
+
+      //TO prevent preachers from moving back and forth (due to constantly finding new lattice points),
+      //the lattice point must be saved. If this point is ever compromised, it is immediately re-computed
+      return CONSTANTS.SAVE_LATTICE
       // let n = nonNuisanceBehavior(self,base_location, false);
       // if (n !== null && (n[0] != 0 && n[1] != 0)){
       //   return self.move(n[0], n[1]);
@@ -583,6 +600,7 @@ export class PreacherManager {
   constructor(self) {
     this.mode_location = null;
     this.base_location = null;
+    this.lattice_point = null;
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -612,9 +630,28 @@ export class PreacherManager {
     }
     // self.log('here-prea')
     let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+    //this.lattice_point = find_lattice_point()
     if (action == CONSTANTS.ELIMINATED_ENEMY) {
       this.mode_location = null;
       action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+    }
+
+    //save lattice means 
+    if (action == CONSTANTS.SAVE_LATTICE){
+      if (this.lattice_point === null || self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] != 0){
+        this.lattice_point = find_lattice_point(self, this.base_location)
+      }
+      if (self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
+        this.lattice_point = null
+      }
+      let n = preacher_nonNuisanceBehavior(self,base_location, this.lattice_point);
+      // self.log(""+n)
+      if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
+        return self.move(n[0] - self.me.x,n[1] - self.me.y);
+      }
+      else{
+        return null
+      }
     }
     return action;
   }

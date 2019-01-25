@@ -3,6 +3,7 @@ export let CONSTANTS = {
   DEFENSE: 100,
   OFFENSE: 101,
   ESCORT: 102,
+  SAVE_LATTICE: 103,
 
   // pilgrims:
   MINE: 125,
