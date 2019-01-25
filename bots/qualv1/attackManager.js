@@ -379,7 +379,6 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       if (self.me.x == 35 && self.me.y == 6){
         // self.log('here3')
       }
-      // self.log()
 
       //TO prevent preachers from moving back and forth (due to constantly finding new lattice points),
       //the lattice point must be saved. If this point is ever compromised, it is immediately re-computed
