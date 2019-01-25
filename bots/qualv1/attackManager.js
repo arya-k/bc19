@@ -157,7 +157,10 @@ function find_lattice_point(self, base_loc){
 function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
   // Since preachers have low vision, they can't reliably lattice
   // This will be a less ambitious version of nonNuisance
-  let closest_lattice_point = null
+  //The lattice point has already been found; so just a* to it
+  //If this point is null because there are no lattice points, look for a point without resources on it
+  //If that's not available, look for a point that is far away from base
+
   let farthest_nonRes_point = null
   let farthest_point = null
   let mypos = [self.me.x, self.me.y]
@@ -183,17 +186,17 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
     farthest_point = [mypos[0],mypos[1]]
   }
   // self.log('here1')
-  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
 
-    if (is_nonResource(self, current, base_loc) && dist(current,mypos) <= myspeed){
+    if (is_nonResource(self, current, base_loc)){
       // self.log('here3')
       if (farthest_nonRes_point === null || dist(current, base_loc) > dist(base_loc,farthest_nonRes_point)){
         farthest_nonRes_point = [current[0],current[1]]
       }
     }
 
-    if (is_available(self, current, base_loc) && dist(current,mypos) <= myspeed){
+    if (is_available(self, current, base_loc)){
       if (farthest_point === null || dist(current, base_loc) > dist(base_loc,farthest_point)){
         farthest_point = [current[0],current[1]]
       }
@@ -636,13 +639,16 @@ export class PreacherManager {
       action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
     }
 
-    //save lattice means 
+    //save lattice means to put lattice point in private variable
     if (action == CONSTANTS.SAVE_LATTICE){
+      //if lattice point is compromised, re compute it
       if (this.lattice_point === null || self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] != 0){
         this.lattice_point = find_lattice_point(self, this.base_location)
       }
+      //if we are already at the lattice point, then simply do mnothing
       if (self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
         this.lattice_point = null
+        return null
       }
       let n = preacher_nonNuisanceBehavior(self,base_location, this.lattice_point);
       // self.log(""+n)
