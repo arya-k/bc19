@@ -5,6 +5,8 @@ import {num_moves} from './path.js'
 import {getNearbyRobots, canAfford, getClearLocations, getAttackOrder, dist} from './utils.js'
 import {find_resource_clusters, local_cluster_info, determine_cluster_plan, get_best_cluster_castle} from './clusters.js'
 
+let CHURCH_BUILD_PILGRIM_THRESHOLD = 500; // we have to have this much fuel before we build a pilgrim for a church.
+
 function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
   let N = pass_map.length;
   for (let i = 0; i < N; i++) {
@@ -54,6 +56,10 @@ export class CastleManager {
     this.enemy_castle_locations = [];
     this.partial_points = [];
 
+    this.church_locations = [];
+    this.castle_ids = [];
+    this.church_ids = [];
+
     this.horiSym = isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)
 
     this.castle_talk_queue = [COMM8.ENCODE_Y(self.me.y), COMM8.ENCODE_X(self.me.x)];
@@ -66,14 +72,18 @@ export class CastleManager {
   turn(step, self) {
 
     /* GATHERING CASTLE LOCATIONS */
-
-    if (step <= 2) {
-      for (const r of self.getVisibleRobots()) {
-        if (COMM8.type(r.castle_talk) == COMM8.X_HEADER) {
-          this.partial_points[r.id] = COMM8.DECODE_X(r.castle_talk);
-        } else if (COMM8.type(r.castle_talk) == COMM8.Y_HEADER) {
+    for (const r of self.getVisibleRobots()) {
+      if (COMM8.type(r.castle_talk) == COMM8.X_HEADER) {
+        this.partial_points[r.id] = COMM8.DECODE_X(r.castle_talk);
+        if (step <= 2)
+          this.castle_ids.push(r.id)
+        else
+          this.church_ids.push(r.id)
+      } else if (COMM8.type(r.castle_talk) == COMM8.Y_HEADER) {
+        if (step <= 2)
           this.castle_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
-        }
+        else
+          this.church_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
       }
     }
 
@@ -193,5 +203,78 @@ export class CastleManager {
         }
       }
     }
+  }
+}
+
+
+export class ChurchManager {
+  constructor(self) {
+    self.log("CHURCH @ " + [self.me.x, self.me.y])
+
+    let cluster_info = local_cluster_info(self);
+    this.resource_count = cluster_info[0];
+    this.resource_radius = cluster_info[1];
+    this.build_queue = []
+    this.castle_talk_queue = [COMM8.ENCODE_Y(self.me.y), COMM8.ENCODE_X(self.me.x)]
+  }
+
+  turn(step, self) {
+    let building_locations = getClearLocations(self, 2);
+    let myRobots = {preacher:[], prophet:[], crusader:[], pilgrim:[]};
+    let enemyRobots = {preacher:false, prophet:false, crusader:false}
+    let maxDefenderRadius = 0;
+
+    for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
+      let r = self.getRobot(r_id);
+      if (r.team == self.me.team) {
+        if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER || r.unit == SPECS.PROPHET)
+          maxDefenderRadius = Math.max(maxDefenderRadius, dist([self.me.x, self.me.y], [r.x, r.y]))
+
+        if (r.unit == SPECS.CRUSADER)
+          myRobots.crusader.push(r);
+        else if (r.unit == SPECS.PREACHER)
+          myRobots.preacher.push(r);
+        else if (r.unit == SPECS.PROPHET)
+          myRobots.prophet.push(r)
+        else if (r.unit == SPECS.PILGRIM)
+          myRobots.pilgrim.push(r);
+      } else if (r.team !== self.me.team) {
+        if (r.unit == SPECS.CRUSADER)
+          enemyRobots.crusader = r;
+        else if (r.unit == SPECS.PREACHER)
+          enemyRobots.preacher = r;
+        else if (r.unit == SPECS.PROPHET)
+          enemyRobots.prophet = r;
+      }
+    }
+
+     // signal if necessary
+    let enemies = getAttackOrder(self);
+    if (enemies.length != 0)
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemies[0].x, enemies[0].y), maxDefenderRadius) // signal most pertinent enemy
+
+    // TODO: ACTIVE DEFENSE.
+
+    // if we need to build more pilgrims, do that:
+    let pilgrimCount = 0;
+    for (const r of myRobots.pilgrim)
+      if (dist([r.x, r.y], [self.me.x, self.me.y]) <= this.resource_radius)
+        pilgrimCount++;
+
+    if (pilgrimCount < this.resource_count && canAfford(SPECS.PILGRIM, self) &&
+        self.fuel > CHURCH_BUILD_PILGRIM_THRESHOLD)
+      this.build_queue.unshift(SPECS.PILGRIM)
+
+    if (this.castle_talk_queue.length > 0)
+      self.castleTalk(this.castle_talk_queue.pop()); // not performant: doesn't matter
+
+    if (this.build_queue.length > 0) {
+      if (building_locations.length > 0 && 
+          self.karbonite > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_KARBONITE &&
+          self.fuel > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_FUEL) {
+        return self.buildUnit(this.build_queue.pop(), building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+      }
+    }
+
   }
 }

@@ -1,5 +1,5 @@
 import {BCAbstractRobot, SPECS} from 'battlecode';
-import {CastleManager} from './buildingManager.js';
+import {CastleManager, ChurchManager} from './buildingManager.js';
 import {PilgrimManager} from './pilgrimManager.js';
 
 class NoneManager {turn(step, self){return null}}
@@ -16,21 +16,27 @@ class MyRobot extends BCAbstractRobot {
       if (self.me.unit === SPECS.CASTLE) {
         robotManager = new CastleManager(self);
         // robotManager = new NoneManager();
+
       } else if (self.me.unit === SPECS.CHURCH) {
-        // robotManager = new ChurchManager(self);
-        robotManager = new NoneManager();
+        robotManager = new ChurchManager(self);
+        // robotManager = new NoneManager();
+
       } else if (self.me.unit === SPECS.PILGRIM) {
         robotManager = new PilgrimManager(self);
         // robotManager = new NoneManager();
+
       } else if (self.me.unit === SPECS.CRUSADER) {
         // robotManager = new CrusaderManager(self);
         robotManager = new NoneManager();
+
       } else if (self.me.unit === SPECS.PROPHET) {
         // robotManager = new ProphetManager(self);
         robotManager = new NoneManager();
+
       } else if (self.me.unit === SPECS.PREACHER) {
         // robotManager = new PreacherManager(self);
         robotManager = new NoneManager();
+
       }
     }
 
