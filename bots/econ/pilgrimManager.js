@@ -192,8 +192,8 @@ export class PilgrimManager {
     
     if (this.base_loc !== null && this.base_loc != this.church_loc) { //if there's a church that's closer to the castle that's not your own, make that new base location
       let r = nearbyChurch(self, this.church_loc, this.base_loc)
-      if (r !== null) {
-        self.base_loc = [r.x, r.y];
+      if (r !== null && [r.x, r.y] != this.base_loc) {
+        this.base_loc = [r.x, r.y];
       }
     }
 
@@ -359,7 +359,7 @@ export class PilgrimManager {
           if ((self.fuel_map[self.me.y][self.me.x] && self.me.fuel >= SPECS.UNITS[self.me.unit].FUEL_CAPACITY) || 
               (self.karbonite_map[self.me.y][self.me.x] && self.me.karbonite >= SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY)) {
             this.mining = false;
-            self.stage = CONSTANTS.DEPOSIT;
+            this.stage = CONSTANTS.DEPOSIT;
           }
           else {
             this.mining = true;
