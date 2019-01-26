@@ -288,7 +288,7 @@ export class PilgrimManager {
 
     if (closest_enemy[1] !== null){
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
-      if (SPECS.UNITS[closest_enemy[1].unit].ATTACK_DAMAGE !== null){
+      if (enemies.length != 0){
         const move = move_away(self, enemies);
         if (move != null){
           return self.move(...move);
