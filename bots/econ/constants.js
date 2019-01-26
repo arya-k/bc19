@@ -13,6 +13,8 @@ export let CONSTANTS = {
 
   // scouts
   SCOUT: 129,
+  CHILLIN: 130,
+  RETURN: 131,
 
   // stages:
   EXPLORATION: 149,

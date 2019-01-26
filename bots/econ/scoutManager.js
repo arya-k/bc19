@@ -1,8 +1,8 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS,CIRCLES} from './constants.js'
 import {COMM8, COMM16} from './comm.js'
-import {move_towards, move_to, move_away, num_moves} from './path.js'
-import {dist, is_valid} from './utils.js'
+import {move_towards, move_to, move_away, num_moves, sneak} from './path.js'
+import {dist, is_valid, getAttackOrder} from './utils.js'
 
 export class ScoutManager {
   constructor(self) {
@@ -35,6 +35,8 @@ export class ScoutManager {
       }
     }
     let enemies = [];
+    let allies = [];
+    let signal = false;
     for (const r of self.getVisibleRobots()) {
       if (r.team !== null && r.team != self.me.team && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE != 0) {
         if (!this.seen_enemies.has(r.id)) {
@@ -43,16 +45,41 @@ export class ScoutManager {
         }
         enemies.push(r);
       }
+      if (r.team !== null && r.team == self.me.team && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE != 0) {
+        if (dist([self.me.x, self.me.y], [r.x, r.y]) <= 25) {
+          signal = true;
+        }
+        allies.push(r);
+      }
     }
     let move = move_away(self, enemies)
     if (move !== null) {
-      self.castleTalk();
-      self.move(...move);
+      //TODO self.castleTalk();
+      return self.move(...move);
     }
 
+    if (this.mode == CONSTANTS.SCOUT) {
+      let move_node = sneak(self, [self.me.x, self.me.y], this.scout_location);
+      if (move_node !== null) {
+        return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
+      } else {
+        this.mode = CONSTANTS.CHILLIN;
+        //TODO self.castleTalk();
+      }
+    }
+
+    if (this.mode == CONSTANTS.CHILLIN) {
+      if (signal) {
+        let temp = getAttackOrder(self)[0];
+        self.signal(COMM16.ENCODE_ENEMYSIGHTING(temp.x, temp.y), 10);
+      }
+      return null;
+    }
+
+    return null;
 
     // get as far in as you can while keeping out of vision
-    // castle talk when 
+    // castle talk when as far in, or have to move_away
     // chill until threatened or reinforcements come
     // if reinforcements come then signal the enemy locations 
   }
