@@ -439,13 +439,6 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
   const speed = SPECS.UNITS[self.me.unit].SPEED;
   let attack_radius_min = null;
   let attack_radius_max = null;
-  let vertical = null;
-  let i_hat = b[0] - a[0];
-  let j_hat = b[1] - a[1];
-  if (j_hat >= Math.abs(i_hat) || j_hat <= Math.abs(i_hat))
-    vertical = true;
-  else
-    vertical = false;
 
   if (self.me.unit == SPECS.PILGRIM) {
     attack_radius_max = 2;
@@ -464,35 +457,16 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
         if (r.team !== null && r.team == self.me.team && SPECS.UNITS[self.me.unit].SPEED > 0 && 
             SPECS.UNITS[self.me.unit].ATTACK_DAMAGE !== null){
           for (let dir of CIRCLES[2]){
-            if (vertical) {
-              if (dir == [0, 1] || dir == [0, -1])
-                continue;
-            }
-            else {
-              if (dir == [1, 0] || dir == [-1, 0])
-                continue;
-            }
             let p = [x + dir[0], y + dir[1]];
-            if (is_valid(p[0], p[1], self.map.length)){
+            if (graph.grid[p[1]] && graph.grid[p[1]][p[0]]){
               graph.grid[p[1]][p[0]].isWall = true;
             }
-          }
-          if (vertical) {
-            if (is_valid(r.x, r.y+2, self.map.length))
-              graph.grid[r.y+2][r.x].isWall = true;
-            if (is_valid(r.x, r.y-2, self.map.length))
-              graph.grid[r.y+2][r.x].isWall = true;
-          }
-          else {
-            if (is_valid(r.x+2, r.y, self.map.length))
-              graph.grid[r.y][r.x+2].isWall = true;
-            if (is_valid(r.x-2, r.y, self.map.length))
-              graph.grid[r.y][r.x-2].isWall = true;
           }
         }
       }
     }
   }
+
   var openHeap = getHeap();
 
   var start = graph.grid[a[1]][a[0]]
