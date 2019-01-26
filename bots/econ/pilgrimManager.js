@@ -155,6 +155,7 @@ export class PilgrimManager {
     }
     else
       this.base_loc = this.castle_loc;
+    self.castleTalk(COMM8.NEW_PILGRIM);
   }
 
   turn(step, self) {

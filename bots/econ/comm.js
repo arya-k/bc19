@@ -9,7 +9,7 @@ export const COMM8 = {
     ADDED_LATTICE: 13,
     REMOVED_LATTICE: 14,
 
-    NEWPILGRIM: 15,
+    NEW_PILGRIM: 15,
     IM_ALIVE: 16,
     HINDERED: 17,
 
