@@ -655,16 +655,11 @@ export class ProphetManager {
         }
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
       }
-      if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
-        this.mode = CONSTANTS.ATTACK
-        this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
-      }
       if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
         this.mode = CONSTANTS.LATTICE
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
     }
-
     let needLattice = false;
     if (this.mode == CONSTANTS.PURSUING_BASE){
       if (dist([self.me.x,self.me.y],this.base_location) > 25) {
@@ -701,7 +696,7 @@ export class ProphetManager {
       // self.log("attack")
       let action = attack_behaviour_passive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        self.log("enemy castle dead")
+        self.log("prophet says enemy castle dead")
         self.log(self.me.x)
         self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
@@ -801,7 +796,7 @@ export class PreacherManager {
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        self.log("enemy castle dead")
+        self.log("preacher says enemy castle dead")
         self.log(self.me.x)
         self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
