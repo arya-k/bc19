@@ -10,6 +10,9 @@ export let CONSTANTS = {
   BUILD: 127,
   FOUND_NEARBY_BASE: 128,
 
+  // scouts
+  SCOUT: 129,
+
   // stages:
   EXPLORATION: 149,
   BUILDUP: 150,

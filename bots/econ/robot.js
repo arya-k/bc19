@@ -1,6 +1,7 @@
 import {BCAbstractRobot, SPECS} from 'battlecode';
 import {CastleManager, ChurchManager} from './buildingManager.js';
 import {PilgrimManager} from './pilgrimManager.js';
+import {ScoutManager} from './scoutManager.js';
 
 class NoneManager {turn(step, self){return null}}
 
@@ -22,7 +23,13 @@ class MyRobot extends BCAbstractRobot {
         // robotManager = new NoneManager();
 
       } else if (self.me.unit === SPECS.PILGRIM) {
-        robotManager = new PilgrimManager(self);
+        for (const r of self.getVisibleRobots()) {
+          if (COMM16.type(r.signal) == COMM16.SCOUT_HEADER) {
+            robotManager = new ScoutManager(self);
+          }
+        }
+        if (robotManager === null)
+          robotManager = new PilgrimManager(self);
         // robotManager = new NoneManager();
 
       } else if (self.me.unit === SPECS.CRUSADER) {
