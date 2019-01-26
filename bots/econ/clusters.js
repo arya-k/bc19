@@ -189,8 +189,8 @@ export function determine_cluster_plan(clusters_in, attack_plan, horiSym, maplen
 
   // protect the clusters near the center (if any).
   for (let cl of clusters_on_our_side) {
-    if ((horiSym && (Math.abs(cl.y - (maplen/2)) <= 1)) ||
-        (!horiSym && (Math.abs(cl.x - (maplen/2)) <= 1))) { // cluster near center:
+    if ((horiSym && (Math.abs(cl.y - (maplen/2)) <= 6)) ||
+        (!horiSym && (Math.abs(cl.x - (maplen/2)) <= 6))) { // cluster near center:
       cl.defend = true;
     } else {
       cl.defend = false;

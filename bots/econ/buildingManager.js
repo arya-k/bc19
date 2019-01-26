@@ -10,6 +10,7 @@ const CASTLE_BUILD_PILGRIM_THRESHOLD = 200; // we have to have this much fuel be
 const LATTICE_BUILD_FUEL_THRESHOLD = 700; // we have to have this much fuel before we add to a lattice.
 const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite before we add to a lattice.
 const NONESSENTIAL_LATTICE_THRESHOLD = 3000; // if we have this much fuel, we can build a lattice beyong whats necessary
+const CRUSADER_SPAM_ROUND = 900; // after this round, we spam crusaders to win on unit health.
 
 const LATTICE_RATIO = { // these HAVE to add up to 1
   prophet: 2/5,
@@ -142,7 +143,6 @@ export class CastleManager {
   }
 
   turn(step, self) {
-
     /* GATHERING CASTLE LOCATIONS */
     for (const r of self.getVisibleRobots()) {
       if (COMM8.type(r.castle_talk) == COMM8.X_HEADER) {
@@ -285,6 +285,9 @@ export class CastleManager {
       else if (myRobots.preacher.length < totalLatticeCount * LATTICE_RATIO.preacher)
         latticeUnit = SPECS.PREACHER;
       else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
+        latticeUnit = SPECS.CRUSADER;
+
+      if (step > CRUSADER_SPAM_ROUND)
         latticeUnit = SPECS.CRUSADER;
 
       if (getToBuild(this.all_lattices, self)) {
@@ -454,6 +457,9 @@ export class ChurchManager {
       else if (myRobots.preacher.length < totalLatticeCount * LATTICE_RATIO.preacher)
         latticeUnit = SPECS.PREACHER;
       else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
+        latticeUnit = SPECS.CRUSADER;
+
+      if (step > CRUSADER_SPAM_ROUND)
         latticeUnit = SPECS.CRUSADER;
 
       if (this.lattice_built < this.lattice_needed) {
