@@ -2,7 +2,7 @@ import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
 import {move_towards, move_to, no_swarm, move_away} from './path.js'
 import {COMM8,COMM16} from './comm.js'
-import {getAttackOrder, has_adjacent_castle, getNearbyRobots, dist, is_valid, is_passable} from './utils.js'
+import {getAttackOrder, dist, is_valid, is_passable, isHorizontalSymmetry} from './utils.js'
 
 function Point(x, y, p) {
   this.x = x,
@@ -68,6 +68,9 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
   // within the cluster.
 
   let r_sq = local_cluster_info(self, base_loc)
+  if (self.me.x == 22 && self.me.y == 0){
+    self.log(r_sq)
+  }
   let current;
   let visited = new Set()
   let queue = [new Point(self.me.x, self.me.y, null)];
@@ -163,7 +166,15 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
 
   let farthest_nonRes_point = null
   let farthest_point = null
-  let center = [parseInt(self.map.length/2), parseInt(self.map.length/2)]
+  let counterpart = null
+  
+  if (isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)){
+    counterpart = [self.map.length - self.me.x, self.me.y]
+  }
+  else{
+    counterpart = [self.me.x, self.map.length - self.me.y]
+  }
+
   let mypos = [self.me.x, self.me.y]
   let myspeed = SPECS.UNITS[self.me.unit].SPEED
   if (is_lattice(self, mypos, base_loc) || (lattice_point !== null && self.me.x == lattice_point[0] && self.me.y == lattice_point[1])){
@@ -192,13 +203,13 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
 
     if (is_nonResource(self, current, base_loc)){
       // self.log('here3')
-      if (farthest_nonRes_point === null || dist(current, center) < dist(center,farthest_nonRes_point)){
+      if (farthest_nonRes_point === null || dist(current, counterpart) < dist(counterpart,farthest_nonRes_point)){
         farthest_nonRes_point = [current[0],current[1]]
       }
     }
 
     if (is_available(self, current, base_loc)){
-      if (farthest_point === null || dist(current, center) < dist(center,farthest_point)){
+      if (farthest_point === null || dist(current, counterpart) < dist(counterpart,farthest_point)){
         farthest_point = [current[0],current[1]]
       }
     }
@@ -370,20 +381,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
     } else {
-      if (self.me.x == 35 && self.me.y == 6){
-        // self.log('here3')
-      }
 
       //TO prevent preachers from moving back and forth (due to constantly finding new lattice points),
       //the lattice point must be saved. If this point is ever compromised, it is immediately re-computed
       return CONSTANTS.SAVE_LATTICE
-      // let n = nonNuisanceBehavior(self,base_location, false);
-      // if (n !== null && (n[0] != 0 && n[1] != 0)){
-      //   return self.move(n[0], n[1]);
-      // }
-      // else{
-      //   return null;
-      // }
      }
   }
 }
@@ -396,23 +397,23 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   let vis_map = self.getVisibleRobotMap()
   //attack enemy, but MAKE SURE crusader is between prophet and enemy
   let targets = getAttackOrder(self)
-  let crusaders = []
-  let enemies = []
-  //if there is a single enemy robot without a crusader in front, move away
-  //since this method is called by prophets, it must be certain that they are protected by crusaders
-  for (const p of self.getVisibleRobots()){
-    if (self.isVisible(p) && (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER])){
-      crusaders.push([p.x,p.y])
-    }
-    if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
-      enemies.push(p)
-    }
-  }
   if (targets.length != 0){
+    let help = []
+    let enemies = []
+    //if there is a single enemy robot without a crusader in front, move away
+    //since this method is called by prophets, it must be certain that they are protected by help
+    for (const p of self.getVisibleRobots()){
+      if (self.isVisible(p) && p.team == self.me.team && (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER])){
+        help.push([p.x,p.y])
+      }
+      if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
+        enemies.push(p)
+      }
+    }
     let escape = false;
     for (const r of targets){
       let unsafe = true;
-      for (const c of crusaders){
+      for (const c of help){
         if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
           unsafe = false;
           break
@@ -437,13 +438,9 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     }
   }
 
-  else{
-    let move = move_away(self,enemies)
-    if (move !== null) {
-      return self.move(move[0],move[1]);
-    }
+  if (self.me.x == 22 && self.me.y == 0){
+    self.log(base_location)
   }
-
   //go back to base if possible
   // self.log('here2')
   if (dist([self.me.x,self.me.y],base_location) >= 36) {
@@ -463,9 +460,6 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
   //Don't be annoying; get off resources spots and waffle
   else {
-    // self.log('no nuis');
-    // self.log(self.me.x)
-    // self.log(self.me.y)
     let n = nonNuisanceBehavior(self,base_location);
     if (n !== null){
       return self.move(n[0],n[1]);
@@ -635,17 +629,12 @@ export class PreacherManager {
 
     //save lattice means to put lattice point in private variable
     if (action == CONSTANTS.SAVE_LATTICE){
-      if (self.me.x == 34 && self.me.y == 7){
-        self.log(this.lattice_point)
-      }
 
       //if lattice point is compromised, re compute it
       if (this.lattice_point === null || (this.lattice_point !== null && self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] > 0)){
         this.lattice_point = find_lattice_point(self, this.base_location)
       }
-      if (self.me.x == 34 && self.me.y == 7){
-        self.log(this.lattice_point)
-      }
+
       //if we are already at the lattice point, then simply do mnothing
       if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
         this.lattice_point = null

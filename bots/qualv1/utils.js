@@ -13,6 +13,20 @@ export function is_valid(x, y, dim) {
   return (x >=0 && x < dim && y >= 0 && y < dim);
 }
 
+export function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
+  let N = pass_map.length;
+  for (let i = 0; i < N; i++) {
+    for (let j = 0; j < Math.floor(N/2); j++) {
+      if (pass_map[j][i] != pass_map[N - j - 1][i] ||
+          fuel_map[j][i] != fuel_map[N - j - 1][i] ||
+          karb_map[j][i] != karb_map[N - j - 1][i]) {
+        return false;
+      }
+    }
+  }
+  return true;
+}
+
 export function getNearbyRobots(self, p, r_squared) {
   // returns the ids of all the robots within the range r_squared
   let ret = []
