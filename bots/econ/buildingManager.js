@@ -140,6 +140,9 @@ export class CastleManager {
 
     this.resource_clusters = find_resource_clusters(self, self.map, self.fuel_map, self.karbonite_map)
     this.nearby_numresources = local_cluster_info(self)[0];
+
+    this.pioneer_pilgrims = {};
+    this.pioneer_ids = [];
   }
 
   turn(step, self) {
@@ -161,8 +164,13 @@ export class CastleManager {
         this.all_lattices[r.id].built++;
       } else if (r.castle_talk == COMM8.REMOVED_LATTICE) {
         this.all_lattices[r.id].built--;
+      } else if (self.isVisible(r) && r.castle_talk == COMM8.NEW_PILGRIM) {
+        this.pioneer_pilgrims[r.id] = this.last_cluster;
+        this.pioneer_ids.push(r.id);
       }
     }
+
+    /* UPDATE ATTACK_TARGETS */
 
     if (step == 2) { // we've just gotten castle location information.
       this.castle_locations.sort(function(a,b) { return dist(a, [0,0]) - dist(b, [0,0])}); // make sure they're all the same
@@ -372,11 +380,11 @@ export class ChurchManager {
     let maxDefenderRadius = 0;
     for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
       let r = self.getRobot(r_id);
-      if (r.team == self.me.team) {
+      if (r.team == self.me.team)
         if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER || r.unit == SPECS.PROPHET)
           maxDefenderRadius = Math.max(maxDefenderRadius, dist([self.me.x, self.me.y], [r.x, r.y]))
     }
-    self.signal(COMM16.ENCODE_LATTICE(0), maxDefenderRadius);
+    self.signal(COMM16.ENCODE_LATTICE(0), maxDefenderRadius)
   }
 
   turn(step, self) {
