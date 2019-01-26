@@ -482,6 +482,26 @@ export class CrusaderManager {
   }
 
   turn(step, self) {
+    for (const r of self.getVisibleRobots()) {
+      if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+      }
+      if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
+        
+
+      }
+      if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
+
+      }
+      if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
+
+      }
+    }
+
+    if (this.base_location == null) {
+      this.mode = CONSTANTS.ATTACK
+    }
   }
 }
 

@@ -34,16 +34,16 @@ class MyRobot extends BCAbstractRobot {
         // robotManager = new NoneManager();
 
       } else if (self.me.unit === SPECS.CRUSADER) {
-        // robotManager = new CrusaderManager(self);
-        robotManager = new NoneManager();
+        robotManager = new CrusaderManager(self);
+        // robotManager = new NoneManager();
 
       } else if (self.me.unit === SPECS.PROPHET) {
-        // robotManager = new ProphetManager(self);
-        robotManager = new NoneManager();
+        robotManager = new ProphetManager(self);
+        // robotManager = new NoneManager();
 
       } else if (self.me.unit === SPECS.PREACHER) {
-        // robotManager = new PreacherManager(self);
-        robotManager = new NoneManager();
+        robotManager = new PreacherManager(self);
+        // robotManager = new NoneManager();
 
       }
     }
