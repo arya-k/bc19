@@ -869,8 +869,6 @@ export class PreacherManager {
       else{
         return action;
       }
-
     }
-    
   }
 }
