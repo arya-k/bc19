@@ -26,7 +26,7 @@ export function local_cluster_info(self) {
     }
 
     visited.add(minicurrent);
-    for (const dir of CIRCLES[9]) {
+    for (const dir of CIRCLES[10]) {
       if (is_valid(minix+dir[0], miniy+dir[1], self.map.length)) {
         miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
       }
@@ -125,7 +125,7 @@ export function find_resource_clusters(self, map, fuel_map, karb_map) {
         }
 
         visited.add(minicurrent);
-        for (const dir of CIRCLES[9]) {
+        for (const dir of CIRCLES[10]) {
           if (is_valid(minix+dir[0], miniy+dir[1], map.length)) {
             miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
           }
@@ -169,7 +169,7 @@ export function determine_cluster_plan(clusters_in, attack_plan, horiSym, maplen
   // clusters at castles are not considered:
   let valid_clusters = clusters_in.filter(function (cl) {
     for (const ap of attack_plan) {
-      if (dist([cl.x, cl.y], ap.me) <= 9 || dist([cl.x, cl.y], ap.enemy) <= 9)
+      if (dist([cl.x, cl.y], ap.me) <= 10 || dist([cl.x, cl.y], ap.enemy) <= 10)
         return false;
     }
     return true;
