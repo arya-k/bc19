@@ -182,7 +182,7 @@ Graph.prototype.neighbors = function(node) {
   return ret;
 };
 
-export function move_towards(self, a, b) {
+export function move_towards(self, a, b, adjacent=false) {
   // given getPassableLocations(), getVisibleRobotMap(), [start_x, start_y], [end_x, end_y], 
   // minimum_radius (1 for PREACHER), maximum_radius (16 for PREACHER)
   // This function will run A*, and just try to position you so that you are within attack range of
@@ -196,7 +196,7 @@ export function move_towards(self, a, b) {
   let attack_radius_min = null;
   let attack_radius_max = null;
 
-  if (self.me.unit == SPECS.PILGRIM) {
+  if (self.me.unit == SPECS.PILGRIM || adjacent) {
     attack_radius_max = 2;
     attack_radius_min = 1;
   } else {

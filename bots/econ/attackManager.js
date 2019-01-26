@@ -156,6 +156,12 @@ function find_lattice_point(self, base_loc, lattice_point){
       }
     }
   }
+  if (self.me.x == 31 && self.me.y == 14){
+    self.log(closest_lattice_point)
+  }
+  if (self.me.x == 31 && self.me.y == 17){
+    self.log(closest_lattice_point)
+  }
   return closest_lattice_point
 }
 
@@ -396,6 +402,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
+
     if (self.me.karbonite > 0 || self.me.fuel > 0) {
       if (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1){
         return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
@@ -404,7 +411,11 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
         return self.give(receiver[0] - self.me.x, receiver[1] - self.me.y, self.me.karbonite, self.me.fuel);
       }
       else{
-        let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
+        let move = move_towards(self, [self.me.x, self.me.y], [base_location[0], base_location[1]], true)
+        if (self.me.x == 31 && self.me.y == 14){
+          self.log("move to base")
+          self.log([move.x, move.y])
+        }
         if (move !== null) {
           return self.move(move.x - self.me.x, move.y - self.me.y);
         } else {
@@ -487,7 +498,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
       return self.give(receiver[0] - self.me.x, receiver[1] - self.me.y, self.me.karbonite, self.me.fuel);
     }
     else{
-      let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
+      let move = move_towards(self, [self.me.x, self.me.y], [base_location[0], base_location[1]], true)
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       } else {
@@ -594,6 +605,10 @@ export class CrusaderManager {
 
     if (this.mode == CONSTANTS.DEFENSE) {
       let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+      if (action == CONSTANTS.ELIMINATED_ENEMY){
+        this.mode_location = null;
+        needLattice = true;
+      }
       if (action == CONSTANTS.SAVE_LATTICE){
         needLattice = true;
       }
