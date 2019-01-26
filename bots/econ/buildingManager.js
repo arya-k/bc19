@@ -259,6 +259,7 @@ export class CastleManager {
             let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations)
             if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) {
               self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y]);
+              this.last_cluster = [best_cluster.x, best_cluster.y]
               this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)])
               this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)])
             }
@@ -268,6 +269,7 @@ export class CastleManager {
           let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations)
           if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) {
             self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y]);
+            this.last_cluster = [best_cluster.x, best_cluster.y]
             this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)])
           }
         }

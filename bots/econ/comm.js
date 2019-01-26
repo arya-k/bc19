@@ -9,6 +9,10 @@ export const COMM8 = {
     ADDED_LATTICE: 13,
     REMOVED_LATTICE: 14,
 
+    NEWPILGRIM: 15,
+    IM_ALIVE: 16,
+    HINDERED: 17,
+
     // message type declarations
     X_HEADER: 0b10<<6,
     Y_HEADER: 0b11<<6,
