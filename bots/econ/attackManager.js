@@ -446,7 +446,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     if (self.isVisible(p) && p.team == self.me.team && (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER])){
       help.push([p.x,p.y])
     }
-    if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
+    if (self.isVisible(p) && p.team != self.me.team && p.unit > 2 && dist(mypos,ppos) < SPECS.UNITS[p.unit].VISION_RADIUS){
       enemies.push(p)
     }
     if (self.me.karbonite > 0 || self.me.fuel > 0){
@@ -682,7 +682,7 @@ export class ProphetManager {
     }
 
     if (this.mode == CONSTANTS.DEFENSE) {
-      self.log("defense")
+      // self.log("defense")
       let action = defensive_behaviour_passive(self, this.mode_location, this.base_location)
       if (action == CONSTANTS.SAVE_LATTICE){
         needLatice = true;
@@ -698,7 +698,7 @@ export class ProphetManager {
     }
 
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
-      self.log("attack")
+      // self.log("attack")
       let action = attack_behaviour_passive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         self.log("enemy castle dead")
@@ -714,7 +714,7 @@ export class ProphetManager {
     }
 
     if (this.mode == CONSTANTS.LATTICE || needLatice){
-      self.log("lattice")
+      // self.log("lattice")
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
