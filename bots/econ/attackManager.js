@@ -512,6 +512,26 @@ function lattice_behaviour(self){
 
 }
 
+function addCastle(self, r, lis){
+  let myList = lis
+  if (self.isVisible(r) && r.team != self.me.team && r.unit == 0){
+    myList.push([r.x,r.y])
+  }
+  return myList
+}
+
+function signalDeadCastle(self, lis, base_location){
+ if (base_location === null){
+  return
+ }
+ lis.forEach(function(x){
+    if (self.getVisibleRobotMap()[x[1]][x[0]] == 0){
+      self.signal(COMM16.ENCODE_ENEMYDEAD(x[0],x[1]), dist([self.me.x, self.me.y],base_location))
+      return
+    }
+  })
+}
+
 export class CrusaderManager {
   constructor(self) {
     this.mode = CONSTANTS.DEFENSE
@@ -519,6 +539,7 @@ export class CrusaderManager {
     this.base_location = null;
     this.lattice_point = null;
     this.lattice_angle = null;
+    this.enemy_castles = []
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -536,6 +557,7 @@ export class CrusaderManager {
 
   turn(step, self) {
     for (const r of self.getVisibleRobots()) {
+      this.enemy_castles = addCastle(r,this.enemy_castles)
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
@@ -553,7 +575,7 @@ export class CrusaderManager {
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
     }
-
+    signalDeadCastle(self, this.enemy_castles, this.base_location)
     let needLattice = false;
     if (this.mode == CONSTANTS.PURSUING_BASE){
       if (dist([self.me.x,self.me.y],this.base_location) > 25) {
@@ -653,6 +675,7 @@ export class ProphetManager {
 
   turn(step, self) {
     for (const r of self.getVisibleRobots()) {
+      this.enemy_castles = addCastle(r,this.enemy_castles)
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
@@ -670,6 +693,7 @@ export class ProphetManager {
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
     }
+    signalDeadCastle(self, this.enemy_castles, this.base_location)
     let needLattice = false;
     if (this.mode == CONSTANTS.PURSUING_BASE){
       if (dist([self.me.x,self.me.y],this.base_location) > 25) {
@@ -775,6 +799,7 @@ export class PreacherManager {
 
   turn(step, self) {
     for (const r of self.getVisibleRobots()) {
+      this.enemy_castles = addCastle(r,this.enemy_castles)
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
@@ -792,7 +817,7 @@ export class PreacherManager {
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
     }
-
+    signalDeadCastle(self, this.enemy_castles, this.base_location)
     if (this.mode == CONSTANTS.DEFENSE) {
       let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
       if (action !== null){
