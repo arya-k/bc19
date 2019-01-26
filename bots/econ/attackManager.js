@@ -412,10 +412,10 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       }
       else{
         let move = move_towards(self, [self.me.x, self.me.y], [base_location[0], base_location[1]], true)
-        if (self.me.x == 31 && self.me.y == 14){
-          self.log("move to base")
-          self.log([move.x, move.y])
-        }
+        // if (self.me.x == 31 && self.me.y == 14){
+        //   self.log("move to base")
+        //   self.log([move.x, move.y])
+        // }
         if (move !== null) {
           return self.move(move.x - self.me.x, move.y - self.me.y);
         } else {
