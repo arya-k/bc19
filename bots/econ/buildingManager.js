@@ -196,6 +196,12 @@ export class CastleManager {
         if (self.karbonite > SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_KARBONITE &&
             self.fuel > (SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_FUEL + 2)) {
           let bs = this.build_signal_queue.pop();
+
+          if (bs[1] !== null && COMM16.type(bs[1]) == COMM16.BASELOC_HEADER) { // pick the best building spot you can.
+            let goal_pos = COMM16.DECODE_BASELOC(bs[1])
+            building_locations.sort(function (a, b) { return dist(a, goal_pos) - dist(b, goal_pos) });
+          }
+
           if (bs[1] !== null)
             self.signal(bs[1], dist([self.me.x, self.me.y], building_locations[0]));
           if (bs[0] !== null)
@@ -262,7 +268,7 @@ export class ChurchManager {
         pilgrimCount++;
 
     if (pilgrimCount < this.resource_count && canAfford(SPECS.PILGRIM, self) &&
-        self.fuel > CHURCH_BUILD_PILGRIM_THRESHOLD)
+        self.fuel > CHURCH_BUILD_PILGRIM_THRESHOLD && this.build_queue.length == 0)
       this.build_queue.unshift(SPECS.PILGRIM)
 
     if (this.castle_talk_queue.length > 0)
@@ -272,6 +278,12 @@ export class ChurchManager {
       if (building_locations.length > 0 && 
           self.karbonite > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_KARBONITE &&
           self.fuel > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_FUEL) {
+
+        if (this.build_queue[this.build_queue.length - 1] == SPECS.PILGRIM) // try to build a pilgrim on a spot
+          for (const bl of building_locations)
+            if (self.fuel_map[bl[1]][bl[0]] || self.karbonite_map[bl[1]][bl[0]])
+              return self.buildUnit(this.build_queue.pop(), bl[0] - self.me.x, bl[1] - self.me.y)
+
         return self.buildUnit(this.build_queue.pop(), building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
       }
     }
