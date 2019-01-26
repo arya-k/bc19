@@ -440,7 +440,12 @@ export class ChurchManager {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.crusader.x, enemyRobots.crusader.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
       this.lattice_built++;
-      self.castleTalk(COMM8.ADDED_LATTICE)
+      if (this.castle_talk_queue.length == 0) {
+        self.castleTalk(COMM8.ADDED_LATTICE)
+      } else {
+        this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE)
+        self.castleTalk(this.castle_talk_queue.pop())
+      }
       return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
@@ -450,7 +455,12 @@ export class ChurchManager {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.prophet.x, enemyRobots.prophet.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
       this.lattice_built++;
-      self.castleTalk(COMM8.ADDED_LATTICE)
+      if (this.castle_talk_queue.length == 0) {
+        self.castleTalk(COMM8.ADDED_LATTICE)
+      } else {
+        this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE)
+        self.castleTalk(this.castle_talk_queue.pop())
+      }
       return self.buildUnit(SPECS.CRUSADER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
@@ -460,7 +470,12 @@ export class ChurchManager {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.preacher.x, enemyRobots.preacher.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
       this.lattice_built++;
-      self.castleTalk(COMM8.ADDED_LATTICE)
+      if (this.castle_talk_queue.length == 0) {
+        self.castleTalk(COMM8.ADDED_LATTICE)
+      } else {
+        this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE)
+        self.castleTalk(this.castle_talk_queue.pop())
+      }
       return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
