@@ -140,11 +140,13 @@ function is_available(self, myposition, base_loc){
   dist(myposition,base_loc) > 1
 }
 
-function find_lattice_point(self, base_loc){
-  let closest_lattice_point = null
+function find_lattice_point(self, base_loc, lattice_point){
+  // self.log(lattice_point)
+  // self.log(base_loc)
+  let closest_lattice_point = lattice_point
   let mypos = [self.me.x, self.me.y]
-  if (is_lattice(self, mypos, base_loc)){
-    return null
+  if (is_lattice(self, mypos, base_loc) && (closest_lattice_point === null || dist(mypos, base_loc) < dist(closest_lattice_point,base_loc))){
+    closest_lattice_point = [mypos[0], mypos[1]]
   }
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
@@ -163,7 +165,6 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
   //The lattice point has already been found; so just a* to it
   //If this point is null because there are no lattice points, look for a point without resources on it
   //If that's not available, look for a point that is far away from base
-
   let farthest_nonRes_point = null
   let farthest_point = null
   let counterpart = null
@@ -438,20 +439,17 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     }
   }
 
-  if (self.me.x == 22 && self.me.y == 0){
-    self.log(base_location)
-  }
-  //go back to base if possible
-  // self.log('here2')
-  if (dist([self.me.x,self.me.y],base_location) >= 36) {
-    let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-    if (move !== null) {
-      return self.move(move.x - self.me.x, move.y - self.me.y);
-    }
-    else{
-      return null;
-    }
-  } 
+  // //go back to base if possible
+  // // self.log('here2')
+  // if (dist([self.me.x,self.me.y],base_location) >= 36) {
+  //   let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+  //   if (move !== null) {
+  //     return self.move(move.x - self.me.x, move.y - self.me.y);
+  //   }
+  //   else{
+  //     return null;
+  //   }
+  // } 
 
   //give resources if possible (given that you are already at base)
   if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
@@ -460,13 +458,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
   //Don't be annoying; get off resources spots and waffle
   else {
-    let n = nonNuisanceBehavior(self,base_location);
-    if (n !== null){
-      return self.move(n[0],n[1]);
-    }
-    else{
-      return null;
-    }
+    return CONSTANTS.SAVE_LATTICE
   }
 }
 
@@ -533,6 +525,7 @@ export class ProphetManager {
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = null;
     this.base_location = null;
+    this.lattice_point = null;
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -568,6 +561,30 @@ export class ProphetManager {
 
     if (this.mode == CONSTANTS.DEFENSE) {
       let action = defensive_behaviour_passive(self, this.mode_location, this.base_location)
+      //save lattice means to put lattice point in private variable
+      if (action == CONSTANTS.SAVE_LATTICE){
+
+        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
+
+        if (self.me.x == 37 && self.me.y == 4){
+          self.log(this.lattice_point)
+        }
+
+        //if we are already at the lattice point, then simply do nothing
+        if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
+          this.lattice_point = null
+          return null
+        }
+
+        let n = preacher_nonNuisanceBehavior(self, this.base_location, this.lattice_point);
+        // self.log(""+n)
+        if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
+          return self.move(n[0] - self.me.x,n[1] - self.me.y);
+        }
+        else{
+          return null
+        }
+      }
       return action;
     }
 
@@ -630,16 +647,14 @@ export class PreacherManager {
     //save lattice means to put lattice point in private variable
     if (action == CONSTANTS.SAVE_LATTICE){
 
-      //if lattice point is compromised, re compute it
-      if (this.lattice_point === null || (this.lattice_point !== null && self.getVisibleRobotMap()[this.lattice_point[1]][this.lattice_point[0]] > 0)){
-        this.lattice_point = find_lattice_point(self, this.base_location)
-      }
+      this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
 
       //if we are already at the lattice point, then simply do mnothing
       if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
         this.lattice_point = null
         return null
       }
+
       let n = preacher_nonNuisanceBehavior(self, this.base_location, this.lattice_point);
       // self.log(""+n)
       if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
