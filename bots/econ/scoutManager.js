@@ -41,6 +41,7 @@ export class ScoutManager {
     }
     let enemies = [];
     let allies = [];
+    let max_ally = 0;
     let signal = false;
     for (const r of self.getVisibleRobots()) {
       if (r.team !== null && r.team != self.me.team && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE != 0) {
@@ -51,9 +52,12 @@ export class ScoutManager {
         enemies.push(r);
       }
       if (r.team !== null && r.team == self.me.team && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE != 0) {
-        if (dist([self.me.x, self.me.y], [r.x, r.y]) <= 25) {
+        let d = dist([self.me.x, self.me.y], [r.x, r.y]);
+        if (d <= 36) {
           signal = true;
         }
+        if (d > max_ally)
+          max_ally = d;
         allies.push(r);
       }
     }
@@ -76,7 +80,7 @@ export class ScoutManager {
     if (this.mode == CONSTANTS.CHILLIN) {
       if (signal) {
         let temp = getAttackOrder(self)[0];
-        self.signal(COMM16.ENCODE_ENEMYSIGHTING(temp.x, temp.y), 100);
+        self.signal(COMM16.ENCODE_ENEMYSIGHTING(temp.x, temp.y), max_ally);
       }
       return null;
     }
