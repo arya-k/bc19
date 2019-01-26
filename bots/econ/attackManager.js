@@ -714,7 +714,9 @@ export class ProphetManager {
     }
 
     if (this.mode == CONSTANTS.LATTICE || needLattice){
-      // self.log("lattice")
+      if (self.me.x == 37 && self.me.y == 0){
+        self.log("lattice")  
+      }
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
