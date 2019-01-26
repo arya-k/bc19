@@ -301,7 +301,7 @@ export class PilgrimManager {
         let move_node = move_towards(self, [self.me.x, self.me.y], this.church_loc)
         if (move_node !== null) {
           if (isDangerous(self, [move_node.x, move_node.y])){
-            self.castle_talk(COMM8.HINDERED);
+            self.castleTalk(COMM8.HINDERED);
             return null; // that move will make you vulnerable, do nothing.
           }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y);
@@ -387,7 +387,7 @@ export class PilgrimManager {
         if (move_node !== null) {
           if (isDangerous(self, [move_node.x, move_node.y])){
             if (this.base_loc != this.church_loc)
-              self.castle_talk(COMM8.HINDERED);
+              self.castleTalk(COMM8.HINDERED);
             return null; // that move will make you vulnerable, do nothing.
           }
           return self.move(move_node.x - self.me.x, move_node.y - self.me.y)
