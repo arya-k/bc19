@@ -155,13 +155,13 @@ export class PilgrimManager {
     }
     else
       this.base_loc = this.castle_loc;
-    self.castleTalk(COMM8.NEW_PILGRIM);
   }
 
   turn(step, self) {
     if (this.church_loc === null) {
       for (const r of self.getVisibleRobots()) {
         if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER) {
+          self.castleTalk(COMM8.NEW_PILGRIM);
           this.church_loc = COMM16.DECODE_BASELOC(r.signal);
           this.resources = find_depots(self, this.church_loc);
           this.mine_loc = find_mine(self, this.resources, choosePriority(self));
