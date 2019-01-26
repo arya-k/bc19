@@ -8,7 +8,7 @@ import {find_resource_clusters, local_cluster_info, determine_cluster_plan, get_
 const CHURCH_BUILD_PILGRIM_THRESHOLD = 500; // we have to have this much fuel before we build a pilgrim for a church.
 const CASTLE_BUILD_PILGRIM_THRESHOLD = 200; // we have to have this much fuel before we build a pilgrim for a castle
 const BUILD_PILGRIM_KARB_THRESHOLD = 50; // we need this much karb to build a pilgrim
-const LATTICE_BUILD_FUEL_THRESHOLD = 700; // we have to have this much fuel before we add to a lattice.
+const LATTICE_BUILD_FUEL_THRESHOLD = 1000; // we have to have this much fuel before we add to a lattice.
 const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite before we add to a lattice.
 const NONESSENTIAL_LATTICE_THRESHOLD = 3000; // if we have this much fuel, we can build a lattice beyong whats necessary
 const CRUSADER_SPAM_ROUND = 900; // after this round, we spam crusaders to win on unit health.
@@ -40,7 +40,7 @@ function determine_attack_plan(self, c_locs, e_locs) {
 
   let to_ret = []
   for (const tp of timed_pairs) {
-    to_ret.push({me:tp[0], enemy:tp[1], lattice:(tp[2] <= 9)});
+    to_ret.push({me:tp[0], enemy:tp[1], lattice:(tp[2] <= 9), cluster:false});
   }
   return to_ret;
 }
@@ -160,6 +160,10 @@ export class CastleManager {
           this.church_ids.push(r.id)
           this.church_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
           this.all_lattices[r.id] = {built:0, needed:3, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
+          let obj = this;
+          this.attack_plan = this.attack_plan.filter(function (ap) { // remove the church if you built there successfully.
+            return dist(ap.enemy, [obj.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]) > 0;
+          })
         }
       } else if (r.castle_talk == COMM8.ADDED_LATTICE) {
         this.all_lattices[r.id].built++;
@@ -172,16 +176,16 @@ export class CastleManager {
     }
 
     /* UPDATE ATTACK_TARGETS */
-    for (const pid of this.pioneer_ids) {
-      const r = self.getRobot(pid)
-      if (pid.castle_talk !== COMM8.IM_ALIVE) {
-        // attack_targets has a horde too
-        self.log("THERES A PROBLEM @ " + [this.pioneer_pilgrims[pid].x, this.pioneer_pilgrims[pid].y])
-        if (pid.castle_talk !== COMM8.HINDERED) {
-          // generate a new pilgrim, too!
-        }
+    let obj = this;
+    this.pioneer_ids = this.pioneer_ids.filter(function (pid) {
+      const r = self.getRobot(pid);
+      if (r === null || r == undefined || r.castle_talk < 1 || r.castle_talk == COMM8.HINDERED) {
+        self.log("CREATING AN ATTACK TARGET + PILGRIM @ " + [obj.pioneer_pilgrims[pid].x, obj.pioneer_pilgrims[pid].y])
+        obj.attack_plan.unshift({me:[self.me.x, self.me.y], enemy:[obj.pioneer_pilgrims[pid].x, obj.pioneer_pilgrims[pid].y], lattice:false, cluster:true})
+        return false;
       }
-    }
+      return true; // nothing is wrong :)
+    })
 
     if (step == 2) { // we've just gotten castle location information.
       this.castle_locations.sort(function(a,b) { return dist(a, [0,0]) - dist(b, [0,0])}); // make sure they're all the same
