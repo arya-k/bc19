@@ -658,6 +658,7 @@ export class ProphetManager {
     this.mode_location = null;
     this.base_location = null;
     this.lattice_point = null;
+    this.enemy_castles = []
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -782,6 +783,7 @@ export class PreacherManager {
     this.mode_location = null;
     this.base_location = null;
     this.lattice_point = null;
+    this.enemy_castles = []
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
