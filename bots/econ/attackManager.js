@@ -665,7 +665,7 @@ export class ProphetManager {
       }
     }
 
-    let needLatice = false;
+    let needLattice = false;
     if (this.mode == CONSTANTS.PURSUING_BASE){
       if (dist([self.me.x,self.me.y],this.base_location) > 36) {
         let move = move_to(self, [self.me.x, self.me.y], [this.base_location[0],this.base_location[1]])
@@ -685,7 +685,7 @@ export class ProphetManager {
       // self.log("defense")
       let action = defensive_behaviour_passive(self, this.mode_location, this.base_location)
       if (action == CONSTANTS.SAVE_LATTICE){
-        needLatice = true;
+        needLattice = true;
       }
       else{
         if (action !== null){
@@ -713,7 +713,7 @@ export class ProphetManager {
       }
     }
 
-    if (this.mode == CONSTANTS.LATTICE || needLatice){
+    if (this.mode == CONSTANTS.LATTICE || needLattice){
       // self.log("lattice")
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
