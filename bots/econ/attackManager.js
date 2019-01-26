@@ -117,9 +117,9 @@ function is_lattice(self, myposition, base_loc){
   return is_valid(myposition[0], myposition[1], self.map.length) && 
   self.map[myposition[1]][myposition[0]] && 
   is_passable(self,myposition[0],myposition[1]) &&
-  dist(myposition,base_loc) > 1 &&
   !self.fuel_map[myposition[1]][myposition[0]] &&
   !self.karbonite_map[myposition[1]][myposition[0]] &&
+  dist(base_loc,myposition) > 2 &&
   (myposition[0] + myposition[1]) % 2 == (base_loc[0] + base_loc[1]) % 2
 }
 
@@ -129,7 +129,7 @@ function is_nonResource(self, myposition, base_loc){
   !self.fuel_map[myposition[1]][myposition[0]] &&
   !self.karbonite_map[myposition[1]][myposition[0]] &&
   is_passable(self,myposition[0],myposition[1]) &&
-  dist(myposition,base_loc) > 1
+  dist(myposition,base_loc) > 2
 }
 
 
@@ -137,7 +137,7 @@ function is_available(self, myposition, base_loc){
   return is_valid(myposition[0], myposition[1], self.map.length) && 
   self.map[myposition[1]][myposition[0]] && 
   is_passable(self,myposition[0],myposition[1]) &&
-  dist(myposition,base_loc) > 1
+  dist(myposition,base_loc) > 2
 }
 
 function find_lattice_point(self, base_loc, lattice_point){

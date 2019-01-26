@@ -27,8 +27,8 @@ class MyRobot extends BCAbstractRobot {
       } else if (self.me.unit === SPECS.PILGRIM) {
         for (const r of self.getVisibleRobots()) {
           if (COMM16.type(r.signal) == COMM16.SCOUT_HEADER) {
-            // robotManager = new ScoutManager(self);
-            robotManager = new NoneManager();
+            robotManager = new ScoutManager(self);
+            // robotManager = new NoneManager();
           }
         }
         if (robotManager === null)
