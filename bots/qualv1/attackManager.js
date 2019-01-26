@@ -371,6 +371,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
+    
     if (self.me.karbonite == SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY || self.me.fuel == SPECS.UNITS[self.me.unit].FUEL_CAPACITY) {
       // self.log("move_towards3")
       let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
@@ -379,9 +380,13 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       } else {
         return null;
       }
-    } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
+    } 
+    
+    else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
       return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
-    } else {
+    } 
+
+    else {
 
       //TO prevent preachers from moving back and forth (due to constantly finding new lattice points),
       //the lattice point must be saved. If this point is ever compromised, it is immediately re-computed

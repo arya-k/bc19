@@ -334,6 +334,8 @@ function attack_behaviour_passive(self, mode_location, base_location){
 function defensive_behaviour_aggressive(self, mode_location, base_location) {
   //If the robot sees an enemy, it will chase it, kill it, and come back to base
 
+  let receiver = null; //surrounding unit that can receive resource
+  let mypos = [self.me.x, self.me.y]
   //attack enemy if possible
   let targets = getAttackOrder(self)
   if (targets.length>0){
@@ -342,11 +344,18 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //pursue any visible enemy robots
   for (const r of self.getVisibleRobots()) {
+    let rpos = [r.x,r.y]
     if (self.isVisible(r) && r.unit !== null && r.team !== null && r.team != self.me.team) {
       let move = move_towards(self, [self.me.x, self.me.y], [r.x, r.y])
       if (move !== null) {
-        // self.log(move.x, move.y)
         return self.move(move.x - self.me.x, move.y - self.me.y);
+      }
+    }
+    if (self.me.karbonite > 0 || self.me.fuel > 0){
+      if (self.isVisible(r) && r.team == self.me.team && dist(rpos,mypos) <= 2 && dist(rpos,base_location) < dist(mypos,base_location)){
+        if (r.karbonite < SPECS.UNITS[r.unit].KARBONITE_CAPACITY || r.fuel < SPECS.UNITS[r.unit].FUEL_CAPACITY){
+          receiver = [r.x,r.y]
+        }
       }
     }
   }
@@ -371,22 +380,36 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
 
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
-    if (self.me.karbonite == SPECS.UNITS[self.me.unit].KARBONITE_CAPACITY || self.me.fuel == SPECS.UNITS[self.me.unit].FUEL_CAPACITY) {
-      // self.log("move_towards3")
-      let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
-      if (move !== null) {
-        return self.move(move.x - self.me.x, move.y - self.me.y);
-      } else {
+    if (self.me.karbonite > 0 || self.me.fuel > 0) {
+      if (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1){
+        return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
+      }
+      else if (receiver !== null){
+        return self.give(receiver[0] - self.me.x, receiver[1] - self.me.y, self.me.karbonite, self.me.fuel);
+      }
+      else{
+        let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
+        if (move !== null) {
+          return self.move(move.x - self.me.x, move.y - self.me.y);
+        } else {
+          return null;
+        }  
+      }
+    }
+    else{
+      if (dist([self.me.x,self.me.y],base_location) > 36) {
+        let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+        if (move !== null) {
+          return self.move(move.x - self.me.x, move.y - self.me.y);
+        }
+        else{
+          return null;
+        }
+      } 
+      else{
         return null;
       }
-    } else if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
-      return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
-    } else {
-
-      //TO prevent preachers from moving back and forth (due to constantly finding new lattice points),
-      //the lattice point must be saved. If this point is ever compromised, it is immediately re-computed
-      return CONSTANTS.SAVE_LATTICE
-     }
+    }
   }
 }
 
@@ -396,21 +419,31 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
   //attack if possible
   let vis_map = self.getVisibleRobotMap()
+  let help = []
+  let enemies = []
+  let receiver = null; //surrounding unit that can receive resource
+  let mypos = [self.me.x, self.me.y]
+  //if there is a single enemy robot without a crusader in front, move away
+  //since this method is called by prophets, it must be certain that they are protected by help
+  for (const p of self.getVisibleRobots()){
+    let ppos = [p.x,p.y]
+    if (self.isVisible(p) && p.team == self.me.team && (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER])){
+      help.push([p.x,p.y])
+    }
+    if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
+      enemies.push(p)
+    }
+    if (self.me.karbonite > 0 || self.me.fuel > 0){
+      if (self.isVisible(p) && p.team == self.me.team && dist(ppos,mypos) <= 2 && dist(ppos,base_location) < dist(mypos,base_location)){
+        if (p.karbonite < SPECS.UNITS[p.unit].KARBONITE_CAPACITY || p.fuel < SPECS.UNITS[p.unit].FUEL_CAPACITY){
+          receiver = [p.x,p.y]
+        }
+      }
+    }
+  }
   //attack enemy, but MAKE SURE crusader is between prophet and enemy
   let targets = getAttackOrder(self)
   if (targets.length != 0){
-    let help = []
-    let enemies = []
-    //if there is a single enemy robot without a crusader in front, move away
-    //since this method is called by prophets, it must be certain that they are protected by help
-    for (const p of self.getVisibleRobots()){
-      if (self.isVisible(p) && p.team == self.me.team && (p.unit == SPECS.UNITS[SPECS.CRUSADER] || p.unit == SPECS.UNITS[SPECS.PREACHER])){
-        help.push([p.x,p.y])
-      }
-      if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
-        enemies.push(p)
-      }
-    }
     let escape = false;
     for (const r of targets){
       let unsafe = true;
@@ -441,24 +474,35 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
 
   // //go back to base if possible
   // // self.log('here2')
-  // if (dist([self.me.x,self.me.y],base_location) >= 36) {
-  //   let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-  //   if (move !== null) {
-  //     return self.move(move.x - self.me.x, move.y - self.me.y);
-  //   }
-  //   else{
-  //     return null;
-  //   }
-  // } 
-
-  //give resources if possible (given that you are already at base)
-  if ((self.me.karbonite > 0 || self.me.fuel > 0) && (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1)) {
-    return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
-  } 
-
-  //Don't be annoying; get off resources spots and waffle
-  else {
-    return CONSTANTS.SAVE_LATTICE
+  if (self.me.karbonite > 0 || self.me.fuel > 0) {
+    if (Math.abs(self.me.x - base_location[0]) <= 1 && Math.abs(self.me.y - base_location[1]) <= 1){
+      return self.give(base_location[0] - self.me.x, base_location[1] - self.me.y, self.me.karbonite, self.me.fuel);
+    }
+    else if (receiver !== null){
+      return self.give(receiver[0] - self.me.x, receiver[1] - self.me.y, self.me.karbonite, self.me.fuel);
+    }
+    else{
+      let move = move_to(self, [self.me.x, self.me.y], [base_location[0], base_location[1]])
+      if (move !== null) {
+        return self.move(move.x - self.me.x, move.y - self.me.y);
+      } else {
+        return null;
+      }  
+    }
+  }
+  else{
+    if (dist([self.me.x,self.me.y],base_location) > 36) {
+      let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+      if (move !== null) {
+        return self.move(move.x - self.me.x, move.y - self.me.y);
+      }
+      else{
+        return null;
+      }
+    } 
+    else{
+      return null;
+    }
   }
 }
 
@@ -467,6 +511,9 @@ export class CrusaderManager {
     this.mode = CONSTANTS.DEFENSE
     this.mode_location = null;
     this.base_location = null;
+    this.lattice_point = null;
+    this.lattice_angle = null;
+
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
       if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
@@ -489,19 +536,45 @@ export class CrusaderManager {
       }
       if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.mode = CONSTANTS.DEFENSE
-        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
-
+        this.mode_location = COMM16.DECODE_BASELOC(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
-
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
-
+        this.mode = CONSTANTS.LATTICE
+        this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
     }
 
-    if (this.base_location == null) {
-      this.mode = CONSTANTS.ATTACK
+    if (this.mode == CONSTANTS.DEFENSE) {
+      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+      if (action !== null){
+        return action
+      }
+      else{
+        return null
+      }
+    }
+
+    if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
+      let action = attack_behaviour_aggressive(self, this.mode_location);
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        self.log("enemy castle dead")
+        self.log(self.me.x)
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        this.mode = CONSTANTS.DEFENSE
+        this.mode_location = null;
+        return null
+      } 
+      else {
+        return action
+      }
+    }
+
+    if (this.mode == CONSTANTS.LATTICE && this.lattice_point){
+
     }
   }
 }
@@ -529,7 +602,24 @@ export class ProphetManager {
   }
 
   turn(step, self) {
-    
+    for (const r of self.getVisibleRobots()) {
+      if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+      }
+      if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
+        this.mode = CONSTANTS.DEFENSE
+        this.mode_location = COMM16.DECODE_BASELOC(r.signal)
+      }
+      if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
+      }
+      if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
+        this.mode = CONSTANTS.LATTICE
+        this.lattice_point = COMM16.DECODE_LATTICE(r.signal)
+      }
+    }
   }
 }
 
@@ -555,7 +645,24 @@ export class PreacherManager {
   }
 
   turn(step, self) {
-
+    for (const r of self.getVisibleRobots()) {
+      if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+      }
+      if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
+        this.mode = CONSTANTS.DEFENSE
+        this.mode_location = COMM16.DECODE_BASELOC(r.signal)
+      }
+      if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
+        this.mode = CONSTANTS.ATTACK
+        this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
+      }
+      if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
+        this.mode = CONSTANTS.LATTICE
+        this.lattice_point = COMM16.DECODE_LATTICE(r.signal)
+      }
+    }
     
   }
 }
