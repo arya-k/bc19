@@ -647,7 +647,7 @@ export class ProphetManager {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
-      if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
+      else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.mode = CONSTANTS.DEFENSE
         let tmpBaseloc = COMM16.DECODE_BASELOC(r.signal);
         if (tmpBaseloc[0] != this.base_location[0] || tmpBaseloc[1] != this.base_location[1]){
@@ -655,11 +655,11 @@ export class ProphetManager {
         }
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
       }
-      if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
+      else if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
       }
-      if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
+      else if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
         this.mode = CONSTANTS.LATTICE
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
