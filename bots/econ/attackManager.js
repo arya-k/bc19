@@ -68,9 +68,9 @@ function nonNuisanceBehavior(self, base_loc, waffle = true) {
   // within the cluster.
 
   let r_sq = local_cluster_info(self, base_loc)
-  if (self.me.x == 22 && self.me.y == 0){
-    self.log(r_sq)
-  }
+  // if (self.me.x == 22 && self.me.y == 0){
+  //   self.log(r_sq)
+  // }
   let current;
   let visited = new Set()
   let queue = [new Point(self.me.x, self.me.y, null)];
@@ -156,12 +156,12 @@ function find_lattice_point(self, base_loc, lattice_point){
       }
     }
   }
-  // if (self.me.x == 31 && self.me.y == 14){
-  //   self.log(closest_lattice_point)
-  // }
-  // if (self.me.x == 31 && self.me.y == 17){
-  //   self.log(closest_lattice_point)
-  // }
+  if (self.me.x == 29 && self.me.y == 14){
+    self.log("first " + closest_lattice_point)
+  }
+  if (self.me.x == 29 && self.me.y == 16){
+    self.log("second " + closest_lattice_point)
+  }
   return closest_lattice_point
 }
 
@@ -759,17 +759,17 @@ export class ProphetManager {
     }
 
     if (this.mode == CONSTANTS.LATTICE || needLattice){
-      if (self.me.x == 37 && self.me.y == 0){
-        self.log("lattice")  
-      }
+      // if (self.me.x == 37 && self.me.y == 0){
+      //   self.log("lattice")  
+      // }
 
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
         this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
-        if (self.me.x == 37 && self.me.y == 0){
-          self.log(this.lattice_point)  
-        }
+        // if (self.me.x == 37 && self.me.y == 0){
+        //   self.log(this.lattice_point)  
+        // }
         //if we are already at the lattice point, then simply do nothing
         if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
           this.lattice_point = null
