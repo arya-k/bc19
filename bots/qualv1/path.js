@@ -440,8 +440,12 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
   let attack_radius_min = null;
   let attack_radius_max = null;
   let vertical = null;
-  
-  [b[1]-a[1], b[0]-a[0]];
+  let i_hat = b[0] - a[0];
+  let j_hat = b[1] - a[1];
+  if (j_hat >= Math.abs(i_hat) || j_hat <= Math.abs(i_hat))
+    vertical = true;
+  else
+    vertical = false;
 
   if (self.me.unit == SPECS.PILGRIM) {
     attack_radius_max = 2;
@@ -460,8 +464,17 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
         if (r.team !== null && r.team == self.me.team && SPECS.UNITS[self.me.unit].SPEED > 0 && 
             SPECS.UNITS[self.me.unit].ATTACK_DAMAGE !== null){
           for (let dir of CIRCLES[2]){
+            if (vertical) {
+              if (dir == [1,0] || dir == [-1, 0])
+                continue;
+            }
+            else {
+              if (dir == [0,1] || dir == [0, -1])
+                continue;
+            }
             let p = [x + dir[0], y + dir[1]];
             if (graph.grid[p[1]] && graph.grid[p[1]][p[0]]){
+
               graph.grid[p[1]][p[0]].isWall = true;
             }
           }
