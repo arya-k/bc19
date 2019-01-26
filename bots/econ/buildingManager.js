@@ -366,6 +366,15 @@ export class ChurchManager {
     this.lattice_built = 0;
     this.lattice_needed = 3;
     this.lattice_agro = false;
+
+    let maxDefenderRadius = 0;
+    for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
+      let r = self.getRobot(r_id);
+      if (r.team == self.me.team) {
+        if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER || r.unit == SPECS.PROPHET)
+          maxDefenderRadius = Math.max(maxDefenderRadius, dist([self.me.x, self.me.y], [r.x, r.y]))
+    }
+    self.signal(COMM16.ENCODE_LATTICE(0), maxDefenderRadius);
   }
 
   turn(step, self) {
