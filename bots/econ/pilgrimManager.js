@@ -399,7 +399,7 @@ function isDangerous(self, p) {
   for (const r of self.getVisibleRobots()){
     if (r.team !== null && r.team != self.me.team && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE != 0){
       let d = dist([r.x, r.y], [p[0], p[1]]);
-      let radius = SPECS.UNITS[r.unit].ATTACK_RADIUS;
+      let radius = [SPECS.UNITS[r.unit].ATTACK_RADIUS[0], SPECS.UNITS[r.unit].VISION_RADIUS]; // stay invisible
       if (r.unit == SPECS.PREACHER)
         radius[1] = 50;
       if (d <= radius[1] && d >= radius[0])
