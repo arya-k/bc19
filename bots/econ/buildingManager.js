@@ -197,7 +197,7 @@ export class CastleManager {
             self.fuel > (SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_FUEL + 2)) {
           let bs = this.build_signal_queue.pop();
 
-          if (bs[1] !== null && COMM16.type(bs[1]) == COMM16.BASELOC_HEADER) { // pick the best building spot you can.
+          if (bs[1] !== null && COMM16.type(bs[1]) == COMM16.BASELOC_HEADER) { // pick the closest building spot you can.
             let goal_pos = COMM16.DECODE_BASELOC(bs[1])
             building_locations.sort(function (a, b) { return dist(a, goal_pos) - dist(b, goal_pos) });
           }
@@ -254,12 +254,35 @@ export class ChurchManager {
       }
     }
 
-     // signal if necessary
+    /* ACTIVE DEFENSE */
+    // signal if necessary
     let enemies = getAttackOrder(self);
     if (enemies.length != 0)
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemies[0].x, enemies[0].y), maxDefenderRadius) // signal most pertinent enemy
 
-    // TODO: ACTIVE DEFENSE.
+    // if we see an enemy crusader, build a preacher if possible:
+    if (enemyRobots.crusader !== false && myRobots.preacher.length < 2 && 
+        canAfford(SPECS.PREACHER, self) && building_locations.length > 0) {
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.crusader.x, enemyRobots.crusader.y),
+                  dist([self.me.x, self.me.y], building_locations[0]))
+      return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
+    }
+
+    // otherwise if we see an enemy prophet, build a crusader
+    if (enemyRobots.prophet !== false && myRobots.crusader.length < 3 && 
+        canAfford(SPECS.CRUSADER, self) && building_locations.length > 0) {
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.prophet.x, enemyRobots.prophet.y),
+                  dist([self.me.x, self.me.y], building_locations[0]))
+      return self.buildUnit(SPECS.CRUSADER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
+    }
+
+    // otherwise if we see an enemy preacher, build a prophet:
+    if (enemyRobots.preacher !== false && myRobots.prophet.length < 3 && 
+        canAfford(SPECS.PROPHET, self) && building_locations.length > 0) {
+      self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.preacher.x, enemyRobots.preacher.y),
+                  dist([self.me.x, self.me.y], building_locations[0]))
+      return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
+    }
 
     // if we need to build more pilgrims, do that:
     let pilgrimCount = 0;
@@ -279,7 +302,7 @@ export class ChurchManager {
           self.karbonite > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_KARBONITE &&
           self.fuel > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_FUEL) {
 
-        if (this.build_queue[this.build_queue.length - 1] == SPECS.PILGRIM) // try to build a pilgrim on a spot
+        if (this.build_queue[this.build_queue.length - 1] == SPECS.PILGRIM) // try to build a pilgrim on a resource spot
           for (const bl of building_locations)
             if (self.fuel_map[bl[1]][bl[0]] || self.karbonite_map[bl[1]][bl[0]])
               return self.buildUnit(this.build_queue.pop(), bl[0] - self.me.x, bl[1] - self.me.y)
