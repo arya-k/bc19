@@ -567,7 +567,7 @@ export class ProphetManager {
         this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
 
         if (self.me.x == 37 && self.me.y == 4){
-          self.log(this.lattice_point)
+          // self.log(this.lattice_point)
         }
 
         //if we are already at the lattice point, then simply do nothing
