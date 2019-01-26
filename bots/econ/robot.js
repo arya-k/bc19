@@ -1,7 +1,7 @@
 import {BCAbstractRobot, SPECS} from 'battlecode';
 import {CastleManager, ChurchManager} from './buildingManager.js';
 import {PilgrimManager} from './pilgrimManager.js';
-import {ScoutManager} from './scoutManager.js';
+// import {ScoutManager} from './scoutManager.js';
 import {COMM16} from './comm.js';
 import {CrusaderManager, ProphetManager, PreacherManager} from './attackManager.js'
 
@@ -27,7 +27,8 @@ class MyRobot extends BCAbstractRobot {
       } else if (self.me.unit === SPECS.PILGRIM) {
         for (const r of self.getVisibleRobots()) {
           if (COMM16.type(r.signal) == COMM16.SCOUT_HEADER) {
-            robotManager = new ScoutManager(self);
+            // robotManager = new ScoutManager(self);
+            robotManager = new NoneManager();
           }
         }
         if (robotManager === null)

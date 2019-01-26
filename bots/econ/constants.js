@@ -4,6 +4,7 @@ export let CONSTANTS = {
   OFFENSE: 101,
   ESCORT: 102,
   LATTICE: 103,
+  PURSUING_BASE: 104,
 
   // pilgrims:
   MINE: 125,
