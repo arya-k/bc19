@@ -439,6 +439,9 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
   const speed = SPECS.UNITS[self.me.unit].SPEED;
   let attack_radius_min = null;
   let attack_radius_max = null;
+  let vertical = null;
+  
+  [b[1]-a[1], b[0]-a[0]];
 
   if (self.me.unit == SPECS.PILGRIM) {
     attack_radius_max = 2;
@@ -458,7 +461,6 @@ export function no_swarm(self, a, b) { // bascially move_towards but not moving 
             SPECS.UNITS[self.me.unit].ATTACK_DAMAGE !== null){
           for (let dir of CIRCLES[2]){
             let p = [x + dir[0], y + dir[1]];
-            //self.log("iswall1")
             if (graph.grid[p[1]] && graph.grid[p[1]][p[0]]){
               graph.grid[p[1]][p[0]].isWall = true;
             }

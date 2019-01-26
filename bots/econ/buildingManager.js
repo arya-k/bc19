@@ -507,7 +507,7 @@ export class ChurchManager {
 
       if (totalLatticeCount < this.lattice_built && this.castle_talk_queue.length == 0) {
         this.lattice_built--; // we lost a troop somewhere along the way.
-        if (castle_talk_queue[castle_talk_queue.length - 1] == COMM8.ADDED_LATTICE)
+        if (this.castle_talk_queue[this.castle_talk_queue.length - 1] == COMM8.ADDED_LATTICE)
           this.castle_talk_queue.pop()
         else
           this.castle_talk_queue.unshift(COMM8.REMOVED_LATTICE);

@@ -335,7 +335,7 @@ export function move_away(self, enemies) {
   let p, d;
   for (let enemy of enemies) {
     threat_points.add((enemy.y<<6) + enemy.x);
-    let max_radius = enemy.unit == SPECS.PREACHER ? 50 : SPECS.UNITS[enemy.unit].VISION_RADIUS
+    let max_radius = enemy.unit == SPECS.PREACHER ? 50 : SPECS.UNITS[enemy.unit].VISION_RADIUS;
     for (let dir of CIRCLES[max_radius]){
       p = [enemy.x + dir[0], enemy.y + dir[1]];
       d = dist(p, [enemy.x, enemy.y]);
