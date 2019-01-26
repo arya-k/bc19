@@ -7,15 +7,16 @@ import {find_resource_clusters, local_cluster_info, determine_cluster_plan, get_
 
 const CHURCH_BUILD_PILGRIM_THRESHOLD = 500; // we have to have this much fuel before we build a pilgrim for a church.
 const CASTLE_BUILD_PILGRIM_THRESHOLD = 200; // we have to have this much fuel before we build a pilgrim for a castle
+const BUILD_PILGRIM_KARB_THRESHOLD = 50; // we need this much karb to build a pilgrim
 const LATTICE_BUILD_FUEL_THRESHOLD = 700; // we have to have this much fuel before we add to a lattice.
 const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite before we add to a lattice.
 const NONESSENTIAL_LATTICE_THRESHOLD = 3000; // if we have this much fuel, we can build a lattice beyong whats necessary
 const CRUSADER_SPAM_ROUND = 900; // after this round, we spam crusaders to win on unit health.
 
 const LATTICE_RATIO = { // these HAVE to add up to 1
-  prophet: 2/5,
-  preacher: 3/5,
-  crusader: 0/5,
+  prophet: 3/5,
+  preacher: 1/5,
+  crusader: 1/5,
 }
 
 function determine_enemy_locations(horiSym, castle_locs, N) {
@@ -171,6 +172,16 @@ export class CastleManager {
     }
 
     /* UPDATE ATTACK_TARGETS */
+    for (const pid of this.pioneer_ids) {
+      const r = self.getRobot(pid)
+      if (pid.castle_talk !== COMM8.IM_ALIVE) {
+        // attack_targets has a horde too
+        self.log("THERES A PROBLEM @ " + [this.pioneer_pilgrims[pid].x, this.pioneer_pilgrims[pid].y])
+        if (pid.castle_talk !== COMM8.HINDERED) {
+          // generate a new pilgrim, too!
+        }
+      }
+    }
 
     if (step == 2) { // we've just gotten castle location information.
       this.castle_locations.sort(function(a,b) { return dist(a, [0,0]) - dist(b, [0,0])}); // make sure they're all the same
@@ -251,7 +262,7 @@ export class CastleManager {
 
     /* BUILDING PILGRIMS FOR THINGS */
     if (canAfford(SPECS.PILGRIM, self) && self.fuel > CASTLE_BUILD_PILGRIM_THRESHOLD &&
-        this.build_signal_queue.length == 0) {
+        self.karbonite > BUILD_PILGRIM_KARB_THRESHOLD && this.build_signal_queue.length == 0) {
       let pilgrimCount = 0;
       for (const r of myRobots.pilgrim)
         if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50)
@@ -267,7 +278,7 @@ export class CastleManager {
             let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations)
             if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) {
               self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y]);
-              this.last_cluster = [best_cluster.x, best_cluster.y]
+              this.last_cluster = best_cluster
               this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)])
               this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)])
             }
@@ -277,7 +288,7 @@ export class CastleManager {
           let best_castle = get_best_cluster_castle(self, best_cluster.x, best_cluster.y, this.castle_locations)
           if (best_castle[0] == self.me.x && best_castle[1] == self.me.y) {
             self.log("SENDING PILGRIM TO CLUSTER: " + [best_cluster.x, best_cluster.y]);
-            this.last_cluster = [best_cluster.x, best_cluster.y]
+            this.last_cluster = best_cluster
             this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(best_cluster.x, best_cluster.y)])
           }
         }
@@ -324,8 +335,8 @@ export class CastleManager {
       }
 
       if (totalLatticeCount < this.all_lattices[self.me.id].built && this.castle_talk_queue.length == 0) {
-        if (castle_talk_queue[castle_talk_queue.length - 1] == COMM8.ADDED_LATTICE)
-          castle_talk_queue.pop() // just pretend we didn't add a troop - that achieves the same thing.
+        if (this.castle_talk_queue[this.castle_talk_queue.length - 1] == COMM8.ADDED_LATTICE)
+          this.castle_talk_queue.pop() // just pretend we didn't add a troop - that achieves the same thing.
         else
           this.castle_talk_queue.unshift(COMM8.REMOVED_LATTICE); // we lost a troop somewhere along the way.
       }
@@ -461,7 +472,8 @@ export class ChurchManager {
         pilgrimCount++;
 
     if (pilgrimCount < this.resource_count && canAfford(SPECS.PILGRIM, self) &&
-        self.fuel > CHURCH_BUILD_PILGRIM_THRESHOLD && this.build_queue.length == 0)
+        self.fuel > CHURCH_BUILD_PILGRIM_THRESHOLD && this.build_queue.length == 0 &&
+        self.karbonite > BUILD_PILGRIM_KARB_THRESHOLD)
       this.build_queue.unshift(SPECS.PILGRIM)
 
     /* LATTICE */
