@@ -159,7 +159,7 @@ export class CastleManager {
         } else {
           this.church_ids.push(r.id)
           this.church_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
-          this.all_lattices[r.id] = {built:0, needed:3, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
+          this.all_lattices[r.id] = {built:0, needed:10, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
           let obj = this;
           this.attack_plan = this.attack_plan.filter(function (ap) { // remove the church if you built there successfully.
             return dist(ap.enemy, [obj.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]) > 0;
@@ -389,7 +389,7 @@ export class ChurchManager {
     this.castle_talk_queue = [COMM8.ENCODE_Y(self.me.y), COMM8.ENCODE_X(self.me.x)]
 
     this.lattice_built = 0;
-    this.lattice_needed = 3;
+    this.lattice_needed = 10;
     this.lattice_agro = false;
 
     let maxDefenderRadius = 0;
