@@ -557,7 +557,7 @@ export class CrusaderManager {
 
   turn(step, self) {
     for (const r of self.getVisibleRobots()) {
-      this.enemy_castles = addCastle(r,this.enemy_castles)
+      this.enemy_castles = addCastle(self, r,this.enemy_castles)
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
@@ -675,7 +675,7 @@ export class ProphetManager {
 
   turn(step, self) {
     for (const r of self.getVisibleRobots()) {
-      this.enemy_castles = addCastle(r,this.enemy_castles)
+      this.enemy_castles = addCastle(self, r,this.enemy_castles)
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
@@ -799,7 +799,7 @@ export class PreacherManager {
 
   turn(step, self) {
     for (const r of self.getVisibleRobots()) {
-      this.enemy_castles = addCastle(r,this.enemy_castles)
+      this.enemy_castles = addCastle(self, r,this.enemy_castles)
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
