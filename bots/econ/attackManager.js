@@ -159,7 +159,7 @@ function find_lattice_point(self, base_loc, lattice_point){
   return closest_lattice_point
 }
 
-function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
+function lattice_movement(self, base_loc, lattice_point, lattice_angle) {
   // Since preachers have low vision, they can't reliably lattice
   // This will be a less ambitious version of nonNuisance
   //The lattice point has already been found; so just a* to it
@@ -169,12 +169,28 @@ function preacher_nonNuisanceBehavior(self, base_loc, lattice_point) {
   let farthest_point = null
   let counterpart = null
   
-  if (isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)){
-    counterpart = [self.map.length - self.me.x, self.me.y]
+  switch(lattice_angle){
+    case 1:
+      counterpart = [self.map.length, self.me.y]
+      break;
+    case 2:
+      counterpart = [self.me.x, 0]
+      break;
+    case 3:
+      counterpart = [0, self.me.y]
+      break;
+    case 4:
+      counterpart = [self.me.x, self.map.length]
+      break;
+    default:
+      if (isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)){
+        counterpart = [self.map.length - self.me.x, self.me.y]
+      }
+      else{
+        counterpart = [self.me.x, self.map.length - self.me.y]
+      }
   }
-  else{
-    counterpart = [self.me.x, self.map.length - self.me.y]
-  }
+
 
   let mypos = [self.me.x, self.me.y]
   let myspeed = SPECS.UNITS[self.me.unit].SPEED
@@ -491,19 +507,20 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     }
   }
   else{
-    if (dist([self.me.x,self.me.y],base_location) > 36) {
-      let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-      if (move !== null) {
-        return self.move(move.x - self.me.x, move.y - self.me.y);
-      }
-      else{
-        return null;
-      }
-    } 
-    else{
-      return null;
-    }
+    return CONSTANTS.SAVE_LATTICE;
   }
+}
+
+function lattice_behaviour(self){
+  //attack enemy, but MAKE SURE crusader is between prophet and enemy
+  let targets = getAttackOrder(self)
+  if (targets.length != 0){
+    return self.attack(targets[0].x-self.me.x,targets[0].y-self.me.y)
+  }
+  else{
+    return CONSTANTS.SAVE_LATTICE
+  }
+
 }
 
 export class CrusaderManager {
@@ -536,7 +553,7 @@ export class CrusaderManager {
       }
       if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.mode = CONSTANTS.DEFENSE
-        this.mode_location = COMM16.DECODE_BASELOC(r.signal)
+        this.base_location = COMM16.DECODE_BASELOC(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
         this.mode = CONSTANTS.ATTACK
@@ -573,7 +590,30 @@ export class CrusaderManager {
       }
     }
 
-    if (this.mode == CONSTANTS.LATTICE && this.lattice_point){
+    if (this.mode == CONSTANTS.LATTICE){
+      let action = lattice_behaviour(self)
+      if (action == CONSTANTS.SAVE_LATTICE){
+
+        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
+
+        //if we are already at the lattice point, then simply do nothing
+        if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
+          this.lattice_point = null
+          return null
+        }
+
+        let n = lattice_movement(self, this.base_location, this.lattice_point, this.lattice_angle);
+        // self.log(""+n)
+        if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
+          return self.move(n[0] - self.me.x,n[1] - self.me.y);
+        }
+        else{
+          return null
+        }
+      }
+      else{
+        return action;
+      }
 
     }
   }
@@ -609,7 +649,11 @@ export class ProphetManager {
       }
       if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.mode = CONSTANTS.DEFENSE
-        this.mode_location = COMM16.DECODE_BASELOC(r.signal)
+        let tmpBaseloc = COMM16.DECODE_BASELOC(r.signal);
+        if (tmpBaseloc[0] != this.base_location[0] || tmpBaseloc[1] != this.base_location[1]){
+          this.mode = CONSTANTS.PURSUING_BASE;
+        }
+        this.base_location = COMM16.DECODE_BASELOC(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
         this.mode = CONSTANTS.ATTACK
@@ -617,7 +661,82 @@ export class ProphetManager {
       }
       if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
         this.mode = CONSTANTS.LATTICE
-        this.lattice_point = COMM16.DECODE_LATTICE(r.signal)
+        this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
+      }
+    }
+
+    let needLatice = false;
+    if (this.mode == CONSTANTS.PURSUING_BASE){
+      if (dist([self.me.x,self.me.y],this.base_location) > 36) {
+        let move = move_to(self, [self.me.x, self.me.y], [this.base_location[0],this.base_location[1]])
+        if (move !== null) {
+          return self.move(move.x - self.me.x, move.y - self.me.y);
+        }
+        else{
+          return null;
+        }
+      }
+      else{
+        this.mode = CONSTANTS.DEFENSE
+      } 
+    }
+
+    if (this.mode == CONSTANTS.DEFENSE) {
+      self.log("defense")
+      let action = defensive_behaviour_passive(self, this.mode_location, this.base_location)
+      if (action == CONSTANTS.SAVE_LATTICE){
+        needLatice = true;
+      }
+      else{
+        if (action !== null){
+          return action
+        }
+        else{
+          return null
+        }
+      }
+    }
+
+    if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
+      self.log("attack")
+      let action = attack_behaviour_passive(self, this.mode_location);
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        self.log("enemy castle dead")
+        self.log(self.me.x)
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        this.mode = CONSTANTS.DEFENSE
+        this.mode_location = null;
+        return null
+      } 
+      else {
+        return action
+      }
+    }
+
+    if (this.mode == CONSTANTS.LATTICE || needLatice){
+      self.log("lattice")
+      let action = lattice_behaviour(self)
+      if (action == CONSTANTS.SAVE_LATTICE){
+
+        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
+
+        //if we are already at the lattice point, then simply do nothing
+        if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
+          this.lattice_point = null
+          return null
+        }
+
+        let n = lattice_movement(self, this.base_location, this.lattice_point, this.lattice_angle);
+        // self.log(""+n)
+        if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
+          return self.move(n[0] - self.me.x,n[1] - self.me.y);
+        }
+        else{
+          return null
+        }
+      }
+      else{
+        return action;
       }
     }
   }
@@ -652,7 +771,7 @@ export class PreacherManager {
       }
       if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.mode = CONSTANTS.DEFENSE
-        this.mode_location = COMM16.DECODE_BASELOC(r.signal)
+        this.base_location = COMM16.DECODE_BASELOC(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
         this.mode = CONSTANTS.ATTACK
@@ -660,8 +779,60 @@ export class PreacherManager {
       }
       if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
         this.mode = CONSTANTS.LATTICE
-        this.lattice_point = COMM16.DECODE_LATTICE(r.signal)
+        this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
+    }
+
+    if (this.mode == CONSTANTS.DEFENSE) {
+      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+      if (action !== null){
+        return action
+      }
+      else{
+        return null
+      }
+    }
+
+    if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
+      let action = attack_behaviour_aggressive(self, this.mode_location);
+      if (action == CONSTANTS.ELIMINATED_ENEMY) {
+        self.log("enemy castle dead")
+        self.log(self.me.x)
+        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        this.mode = CONSTANTS.DEFENSE
+        this.mode_location = null;
+        return null
+      } 
+      else {
+        return action
+      }
+    }
+
+    if (this.mode == CONSTANTS.LATTICE){
+      let action = lattice_behaviour(self)
+      if (action == CONSTANTS.SAVE_LATTICE){
+
+        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
+
+        //if we are already at the lattice point, then simply do nothing
+        if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
+          this.lattice_point = null
+          return null
+        }
+
+        let n = lattice_movement(self, this.base_location, this.lattice_point, this.lattice_angle);
+        // self.log(""+n)
+        if (n !== null && !(n[0] - self.me.x == 0 && n[1] - self.me.y == 0)){
+          return self.move(n[0] - self.me.x,n[1] - self.me.y);
+        }
+        else{
+          return null
+        }
+      }
+      else{
+        return action;
+      }
+
     }
     
   }
