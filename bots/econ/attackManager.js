@@ -413,18 +413,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       }
     }
     else{
-      if (dist([self.me.x,self.me.y],base_location) > 36) {
-        let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-        if (move !== null) {
-          return self.move(move.x - self.me.x, move.y - self.me.y);
-        }
-        else{
-          return null;
-        }
-      } 
-      else{
-        return null;
-      }
+      return CONSTANTS.SAVE_LATTICE
     }
   }
 }
@@ -552,7 +541,7 @@ export class CrusaderManager {
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
-        this.mode = CONSTANTS.DEFENSE
+        this.mode = CONSTANTS.PURSUING_BASE
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
@@ -565,22 +554,43 @@ export class CrusaderManager {
       }
     }
 
-    if (this.mode == CONSTANTS.DEFENSE) {
-      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
-      if (action !== null){
-        return action
+    let needLattice = false;
+    if (this.mode == CONSTANTS.PURSUING_BASE){
+      if (dist([self.me.x,self.me.y],this.base_location) > 25) {
+        let move = move_to(self, [self.me.x, self.me.y], [this.base_location[0],this.base_location[1]])
+        if (move !== null) {
+          return self.move(move.x - self.me.x, move.y - self.me.y);
+        }
+        else{
+          return null;
+        }
       }
       else{
-        return null
+        this.mode = CONSTANTS.DEFENSE
+      } 
+    }
+
+    if (this.mode == CONSTANTS.DEFENSE) {
+      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
+      if (action == CONSTANTS.SAVE_LATTICE){
+        needLattice = true;
+      }
+      else{
+        if (action !== null){
+          return action
+        }
+        else{
+          return null
+        }
       }
     }
 
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        self.log("enemy castle dead")
-        self.log(self.me.x)
-        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        // self.log("enemy castle dead")
+        // self.log(self.me.x)
+        // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
         return null
@@ -590,7 +600,7 @@ export class CrusaderManager {
       }
     }
 
-    if (this.mode == CONSTANTS.LATTICE){
+    if (this.mode == CONSTANTS.LATTICE || needLattice){
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
@@ -696,9 +706,9 @@ export class ProphetManager {
       // self.log("attack")
       let action = attack_behaviour_passive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        self.log("prophet says enemy castle dead")
-        self.log(self.me.x)
-        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        // self.log("prophet says enemy castle dead")
+        // self.log(self.me.x)
+        // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
         return null
@@ -796,9 +806,9 @@ export class PreacherManager {
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        self.log("preacher says enemy castle dead")
-        self.log(self.me.x)
-        self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
+        // self.log("preacher says enemy castle dead")
+        // self.log(self.me.x)
+        // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
         return null
