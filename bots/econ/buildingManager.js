@@ -84,7 +84,6 @@ export class CastleManager {
         }
       } else if (r.castle_talk == COMM8.ADDED_LATTICE) {
         this.all_lattices[r.id].built++;
-        self.log(this.all_lattices[r.id])
       } else if (r.castle_talk == COMM8.REMOVED_LATTICE) {
         this.all_lattices[r.id].built--;
       }
@@ -216,6 +215,21 @@ export class CastleManager {
         this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0,0)]);
       } else if (totalLatticeCount < this.all_lattices[self.me.id].built && this.castle_talk_queue.length == 0) {
         this.castle_talk_queue.unshift(COMM8.REMOVED_LATTICE); // we lost a troop somewhere along the way.
+      } else {
+        // check if anything is aggro:
+        let agro_lattice = null;
+        for (const ll in this.all_lattices)
+          if (this.all_lattices[ll].aggro)
+            agro_lattice = this.all_lattices[ll];
+
+        if (agro_lattice !== null) { // a castle is tryint to lattice to the enemy
+          if (agro_lattice.loc[0] == self.me.x && agro_lattice.loc[1] == self.me.y) {
+            this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
+            this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0,0)]); // TODO: ENCODE_LATTICE should not just be 0,0
+          }
+        } else {
+          // TODO: THERE ARE NO AGRESSIVE CASTLES. EACH ONE SHOULD JUST EXPAND THE LATTICE.
+        }
       }
     }
 
