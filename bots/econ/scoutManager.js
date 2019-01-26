@@ -10,7 +10,12 @@ export class ScoutManager {
     this.scout_location = null;
     this.base_location = null;
     this.seen_enemies = new Set();
-    this.enemy_count = {SPECS.PILGRIM : 0, SPECS.CRUSADER : 0, SPECS.PROPHET : 0, SPECS.PREACHER : 0, SPECS.CHURCH : 0}
+    this.enemy_count = {};
+    this.enemy_count[SPECS.PILGRIM] = 0;
+    this.enemy_count[SPECS.CRUSADER] = 0;
+    this.enemy_count[SPECS.PROPHET] = 0;
+    this.enemy_count[SPECS.PREACHER] = 0;
+    this.enemy_count[SPECS.CHURCH] = 0;
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -71,7 +76,7 @@ export class ScoutManager {
     if (this.mode == CONSTANTS.CHILLIN) {
       if (signal) {
         let temp = getAttackOrder(self)[0];
-        self.signal(COMM16.ENCODE_ENEMYSIGHTING(temp.x, temp.y), 10);
+        self.signal(COMM16.ENCODE_ENEMYSIGHTING(temp.x, temp.y), 100);
       }
       return null;
     }

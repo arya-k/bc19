@@ -280,7 +280,8 @@ export class PilgrimManager {
           closest_enemy = [d, r];
         if (SPECS.UNITS[r.unit].ATTACK_DAMAGE != null && SPECS.UNITS[r.unit].ATTACK_DAMAGE > 0)
           enemies.push(r);
-      } else if (r.team !== null && r.team == self.me.team && d > max_ally){
+      } else if (r.team !== null && r.team == self.me.team && SPECS.UNITS[r.unit].SPEED > 0 && 
+                  SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null> max_ally){
         max_ally = d;
       }
     }
