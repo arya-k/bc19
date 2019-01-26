@@ -36,6 +36,7 @@ export const COMM16 = {
     ENEMYCASTLE_HEADER: 0b1010<<12,
     LATTICE_HEADER: 0b1011<<12,
     SCOUT_HEADER: 0b1100<<12,
+    ENEMYDEAD_HEADER: 0b1101<<12,
 
     // check header:
     type: function(s) { return (s^MASK16) & (0b1111<<12); },
@@ -46,10 +47,13 @@ export const COMM16 = {
     ENCODE_ENEMYCASTLE: function(x, y) { return ((0b1010<<12) + (y<<6) + x) ^ MASK16; }, // this tells our units to go into rush mode, and attack an enemycastle;
     ENCODE_LATTICE: function(region) { return ((0b1011<<12) + region) ^ MASK16; }, // this tells our units to lattice between a theta 1 and 2. If both are set to 0, then generic lattice,
     ENCODE_SCOUT: function(x, y) { return ((0b1100<<12) + (y<<6) + x) ^ MASK16; }, // tells pilgrims to act as scouts and provides an enemy location
+    ENCODE_ENEMYDEAD: function(x, y) { return ((0b1101<<12) + (y<<6) + x) ^ MASK16; }, // this is signalled whenever an enemy is killed
+
 
     DECODE_BASELOC: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
     DECODE_ENEMYSIGHTING: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
     DECODE_ENEMYCASTLE: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
     DECODE_LATTICE: function(s) { return (s^MASK16)&4095; },
-    DECODE_SCOUT: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; }
+    DECODE_SCOUT: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
+    DECODE_ENEMYDEAD: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
 }
