@@ -2,23 +2,18 @@ import {SPECS} from 'battlecode';
 import {CIRCLES} from './constants.js'
 import {COMM8, COMM16} from './comm.js'
 import {num_moves} from './path.js'
-import {getNearbyRobots, canAfford, getClearLocations, getAttackOrder, dist} from './utils.js'
+import {getNearbyRobots, canAfford, getClearLocations, getAttackOrder, dist, isHorizontalSymmetry} from './utils.js'
 import {find_resource_clusters, local_cluster_info, determine_cluster_plan, get_best_cluster_castle} from './clusters.js'
 
-let CHURCH_BUILD_PILGRIM_THRESHOLD = 500; // we have to have this much fuel before we build a pilgrim for a church.
+const CHURCH_BUILD_PILGRIM_THRESHOLD = 500; // we have to have this much fuel before we build a pilgrim for a church.
+const CASTLE_BUILD_PILGRIM_THRESHOLD = 200; // we have to have this much fuel before we build a pilgrim for a castle
+const LATTICE_BUILD_FUEL_THRESHOLD = 700; // we have to have this much fuel before we add to a lattice.
+const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite before we add to a lattice.
 
-function isHorizontalSymmetry(pass_map, fuel_map, karb_map) {
-  let N = pass_map.length;
-  for (let i = 0; i < N; i++) {
-    for (let j = 0; j < Math.floor(N/2); j++) {
-      if (pass_map[j][i] != pass_map[N - j - 1][i] ||
-          fuel_map[j][i] != fuel_map[N - j - 1][i] ||
-          karb_map[j][i] != karb_map[N - j - 1][i]) {
-        return false;
-      }
-    }
-  }
-  return true;
+const LATTICE_RATIO = { // these HAVE to add up to 1
+  prophet: 5/5,
+  preacher: 0/5,
+  crusader: 0/5,
 }
 
 function determine_enemy_locations(horiSym, castle_locs, N) {
@@ -60,6 +55,8 @@ export class CastleManager {
     this.castle_ids = [];
     this.church_ids = [];
 
+    this.all_lattices = {};
+
     this.horiSym = isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)
 
     this.castle_talk_queue = [COMM8.ENCODE_Y(self.me.y), COMM8.ENCODE_X(self.me.x)];
@@ -75,25 +72,39 @@ export class CastleManager {
     for (const r of self.getVisibleRobots()) {
       if (COMM8.type(r.castle_talk) == COMM8.X_HEADER) {
         this.partial_points[r.id] = COMM8.DECODE_X(r.castle_talk);
-        if (step <= 2)
-          this.castle_ids.push(r.id)
-        else
-          this.church_ids.push(r.id)
       } else if (COMM8.type(r.castle_talk) == COMM8.Y_HEADER) {
-        if (step <= 2)
+        if (step <= 2) {
+          this.castle_ids.push(r.id)
           this.castle_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
-        else
+          this.all_lattices[r.id] = {built:0, needed:5, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
+        } else {
+          this.church_ids.push(r.id)
           this.church_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
+          this.all_lattices[r.id] = {built:0, needed:3, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
+        }
+      } else if (r.castle_talk == COMM8.ADDED_LATTICE) {
+        this.all_lattices[r.id].built++;
+      } else if (r.castle_talk == COMM8.REMOVED_LATTICE) {
+        this.all_lattices[r.id].built--;
       }
     }
 
     if (step == 2) { // we've just gotten castle location information.
+      this.castle_locations.sort(function(a,b) { return dist(a, [0,0]) - dist(b, [0,0])}); // make sure they're all the same
       this.enemy_castle_locations = determine_enemy_locations(this.horiSym, this.castle_locations, self.map.length);
       this.attack_plan = determine_attack_plan(self, this.castle_locations, this.enemy_castle_locations);
       this.cluster_plan = determine_cluster_plan(this.resource_clusters, this.attack_plan, this.horiSym, self.map.length, self);
       this.attack_index = 0; // we attack the closest enemy first
       this.attack_party = new Set(); // keep track of my robot_ids
       this.attacked = 0;
+
+      for (const ap of this.attack_plan) // the ones that need to lattice to the enemy are in aggro lattice mode.
+        if (ap.lattice) // we are going to lattice to the enemy to attack them:
+          for (const ll in this.all_lattices) {
+            let l = this.all_lattices[ll];
+            if (l.loc[0] == ap.me[0] && l.loc[1] == ap.me[1])
+              l.aggro = true;
+          }
     }
 
     // Count up units, build_locations, etc.
@@ -122,12 +133,12 @@ export class CastleManager {
     }
 
     /* ACTIVE DEFENSE */
-
     // if we see an enemy crusader, build a preacher if possible:
     if (enemyRobots.crusader !== false && myRobots.preacher.length < 2 && 
         canAfford(SPECS.PREACHER, self) && building_locations.length > 0) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.crusader.x, enemyRobots.crusader.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
+      self.castleTalk(COMM8.ADDED_LATTICE);
       return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
@@ -142,6 +153,7 @@ export class CastleManager {
         canAfford(SPECS.CRUSADER, self) && building_locations.length > 0) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.prophet.x, enemyRobots.prophet.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
+      self.castleTalk(COMM8.ADDED_LATTICE);
       return self.buildUnit(SPECS.CRUSADER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
@@ -150,11 +162,12 @@ export class CastleManager {
         canAfford(SPECS.PROPHET, self) && building_locations.length > 0) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.preacher.x, enemyRobots.preacher.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
+      self.castleTalk(COMM8.ADDED_LATTICE);
       return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
     /* BUILDING PILGRIMS FOR THINGS */
-    if (canAfford(SPECS.PILGRIM, self) && self.fuel > 200) {
+    if (canAfford(SPECS.PILGRIM, self) && self.fuel > CASTLE_BUILD_PILGRIM_THRESHOLD) {
       let pilgrimCount = 0;
       for (const r of myRobots.pilgrim)
         if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50)
@@ -185,7 +198,40 @@ export class CastleManager {
       }
     }
 
+    /* LATTICE PLANNING */
+    if (step >= 2 && self.fuel >= LATTICE_BUILD_FUEL_THRESHOLD && building_locations.length > 0 &&
+        self.karbonite > LATTICE_BUILD_KARB_THRESHOLD && this.build_signal_queue.length == 0) {
+      let totalLatticeCount = myRobots.preacher.length + myRobots.prophet.length + myRobots.crusader.length;
+      if (this.all_lattices[self.me.id].built < this.all_lattices[self.me.id].needed) {
+        let latticeUnit = SPECS.PROPHET;
+        if (myRobots.prophet.length < totalLatticeCount * LATTICE_RATIO.prophet)
+          latticeUnit = SPECS.PROPHET;
+        else if (myRobots.preacher.length < totalLatticeCount * LATTICE_RATIO.preacher)
+          latticeUnit = SPECS.PREACHER;
+        else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
+          latticeUnit = SPECS.CRUSADER;
 
+        this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
+        this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0,0)]);
+      } else if (totalLatticeCount < this.all_lattices[self.me.id].built && this.castle_talk_queue.length == 0) {
+        this.castle_talk_queue.unshift(COMM8.REMOVED_LATTICE); // we lost a troop somewhere along the way.
+      } else {
+        // check if anything is aggro:
+        let agro_lattice = null;
+        for (const ll in this.all_lattices)
+          if (this.all_lattices[ll].aggro)
+            agro_lattice = this.all_lattices[ll];
+
+        if (agro_lattice !== null) { // a castle is tryint to lattice to the enemy
+          if (agro_lattice.loc[0] == self.me.x && agro_lattice.loc[1] == self.me.y) {
+            this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
+            this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0,0)]); // TODO: ENCODE_LATTICE should not just be 0,0
+          }
+        } else {
+          // TODO: THERE ARE NO AGRESSIVE CASTLES. EACH ONE SHOULD JUST EXPAND THE LATTICE.
+        }
+      }
+    }
 
     // now, do any cached activities.
     if (this.castle_talk_queue.length > 0)
@@ -222,6 +268,10 @@ export class ChurchManager {
     this.resource_radius = cluster_info[1];
     this.build_queue = []
     this.castle_talk_queue = [COMM8.ENCODE_Y(self.me.y), COMM8.ENCODE_X(self.me.x)]
+
+    this.lattice_built = 0;
+    this.lattice_needed = 3;
+    this.lattice_agro = false;
   }
 
   turn(step, self) {
@@ -265,6 +315,8 @@ export class ChurchManager {
         canAfford(SPECS.PREACHER, self) && building_locations.length > 0) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.crusader.x, enemyRobots.crusader.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
+      this.lattice_built++;
+      self.castleTalk(COMM8.ADDED_LATTICE)
       return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
@@ -273,6 +325,8 @@ export class ChurchManager {
         canAfford(SPECS.CRUSADER, self) && building_locations.length > 0) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.prophet.x, enemyRobots.prophet.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
+      this.lattice_built++;
+      self.castleTalk(COMM8.ADDED_LATTICE)
       return self.buildUnit(SPECS.CRUSADER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
@@ -281,9 +335,12 @@ export class ChurchManager {
         canAfford(SPECS.PROPHET, self) && building_locations.length > 0) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.preacher.x, enemyRobots.preacher.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
+      this.lattice_built++;
+      self.castleTalk(COMM8.ADDED_LATTICE)
       return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
+    /* BUILDING PILGRIMS */
     // if we need to build more pilgrims, do that:
     let pilgrimCount = 0;
     for (const r of myRobots.pilgrim)
@@ -294,6 +351,31 @@ export class ChurchManager {
         self.fuel > CHURCH_BUILD_PILGRIM_THRESHOLD && this.build_queue.length == 0)
       this.build_queue.unshift(SPECS.PILGRIM)
 
+    /* LATTICE */
+    if (step >= 2 && self.fuel >= LATTICE_BUILD_FUEL_THRESHOLD && building_locations.length > 0 &&
+        self.karbonite > LATTICE_BUILD_KARB_THRESHOLD && this.build_queue.length == 0) {
+      let totalLatticeCount = myRobots.preacher.length + myRobots.prophet.length + myRobots.crusader.length;
+      if (this.lattice_built < this.lattice_needed) {
+        let latticeUnit = SPECS.PROPHET;
+        if (myRobots.prophet.length < totalLatticeCount * LATTICE_RATIO.prophet)
+          latticeUnit = SPECS.PROPHET;
+        else if (myRobots.preacher.length < totalLatticeCount * LATTICE_RATIO.preacher)
+          latticeUnit = SPECS.PREACHER;
+        else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
+          latticeUnit = SPECS.CRUSADER;
+
+        this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
+        self.signal(COMM16.ENCODE_LATTICE(0,0), dist([self.me.x, self.me.y], building_locations[0]));
+        this.lattice_built++;
+        this.build_queue.unshift(latticeUnit);
+      } else if (totalLatticeCount < this.lattice_built && this.castle_talk_queue.length == 0) {
+        this.lattice_built--;
+        this.castle_talk_queue.unshift(COMM8.REMOVED_LATTICE); // we lost a troop somewhere along the way.
+      }
+    }
+
+
+    /* CACHED ACTIVITIES */
     if (this.castle_talk_queue.length > 0)
       self.castleTalk(this.castle_talk_queue.pop()); // not performant: doesn't matter
 
