@@ -2,6 +2,7 @@ import {BCAbstractRobot, SPECS} from 'battlecode';
 import {CastleManager, ChurchManager} from './buildingManager.js';
 import {PilgrimManager} from './pilgrimManager.js';
 import {ScoutManager} from './scoutManager.js';
+import {COMM16} from './comm.js';
 
 class NoneManager {turn(step, self){return null}}
 
