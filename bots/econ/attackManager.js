@@ -168,7 +168,6 @@ function lattice_movement(self, base_loc, lattice_point, lattice_angle) {
   let farthest_nonRes_point = null
   let farthest_point = null
   let counterpart = null
-  
   switch(lattice_angle){
     case 1:
       counterpart = [self.map.length, self.me.y]
@@ -191,10 +190,9 @@ function lattice_movement(self, base_loc, lattice_point, lattice_angle) {
       }
   }
 
-
   let mypos = [self.me.x, self.me.y]
   let myspeed = SPECS.UNITS[self.me.unit].SPEED
-  if (is_lattice(self, mypos, base_loc) || (lattice_point !== null && self.me.x == lattice_point[0] && self.me.y == lattice_point[1])){
+  if (lattice_point !== null && self.me.x == lattice_point[0] && self.me.y == lattice_point[1]) {
     return null
   }
   if (lattice_point !== null && self.getVisibleRobotMap()[lattice_point[1]][lattice_point[0]] <= 0){
@@ -294,18 +292,20 @@ function attack_behaviour_passive(self, mode_location, base_location){
     //attack enemy, but MAKE SURE crusader is between prophet and enemy
     let crusaders = []
     let enemies = []
+    let mypos = [self.me.x, self.me.y]
     //if there is a single enemy robot without a crusader in front, move away
     //since this method is called by prophets, it must be certain that they are protected by crusaders
     for (const p of self.getVisibleRobots()){
+      let ppos = [p.x,p.y]
       if (self.isVisible(p) && (p.unit == SPECS.UNITS[SPECS.PREACHER] || p.unit == SPECS.UNITS[SPECS.CRUSADER])){
         crusaders.push([p.x,p.y])
       }
-      if (self.isVisible(p) && p.team != self.me.team && p.unit > 2){
+      if (self.isVisible(p) && p.team != self.me.team && p.unit > 2 && dist(mypos,ppos) < SPECS.UNITS[p.unit].VISION_RADIUS){
         enemies.push(p)
       }
     }
     let escape = false;
-    for (const r of targets){
+    for (const r of enemies){
       let unsafe = true;
       for (const c of crusaders){
         if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
@@ -461,7 +461,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   let targets = getAttackOrder(self)
   if (targets.length != 0){
     let escape = false;
-    for (const r of targets){
+    for (const r of enemies){
       let unsafe = true;
       for (const c of help){
         if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
@@ -667,7 +667,7 @@ export class ProphetManager {
 
     let needLattice = false;
     if (this.mode == CONSTANTS.PURSUING_BASE){
-      if (dist([self.me.x,self.me.y],this.base_location) > 36) {
+      if (dist([self.me.x,self.me.y],this.base_location) > 25) {
         let move = move_to(self, [self.me.x, self.me.y], [this.base_location[0],this.base_location[1]])
         if (move !== null) {
           return self.move(move.x - self.me.x, move.y - self.me.y);
@@ -715,14 +715,16 @@ export class ProphetManager {
 
     if (this.mode == CONSTANTS.LATTICE || needLattice){
       if (self.me.x == 37 && self.me.y == 0){
-        // self.log("lattice")  
+        self.log("lattice")  
       }
-      
+
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
         this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
-
+        if (self.me.x == 37 && self.me.y == 0){
+          self.log(this.lattice_point)  
+        }
         //if we are already at the lattice point, then simply do nothing
         if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
           this.lattice_point = null
