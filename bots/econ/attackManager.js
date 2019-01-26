@@ -156,12 +156,12 @@ function find_lattice_point(self, base_loc, lattice_point){
       }
     }
   }
-  if (self.me.x == 31 && self.me.y == 14){
-    self.log(closest_lattice_point)
-  }
-  if (self.me.x == 31 && self.me.y == 17){
-    self.log(closest_lattice_point)
-  }
+  // if (self.me.x == 31 && self.me.y == 14){
+  //   self.log(closest_lattice_point)
+  // }
+  // if (self.me.x == 31 && self.me.y == 17){
+  //   self.log(closest_lattice_point)
+  // }
   return closest_lattice_point
 }
 
