@@ -488,7 +488,8 @@ export class CrusaderManager {
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
-        
+        this.mode = CONSTANTS.DEFENSE
+        this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
 
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){

@@ -3,6 +3,7 @@ import {CastleManager, ChurchManager} from './buildingManager.js';
 import {PilgrimManager} from './pilgrimManager.js';
 import {ScoutManager} from './scoutManager.js';
 import {COMM16} from './comm.js';
+import {CrusaderManager, ProphetManager, PreacherManager} from './attackManager.js'
 
 class NoneManager {turn(step, self){return null}}
 
