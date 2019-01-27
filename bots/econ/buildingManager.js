@@ -20,6 +20,14 @@ const LATTICE_RATIO = { // these HAVE to add up to 1
   crusader: 2/10,
 }
 
+const HORDE_RATIO = {
+  prophet: 7/15,
+  preacher: 1/15,
+  crusader: 7/15
+}
+const HORDE_SIZE = 15;
+const SEND_HORDE_FUEL_THRESHOLD = 4000; // after we have this much fuel, we let the horde go.
+
 function determine_enemy_locations(horiSym, castle_locs, N) {
   let ret = [];
   for (const loc of castle_locs)
@@ -52,8 +60,11 @@ function getRelevantAttackPlan(self, attack_plan) {
     if (dist(ap.me, [self.me.x, self.me.y]) == 0) {
       if (ap.lattice)
         return ap
-      else if (ap.cluster)
-        cluster_plan = ap;
+      else if (ap.cluster) {
+        if (cluster_plan == null ||
+            dist(ap.enemy, [self.me.x, self.me.y]) < dist(cluster_plan.enemy, [self.me.x, self.me.y]))
+          cluster_plan = ap;
+      }
     }
   return cluster_plan;
 }
@@ -355,7 +366,21 @@ export class CastleManager {
               this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
               this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(this.lattice_dir)]);
             } else if (relevantPlan.cluster) {
-              self.log("THIS IS WHERE I WORK TOWARDS A HORDE FOR: " + relevantPlan)
+              self.log("THIS IS WHERE I WORK TOWARDS A HORDE FOR: ")
+              self.log(relevantPlan)
+              if (this.all_lattices[self.me.id].built < HORDE_SIZE) {
+                self.log("EXPANDING LATTICE TO MATCH HORDE SIZE")
+                if (myRobots.prophet.length < totalLatticeCount * LATTICE_RATIO.prophet)
+                  latticeUnit = SPECS.PROPHET;
+                else if (myRobots.preacher.length < totalLatticeCount * LATTICE_RATIO.preacher)
+                  latticeUnit = SPECS.PREACHER;
+                else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
+                  latticeUnit = SPECS.CRUSADER;
+                this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
+                this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(0)]);
+              } else {
+                self.log("OK THE HORDE IS BIG ENOUGH.")
+              }
             }
           }
         } else if (getToBuildNonEssential(this.all_lattices, self) && 

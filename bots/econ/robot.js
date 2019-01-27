@@ -25,14 +25,14 @@ class MyRobot extends BCAbstractRobot {
         // robotManager = new NoneManager();
 
       } else if (self.me.unit === SPECS.PILGRIM) {
-        for (const r of self.getVisibleRobots()) {
-          if (COMM16.type(r.signal) == COMM16.SCOUT_HEADER) {
-            robotManager = new ScoutManager(self);
-            // robotManager = new NoneManager();
-          }
-        }
-        if (robotManager === null)
-          robotManager = new PilgrimManager(self);
+        // for (const r of self.getVisibleRobots()) {
+        //   if (COMM16.type(r.signal) == COMM16.SCOUT_HEADER) {
+        //     robotManager = new ScoutManager(self);
+        //     // robotManager = new NoneManager();
+        //   }
+        // }
+        // if (robotManager === null)
+        robotManager = new PilgrimManager(self);
         // robotManager = new NoneManager();
 
       } else if (self.me.unit === SPECS.CRUSADER) {
