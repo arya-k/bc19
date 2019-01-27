@@ -156,10 +156,10 @@ function find_lattice_point(self, base_loc, lattice_point){
       }
     }
   }
-  if (self.me.x == 31 && self.me.y == 18){
-    self.log("first " + closest_lattice_point)
-    self.log(is_lattice(self, closest_lattice_point[0],closest_lattice_point[1]))
-  }
+  // if (self.me.x == 31 && self.me.y == 18){
+  //   self.log("first " + closest_lattice_point)
+  //   self.log(is_lattice(self, closest_lattice_point[0],closest_lattice_point[1]))
+  // }
   // if (self.me.x == 33 && self.me.y == 18){
   //   self.log("second " + closest_lattice_point)
   // }
