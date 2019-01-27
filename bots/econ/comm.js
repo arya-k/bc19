@@ -7,12 +7,13 @@ export const COMM8 = {
     ENEMY_CASTLE_DEAD: 11,
 
     NOT_AGGRO: 12,
-    ADDED_LATTICE: 13,
-    REMOVED_LATTICE: 14,
+    AGGRO: 13,
+    ADDED_LATTICE: 14,
+    REMOVED_LATTICE: 15,
 
-    NEW_PILGRIM: 15,
-    IM_ALIVE: 16,
-    HINDERED: 17,
+    NEW_PILGRIM: 16,
+    IM_ALIVE: 17,
+    HINDERED: 18,
 
     // message type declarations
     X_HEADER: 0b10<<6,

@@ -23,7 +23,7 @@ const LATTICE_RATIO = { // these HAVE to add up to 1
 function determine_enemy_locations(horiSym, castle_locs, N) {
   let ret = [];
   for (const loc of castle_locs)
-    ret.push(horiSym ? [loc[0], N - loc[1] - 1] : [N - loc[0] - 1, loc[1]])
+    ret.push(horiSym ? [loc[0], N - loc[1] - 1] : [N - loc[0] - 1, loc[1]]);
   return ret;
 }
 
@@ -41,9 +41,19 @@ function determine_attack_plan(self, c_locs, e_locs) {
 
   let to_ret = []
   for (const tp of timed_pairs) {
-    to_ret.push({me:tp[0], enemy:tp[1], lattice:(tp[2] <= 9), cluster:false});
+    to_ret.push({me:tp[0], enemy:tp[1], lattice:(tp[2] <= 12), cluster:false});
   }
   return to_ret;
+}
+
+function getRelevantAttackPlan(self, attack_plan) {
+  let cluster_plan = null;
+  for (const ap of attack_plan)
+    if (ap.lattice)
+      return ap
+    else if (ap.cluster)
+      cluster_plan = ap;
+  return cluster_plan;
 }
 
 function getToBuild(lattices, self) {
@@ -105,21 +115,6 @@ function calculate_lattice_dir(horiSym, attack_plan, maplen) {
     return 3; // attack the left
 }
 
-function in_lattice_direction(x, y, lattice_dir) {
-  if (lattice_dir == 0)
-    return true; // direction 0 means circle all around.
-  else if (lattice_dir == 1) // right
-    return x >= Math.abs(y)
-  else if (lattice_dir == 2) // top
-    return y <= (-1 * Math.abs(x))
-  else if (lattice_dir == 3) // left
-    return x <= (-1 * Math.abs(y))
-  else if (lattice_dir == 4) // bottom
-    return y >= Math.abs(x)
-  else
-    return false; // this direction should not be possible!
-}
-
 export class CastleManager {
   constructor(self) {
     self.log("CASTLE @ " + [self.me.x, self.me.y])
@@ -162,7 +157,11 @@ export class CastleManager {
           this.all_lattices[r.id] = {built:0, needed:10, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
           let obj = this;
           this.attack_plan = this.attack_plan.filter(function (ap) { // remove the church if you built there successfully.
-            return dist(ap.enemy, [obj.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]) > 0;
+            if (dist(ap.enemy, [obj.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]) == 0) {
+              obj.castle_talk_queue.unshift(COMM8.NOT_AGGRO)
+              return false;
+            }
+            return true;
           })
         }
       } else if (r.castle_talk == COMM8.ADDED_LATTICE) {
@@ -174,17 +173,21 @@ export class CastleManager {
         this.pioneer_ids.push(r.id);
       } else if (r.castle_talk == COMM8.NOT_AGGRO) {
         this.all_lattices[r.id].aggro = false;
-        let obj = this;
-        this.attack_plan = this.attack_plan.filter(function (ap) {
-          return dist(ap.me, obj.all_lattices[r.id].loc) > 0; // remove it from the attack plan.
-        });
+      } else if (r.castle_talk == COMM8.AGGRO) {
+        this.all_lattices[r.id].aggro = true;
       }
 
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER) {
         if (this.castle_talk_queue.length == 0 ||
             this.castle_talk_queue[this.castle_talk_queue.length - 1 ] !== COMM8.NOT_AGGRO) {
-          this.castle_talk_queue.unshift(COMM8.NOT_AGGRO);
+          let obj = this; // remove it from the attack plan.
+          this.attack_plan = this.attack_plan.filter(function (ap) {
+            return dist(ap.me, obj.all_lattices[self.me.id].loc) > 0 || !ap.lattice;
+          });
           self.log("KILLED ENEMY @ " + COMM16.DECODE_ENEMYDEAD(r.signal))
+
+          if (getRelevantAttackPlan(self, this.attack_plan) == null)
+            this.castle_talk_queue.unshift(COMM8.NOT_AGGRO); // there are no more reasons for you to be aggressive.
         }
       }
     }
@@ -195,6 +198,7 @@ export class CastleManager {
       const r = self.getRobot(pid);
       if (r === null || r == undefined || r.castle_talk < 1 || r.castle_talk == COMM8.HINDERED) {
         self.log("CREATING AN ATTACK TARGET + PILGRIM @ " + [obj.pioneer_pilgrims[pid].x, obj.pioneer_pilgrims[pid].y])
+        obj.castle_talk_queue.unshift(COMM8.AGGRO)
         obj.attack_plan.unshift({me:[self.me.x, self.me.y], enemy:[obj.pioneer_pilgrims[pid].x, obj.pioneer_pilgrims[pid].y], lattice:false, cluster:true})
         return false;
       }
@@ -340,10 +344,15 @@ export class CastleManager {
 
         if (agro_lattice !== null) { // a castle is trying to lattice to the enemy
           if (agro_lattice.loc[0] == self.me.x && agro_lattice.loc[1] == self.me.y) {
-            if (this.lattice_dir === undefined) // determine which way the lattice should point.
-              this.lattice_dir = calculate_lattice_dir(this.horiSym, this.attack_plan, self.map.length);
-            this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
-            this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(this.lattice_dir)]);
+            let relevantPlan = getRelevantAttackPlan(self, this.attack_plan)
+            if (relevantPlan.lattice) {
+              if (this.lattice_dir === undefined) // determine which way the lattice should point.
+                this.lattice_dir = calculate_lattice_dir(this.horiSym, this.attack_plan, self.map.length);
+              this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
+              this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(this.lattice_dir)]);
+            } else if (relevantPlan.cluster) {
+              self.log("THIS IS WHERE I WORK TOWARDS A HORDE FOR: " + relevantPlan)
+            }
           }
         } else if (getToBuildNonEssential(this.all_lattices, self) && 
                    self.fuel > NONESSENTIAL_LATTICE_FUEL_THRESHOLD &&
