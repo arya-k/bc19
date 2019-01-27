@@ -643,7 +643,6 @@ export class ProphetManager {
       let action = attack_behaviour_passive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         // self.log("prophet says enemy castle dead")
-        // self.log(self.me.x)
         // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
