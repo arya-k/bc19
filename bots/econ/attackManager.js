@@ -143,7 +143,7 @@ function lattice_movement(self, base_loc, lattice_point, lattice_angle) {
   }
 }
 
-function attack_behaviour_aggressive(self, mode_location, is_crusader = false){
+function attack_behaviour_aggressive(self, mode_location){
   //Always pursue mode_location, and kill anyone seen
 
   //attack enemy if possible
@@ -246,7 +246,7 @@ function attack_behaviour_passive(self, mode_location){
   }
 }
 
-function defensive_behaviour_aggressive(self, mode_location, base_location, pursuing=false, is_crusader=false) {
+function defensive_behaviour_aggressive(self, mode_location, base_location) {
   //If the robot sees an enemy, it will chase it, kill it, and come back to base
 
   let receiver = null; //surrounding unit that can receive resource
@@ -293,21 +293,6 @@ function defensive_behaviour_aggressive(self, mode_location, base_location, purs
       return CONSTANTS.ELIMINATED_ENEMY;
     }
   } 
-
-  if (pursuing){
-    if (dist([self.me.x,self.me.y],base_location) > 25) {
-      let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
-      if (move !== null) {
-        return self.move(move.x - self.me.x, move.y - self.me.y)
-      }
-      else{
-        return null;
-      }
-    }
-    else{
-      return CONSTANTS.BASE_PURSUED
-    }
-  }
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
 
@@ -513,7 +498,7 @@ export class CrusaderManager {
 
     if (this.mode == CONSTANTS.DEFENSE) {
       // self.log("here2")
-      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location, false, true)
+      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
       if (action == CONSTANTS.ELIMINATED_ENEMY){
         this.mode_location = null;
         needLattice = true;
@@ -532,7 +517,7 @@ export class CrusaderManager {
     }
 
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
-      let action = attack_behaviour_aggressive(self, this.mode_location, true);
+      let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         // self.log("enemy castle dead")
         // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
