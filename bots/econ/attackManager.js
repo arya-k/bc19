@@ -688,7 +688,6 @@ export class ProphetManager {
   }
 }
 
-// PREACHER BEHAVIOR is just CRUSADER - the escort stuff
 export class PreacherManager {
   constructor(self) {
     this.mode_location = null;
