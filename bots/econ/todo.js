@@ -23,7 +23,7 @@ back and forth while it's not cost effective to build a church.
 
 14. add hording back in to go back and attack those resource spots
 
-15. respond to enemy castle dead to turn off aggro
+15. respond to enemy castle dead to turn on/off aggro
 
 16. add scouts to those hordes when necessary
 

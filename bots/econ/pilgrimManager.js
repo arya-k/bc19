@@ -158,10 +158,12 @@ export class PilgrimManager {
   }
 
   turn(step, self) {
+    let signalledNew = false;
     if (this.church_loc === null) {
       for (const r of self.getVisibleRobots()) {
         if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER) {
           self.castleTalk(COMM8.NEW_PILGRIM);
+          signalledNew = true;
           this.church_loc = COMM16.DECODE_BASELOC(r.signal);
           this.resources = find_depots(self, this.church_loc);
           this.mine_loc = find_mine(self, this.resources, choosePriority(self));
@@ -181,7 +183,8 @@ export class PilgrimManager {
       this.mine_loc = find_mine(self, this.resources, choosePriority(self));
     }
 
-    self.castleTalk(COMM8.IM_ALIVE); // default alive
+    if (!signalledNew)
+      self.castleTalk(COMM8.IM_ALIVE); // default alive
 
     if (this.mine_loc === null) {
       return null; // there's nothing to do.
