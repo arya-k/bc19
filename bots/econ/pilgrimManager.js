@@ -147,7 +147,7 @@ export class PilgrimManager {
         }
       }
     }
-    if (this.church_loc != null){
+    if (this.church_loc !== null){
       this.base_loc = this.church_loc;
       //this.castle_loc = this.church_loc;
       this.resources = find_depots(self, this.church_loc);
@@ -192,7 +192,7 @@ export class PilgrimManager {
 
     if (self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]] > 0){ // if you see a church where your church should be, it is built.
       let r = self.getRobot(self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]]);
-      if (this.church_loc != this.base_loc && r.team != null && r.team == self.me.team && r.unit == SPECS.CHURCH)
+      if (this.church_loc != this.base_loc && r.team !== null && r.team == self.me.team && r.unit == SPECS.CHURCH)
         this.base_loc = this.church_loc; // set new base location if a church is visible at church_loc
     }
     
@@ -281,9 +281,9 @@ export class PilgrimManager {
       if (r.team !== null && r.team != self.me.team){
         if (d < closest_enemy[0])
           closest_enemy = [d, r];
-        if (SPECS.UNITS[r.unit].ATTACK_DAMAGE != null && SPECS.UNITS[r.unit].ATTACK_DAMAGE > 0)
+        if (r.unit !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE > 0)
           enemies.push(r);
-      } else if (r.team !== null && r.team == self.me.team && SPECS.UNITS[r.unit].SPEED > 0 && 
+      } else if (r.unit !== null && r.team !== null && r.team == self.me.team && SPECS.UNITS[r.unit].SPEED > 0 && 
                   SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null> max_ally){
         max_ally = d;
       }
@@ -293,7 +293,7 @@ export class PilgrimManager {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
       if (enemies.length != 0){
         const move = move_away(self, enemies);
-        if (move != null){
+        if (move !== null){
           return self.move(...move);
         }
       }
