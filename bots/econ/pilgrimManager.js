@@ -460,6 +460,8 @@ function choosePriority(self) {
     priority = 'karbonite';
   else
     priority = 'fuel';
+  if (self.karbonite > self.fuel)
+    priority = 'fuel';
   return priority;
 }
 
