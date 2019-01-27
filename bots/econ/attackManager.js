@@ -188,7 +188,7 @@ function attack_behaviour_passive(self, mode_location){
   let vis_map = self.getVisibleRobotMap()
   let targets = getAttackOrder(self)
   if (targets.length != 0){
-    //attack enemy, but MAKE SURE crusader is between prophet and enemy
+    //attack enemy, but MAKE SURE protection is between prophet and enemy
     let crusaders = []
     let enemies = []
     let mypos = [self.me.x, self.me.y]
@@ -264,15 +264,6 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
       let move = move_towards(self, [self.me.x, self.me.y], [r.x, r.y])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
-      }
-    }
-    if (!pursuing){
-      if (self.me.karbonite > 0 || self.me.fuel > 0){
-        if (self.isVisible(r) && r.team == self.me.team && dist(rpos,mypos) <= 2 && dist(rpos,base_location) < dist(mypos,base_location)){
-          if (r.karbonite < SPECS.UNITS[r.unit].KARBONITE_CAPACITY || r.fuel < SPECS.UNITS[r.unit].FUEL_CAPACITY){
-            receiver = [r.x,r.y]
-          }
-        }
       }
     }
   }
