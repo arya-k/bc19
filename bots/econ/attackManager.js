@@ -482,7 +482,7 @@ export class CrusaderManager {
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
-        this.mode = CONSTANTS.DEFENSE
+        this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
         this.lattice_angle = 0
         this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
@@ -575,7 +575,7 @@ export class ProphetManager {
     this.mode_location = null;
     this.base_location = null;
     this.lattice_point = null;
-      this.lattice_angle = 0;
+    this.lattice_angle = 0;
     this.enemy_castles = []
 
     const vis_map = self.getVisibleRobotMap()
@@ -612,7 +612,7 @@ export class ProphetManager {
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
       else if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
-        this.mode = CONSTANTS.DEFENSE
+        this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
         this.lattice_angle = 0
         this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
@@ -744,7 +744,7 @@ export class PreacherManager {
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
-        this.mode = CONSTANTS.DEFENSE
+        this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
         this.lattice_angle = 0
         this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
