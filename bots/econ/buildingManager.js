@@ -10,7 +10,7 @@ const CASTLE_BUILD_PILGRIM_THRESHOLD = 200; // we have to have this much fuel be
 const BUILD_PILGRIM_KARB_THRESHOLD = 50; // we need this much karb to build a pilgrim
 const LATTICE_BUILD_FUEL_THRESHOLD = 1000; // we have to have this much fuel before we add to a lattice.
 const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite before we add to a lattice.
-const NONESSENTIAL_LATTICE_THRESHOLD = 1500; // if we have this much fuel, we can build a lattice beyond whats necessary
+const NONESSENTIAL_LATTICE_THRESHOLD = 2000; // if we have this much fuel, we can build a lattice beyond whats necessary
 const CRUSADER_SPAM_ROUND = 900; // after this round, we spam crusaders to win on unit health.
 
 const LATTICE_RATIO = { // these HAVE to add up to 1
