@@ -342,7 +342,7 @@ export class PilgrimManager {
       }
     }
 
-    if (closest_enemy[1] !== null){
+    if (closest_enemy[1] !== null && closest_enemy[0] <= 25){
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
       if (enemies.length != 0){
         const move = move_away(self, enemies);
