@@ -1,6 +1,6 @@
 // responsible for all signalling
 
-const MASK16 = 0b0010000001101000
+const MASK16 = 0b1110110101011100
 
 export const COMM8 = {
     ENEMY_DEAD: 10,

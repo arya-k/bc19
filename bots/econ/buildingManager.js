@@ -188,6 +188,8 @@ export class CastleManager {
           });
           self.log("KILLED ENEMY @ " + COMM16.DECODE_ENEMYDEAD(r.signal))
 
+          this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(...COMM16.DECODE_ENEMYDEAD(r.signal))])
+
           if (getRelevantAttackPlan(self, this.attack_plan) == null)
             this.castle_talk_queue.unshift(COMM8.NOT_AGGRO); // there are no more reasons for you to be aggressive.
         }
@@ -422,8 +424,11 @@ export class ChurchManager {
     for (const r_id of getNearbyRobots(self, [self.me.x, self.me.y], SPECS.UNITS[SPECS.CASTLE].VISION_RADIUS)) {
       let r = self.getRobot(r_id);
       if (r.team == self.me.team)
-        if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER || r.unit == SPECS.PROPHET)
-          maxDefenderRadius = Math.max(maxDefenderRadius, dist([self.me.x, self.me.y], [r.x, r.y]))
+        if (r.unit == SPECS.CRUSADER || r.unit == SPECS.PREACHER || r.unit == SPECS.PROPHET) {
+          let d = dist([self.me.x, self.me.y], [r.x, r.y])
+          if (d <= 25)
+            maxDefenderRadius = Math.max(maxDefenderRadius, dist([self.me.x, self.me.y], [r.x, r.y]))
+        }
     }
     self.signal(COMM16.ENCODE_LATTICE(0), maxDefenderRadius)
   }

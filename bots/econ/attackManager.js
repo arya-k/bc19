@@ -426,16 +426,16 @@ function addCastle(self, r, lis){
   return myList
 }
 
-function signalDeadCastle(self, lis, base_location){
- if (base_location === null){
-  return
- }
- lis.forEach(function(x){
-    if (self.getVisibleRobotMap()[x[1]][x[0]] == 0){
-      self.signal(COMM16.ENCODE_ENEMYDEAD(x[0],x[1]), dist([self.me.x, self.me.y],base_location))
-      return
-    }
-  })
+function signalDeadCastle(self, toSignal, loc){
+  if (loc === null || !toSignal)
+    return
+
+  let N = self.map.length
+  let horiSym = isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)
+  let enemyBaseLoc = horiSym ? [loc[0], N - loc[1] - 1] : [N - loc[0] - 1, loc[1]]
+
+  if (self.getVisibleRobotMap()[enemyBaseLoc[1]][enemyBaseLoc[0]] == 0)
+    self.signal(COMM16.ENCODE_ENEMYDEAD(...enemyBaseLoc), dist([self.me.x, self.me.y], loc))
 }
 
 export class CrusaderManager {
@@ -446,6 +446,7 @@ export class CrusaderManager {
     this.lattice_point = null;
     this.lattice_angle = 0;
     this.enemy_castles = []
+    this.toSignal = true;
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -479,12 +480,15 @@ export class CrusaderManager {
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
         this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
-        // this.lattice_angle = 0
-        this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
+        let N = self.map.length
+        let horiSym = isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)
+        let enemyBaseLoc = horiSym ? [this.base_location[0], N - this.base_location[1] - 1] : [N - this.base_location[0] - 1, this.base_location[1]]
+        if (dist(enemyBaseLoc, tmp_loc) == 0)
+          this.toSignal = false;
       }
     }
     // self.log("here1")
-    signalDeadCastle(self, this.enemy_castles, this.base_location)
+    signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
 
     if (this.mode == CONSTANTS.DEFENSE) {
@@ -559,6 +563,7 @@ export class ProphetManager {
     this.lattice_point = null;
     this.lattice_angle = 0;
     this.enemy_castles = []
+    this.toSignal = true;
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -596,11 +601,14 @@ export class ProphetManager {
       else if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
         this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
-        // this.lattice_angle = 0
-        this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
+        let N = self.map.length
+        let horiSym = isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)
+        let enemyBaseLoc = horiSym ? [this.base_location[0], N - this.base_location[1] - 1] : [N - this.base_location[0] - 1, this.base_location[1]]
+        if (dist(enemyBaseLoc, tmp_loc) == 0)
+          this.toSignal = false;
       }
     }
-    signalDeadCastle(self, this.enemy_castles, this.base_location)
+    signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
 
     if (this.mode == CONSTANTS.PURSUING_BASE){
@@ -685,6 +693,7 @@ export class PreacherManager {
     this.lattice_point = null;
     this.lattice_angle = 0;
     this.enemy_castles = []
+    this.toSignal = true;
 
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
@@ -718,11 +727,14 @@ export class PreacherManager {
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
         this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
-        // this.lattice_angle = 0
-        this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
+        let N = self.map.length
+        let horiSym = isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map)
+        let enemyBaseLoc = horiSym ? [this.base_location[0], N - this.base_location[1] - 1] : [N - this.base_location[0] - 1, this.base_location[1]]
+        if (dist(enemyBaseLoc, tmp_loc) == 0)
+          this.toSignal = false;
       }
     }
-    signalDeadCastle(self, this.enemy_castles, this.base_location)
+    signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
 
     if (this.mode == CONSTANTS.DEFENSE) {
