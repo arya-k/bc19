@@ -479,7 +479,7 @@ export class CrusaderManager {
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
         this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
-        this.lattice_angle = 0
+        // this.lattice_angle = 0
         this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
       }
     }
@@ -596,7 +596,7 @@ export class ProphetManager {
       else if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
         this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
-        this.lattice_angle = 0
+        // this.lattice_angle = 0
         this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
       }
     }
@@ -718,25 +718,37 @@ export class PreacherManager {
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
         this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
-        this.lattice_angle = 0
+        // this.lattice_angle = 0
         this.enemy_castles.filter(value => value[0] != tmp_loc[0] && value[1] != tmp_loc[1])
       }
     }
     signalDeadCastle(self, this.enemy_castles, this.base_location)
+    let needLattice = false;
+
     if (this.mode == CONSTANTS.DEFENSE) {
+      // self.log("here2")
       let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
-      if (action !== null){
-        return action
+      if (action == CONSTANTS.ELIMINATED_ENEMY){
+        this.mode_location = null;
+        needLattice = true;
+      }
+      if (action == CONSTANTS.SAVE_LATTICE){
+        needLattice = true;
       }
       else{
-        return null
+        if (action !== null){
+          return action
+        }
+        else{
+          return null
+        }
       }
     }
 
     if (this.mode == CONSTANTS.ATTACK && this.mode_location !== null) {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
-        // self.log("preacher says enemy castle dead")
+        // self.log("enemy castle dead")
         // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
@@ -747,7 +759,7 @@ export class PreacherManager {
       }
     }
 
-    if (this.mode == CONSTANTS.LATTICE){
+    if (this.mode == CONSTANTS.LATTICE || needLattice){
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
@@ -771,6 +783,7 @@ export class PreacherManager {
       else{
         return action;
       }
+
     }
   }
 }
