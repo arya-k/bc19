@@ -143,7 +143,7 @@ function is_available(self, myposition, base_loc){
 function find_lattice_point(self, base_loc, lattice_point){
   // self.log(lattice_point)
   // self.log(base_loc)
-  let closest_lattice_point = lattice_point
+  let closest_lattice_point = lattice_point !== null && is_lattice(self, lattice_point, base_loc) ? lattice_point : null
   let mypos = [self.me.x, self.me.y]
   if (is_lattice(self, mypos, base_loc) && (closest_lattice_point === null || dist(mypos, base_loc) < dist(closest_lattice_point,base_loc))){
     closest_lattice_point = [mypos[0], mypos[1]]
@@ -156,12 +156,13 @@ function find_lattice_point(self, base_loc, lattice_point){
       }
     }
   }
-  if (self.me.x == 29 && self.me.y == 14){
+  if (self.me.x == 31 && self.me.y == 18){
     self.log("first " + closest_lattice_point)
+    self.log(is_lattice(self, closest_lattice_point[0],closest_lattice_point[1]))
   }
-  if (self.me.x == 29 && self.me.y == 16){
-    self.log("second " + closest_lattice_point)
-  }
+  // if (self.me.x == 33 && self.me.y == 18){
+  //   self.log("second " + closest_lattice_point)
+  // }
   return closest_lattice_point
 }
 
