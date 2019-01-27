@@ -6,6 +6,48 @@ import {dist, is_valid} from './utils.js'
 
 const CHURCH_BUILD_THRESHOLD = 500; // only build a church if we have >500 fuel.
 
+function Point(x, y, parent = null){
+  this.x = x;
+  this.y = y;
+  this.parent = parent;
+}
+
+function unclog(self, base_loc) {
+  const pass_map = self.map, fuel_map = self.fuel_map, karbonite_map = self.karbonite_map;
+
+  // Generate the visited set:
+  let visited = new Set()
+  let queue = [new Point(base_loc[0], base_loc[1])]
+
+  while (queue.length > 0) {
+    let current = queue.shift()
+
+    if (visited.has((current.y<<6) + current.x)) { continue; } // seen before.
+    visited.add((current.y<<6) + current.x) // mark as visited
+
+    if (dist([current.x, current.y], base_loc) > 2 && !fuel_map[current.y][current.x] && !karbonite_map[current.y][current.x]) {
+      if (current.parent !== null) {
+        while (current.parent.parent !== null)
+          current = current.parent;
+      }
+      return [current.x - self.me.x, current.y - self.me.y];
+    }
+    
+    for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){ // add nbrs
+      if ((current.x + dir[0]) >= 0 && (current.x + dir[0]) < pass_map[0].length) {
+        if ((current.y + dir[1]) >= 0 && (current.y + dir[1]) < pass_map.length) { // in map range
+          if (pass_map[current.y + dir[1]][current.x + dir[0]]) { // can go here
+            if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] <= 0) {
+              queue.push(new Point(current.x + dir[0], current.y + dir[1]));
+            }
+          }
+        }
+      }
+    }
+  }
+  return null;
+}
+
 function find_depots(self, church_loc) {
   var split_resource_map = {fuel: [], karbonite: []};
   var resource_map = []
@@ -187,7 +229,11 @@ export class PilgrimManager {
       self.castleTalk(COMM8.IM_ALIVE); // default alive
 
     if (this.mine_loc === null) {
-      return null; // there's nothing to do.
+      let move = unclog(self, this.base_loc);
+      if (move !== null)
+        return self.move(...move);
+      else
+        return null; // there's nothing to do.
     }
 
     if (self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]] > 0){ // if you see a church where your church should be, it is built.
@@ -383,8 +429,9 @@ export class PilgrimManager {
             this.mine_loc = find_mine(self, this.resources, choosePriority(self));
         }
 
-        if (this.mine_loc === null)
+        if (this.mine_loc === null) {
           return null;
+        }
         let move_node = move_to(self, [self.me.x, self.me.y], this.mine_loc)
         if (move_node !== null) {
           if (isDangerous(self, [move_node.x, move_node.y])){
@@ -402,7 +449,7 @@ export class PilgrimManager {
 
 function choosePriority(self) {
   let priority = null;
-  if (self.fuel > 400 || self.karbonite < 50)
+  if (self.fuel > 500 || self.karbonite < 50)
     priority = 'karbonite';
   else
     priority = 'fuel';
