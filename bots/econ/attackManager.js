@@ -4,115 +4,6 @@ import {move_towards, move_to, no_swarm, move_away} from './path.js'
 import {COMM8,COMM16} from './comm.js'
 import {getAttackOrder, dist, is_valid, is_passable, isHorizontalSymmetry} from './utils.js'
 
-function Point(x, y, p) {
-  this.x = x,
-  this.y = y,
-  this.p = p
-}
-
-function is_nono(self,x,y,base_loc){
-  //Ret, base_locationurns true if this x and y is a nuisance; false if not
-  let nono_map = [...Array(self.map.length)].map(e => Array(self.map.length).fill(false));
-  nono_map[base_loc[1]][base_loc[0]] = true;
-  for (const r of self.getVisibleRobots()) {
-    if (r.team == self.me.team) {
-      if (r.unit == SPECS.CHURCH || r.unit == SPECS.CASTLE) { // castle or church
-        nono_map[r.y][r.x] = true;
-        for (const dir of CIRCLES[2])
-          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
-            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
-      } else if (r.id !== self.me.id) {
-        nono_map[r.y][r.x] = true;
-        for (const dir of CIRCLES[1])
-          if (is_valid(r.x + dir[0], r.y + dir[1], self.map.length))
-            nono_map[r.y + dir[1]][r.x + dir[0]] = true;
-      }
-    }
-  }
-  return nono_map[y][x]
-}
-
-function local_cluster_info(self, base_loc) {
-  let minicurrent, minix, miniy;
-
-  let maxr = 0
-  let visited = new Set()
-  let miniqueue = [(base_loc[1]<<6)|base_loc[0]];
-
-  while (miniqueue.length > 0) {
-    minicurrent = miniqueue.shift();
-    minix = minicurrent&63
-    miniy = (minicurrent&4032)>>6
-
-    if (visited.has(minicurrent)){ continue; }
-
-    if (self.fuel_map[miniy][minix] || self.karbonite_map[miniy][minix]) {
-      maxr = Math.max(maxr, dist(base_loc, [minix, miniy]))
-    } else if (miniy !== base_loc[1] || minix !== base_loc[0]) {
-      continue; // don't continue exploring a non-fuel or karb. spot
-    }
-
-    visited.add(minicurrent);
-    for (const dir of CIRCLES[8]) {
-      if (is_valid(minix+dir[0], miniy+dir[1], self.map.length)) {
-        miniqueue.push(((miniy+dir[1])<<6)|(minix+dir[0]));
-      }
-    }
-  }
-
-  return maxr;
-}
-
-function nonNuisanceBehavior(self, base_loc, waffle = true) {
-  // first find resource_r, the r^2 of the resource that is furthest from base,
-  // within the cluster.
-
-  let r_sq = local_cluster_info(self, base_loc)
-  // if (self.me.x == 22 && self.me.y == 0){
-  //   self.log(r_sq)
-  // }
-  let current;
-  let visited = new Set()
-  let queue = [new Point(self.me.x, self.me.y, null)];
-  let path_end_point = null;
-  // if (self.me.x == 37 && self.me.y == 4){
-  //   // self.log("r_sq = " + r_sq)
-  // }
-  while (queue.length > 0) {
-    current = queue.shift();
-
-    if (visited.has((current.y<<6)|current.x)){ continue; }
-
-    if (self.map[current.y][current.x] && is_passable(self,current.x,current.y) &&
-        dist(base_loc, [current.x, current.y]) > r_sq && 
-        !self.fuel_map[current.y][current.x] &&
-        !self.karbonite_map[current.y][current.x] &&
-        (current.x + current.y) % 2 == (base_loc[0] + base_loc[1]) % 2) {
-      path_end_point = current;
-      break;
-    }
-
-    visited.add((current.y<<6)|current.x);
-    for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]) {
-      if (is_valid(current.x+dir[0], current.y+dir[1], self.map.length)) {
-        if (is_passable(self,current.x,current.y) && self.map[current.y + dir[1]][current.x + dir[0]]) {
-          queue.push(new Point(current.x + dir[0], current.y + dir[1], current));
-        }
-      }
-    }
-  }
-
-  if (path_end_point === null || path_end_point.p === null) { // you already good. Move towards the base if you're too far.
-    return null;
-  } else {
-    while (path_end_point.p.p !== null){
-      path_end_point = path_end_point.p;
-    }
-    return [path_end_point.x - self.me.x, path_end_point.y - self.me.y];
-  }
-
-}
-
 function is_lattice(self, myposition, base_loc){
   return is_valid(myposition[0], myposition[1], self.map.length) && 
   self.map[myposition[1]][myposition[0]] && 
@@ -141,8 +32,6 @@ function is_available(self, myposition, base_loc){
 }
 
 function find_lattice_point(self, base_loc, lattice_point){
-  // self.log(lattice_point)
-  // self.log(base_loc)
   let closest_lattice_point = lattice_point !== null && is_lattice(self, lattice_point, base_loc) ? lattice_point : null
   let mypos = [self.me.x, self.me.y]
   if (is_lattice(self, mypos, base_loc) && (closest_lattice_point === null || dist(mypos, base_loc) < dist(closest_lattice_point,base_loc))){
@@ -159,9 +48,6 @@ function find_lattice_point(self, base_loc, lattice_point){
   // if (self.me.x == 31 && self.me.y == 18){
   //   self.log("first " + closest_lattice_point)
   //   self.log(is_lattice(self, closest_lattice_point[0],closest_lattice_point[1]))
-  // }
-  // if (self.me.x == 33 && self.me.y == 18){
-  //   self.log("second " + closest_lattice_point)
   // }
   return closest_lattice_point
 }
