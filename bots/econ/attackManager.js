@@ -11,7 +11,7 @@ function is_lattice(self, myposition, base_loc, lattice_angle){
   !self.fuel_map[myposition[1]][myposition[0]] &&
   !self.karbonite_map[myposition[1]][myposition[0]] &&
   dist(base_loc,myposition) > 2 &&
-  (myposition[0] + myposition[1]) % 2 == (base_loc[0] + base_loc[1]) % 2) {
+  (myposition[0] + myposition[1]) % 2 == 1 ){
     switch(lattice_angle) {
       case 1: return (myposition[0]-base_loc[0]) >= (2 * Math.abs(myposition[1]-base_loc[1]));
       case 2: return (myposition[1]-base_loc[1]) <= (-2 * Math.abs(myposition[0]-base_loc[0]));
