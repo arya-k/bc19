@@ -748,7 +748,6 @@ export class PreacherManager {
       let action = attack_behaviour_aggressive(self, this.mode_location);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         // self.log("preacher says enemy castle dead")
-        // self.log(self.me.x)
         // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
