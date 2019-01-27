@@ -49,10 +49,12 @@ function determine_attack_plan(self, c_locs, e_locs) {
 function getRelevantAttackPlan(self, attack_plan) {
   let cluster_plan = null;
   for (const ap of attack_plan)
-    if (ap.lattice)
-      return ap
-    else if (ap.cluster)
-      cluster_plan = ap;
+    if (dist(ap.me, [self.me.x, self.me.y]) == 0) {
+      if (ap.lattice)
+        return ap
+      else if (ap.cluster)
+        cluster_plan = ap;
+    }
   return cluster_plan;
 }
 
