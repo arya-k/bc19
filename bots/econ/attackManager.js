@@ -592,6 +592,7 @@ export class ProphetManager {
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
       else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
+        this.base_is_castle = false
         this.mode = CONSTANTS.DEFENSE
         let tmpBaseloc = COMM16.DECODE_BASELOC(r.signal);
         if (tmpBaseloc[0] != this.base_location[0] || tmpBaseloc[1] != this.base_location[1]){
