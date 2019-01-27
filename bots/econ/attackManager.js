@@ -535,7 +535,6 @@ export class CrusaderManager {
       let action = attack_behaviour_aggressive(self, this.mode_location, true);
       if (action == CONSTANTS.ELIMINATED_ENEMY) {
         // self.log("enemy castle dead")
-        // self.log(self.me.x)
         // self.castleTalk(COMM8.ENEMY_CASTLE_DEAD);
         this.mode = CONSTANTS.DEFENSE
         this.mode_location = null;
