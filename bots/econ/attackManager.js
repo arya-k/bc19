@@ -4,14 +4,23 @@ import {move_towards, move_to, no_swarm, move_away} from './path.js'
 import {COMM8,COMM16} from './comm.js'
 import {getAttackOrder, dist, is_valid, is_passable, isHorizontalSymmetry} from './utils.js'
 
-function is_lattice(self, myposition, base_loc){
-  return is_valid(myposition[0], myposition[1], self.map.length) && 
+function is_lattice(self, myposition, base_loc, lattice_angle){
+  if (is_valid(myposition[0], myposition[1], self.map.length) && 
   self.map[myposition[1]][myposition[0]] && 
   is_passable(self,myposition[0],myposition[1]) &&
   !self.fuel_map[myposition[1]][myposition[0]] &&
   !self.karbonite_map[myposition[1]][myposition[0]] &&
   dist(base_loc,myposition) > 2 &&
-  (myposition[0] + myposition[1]) % 2 == (base_loc[0] + base_loc[1]) % 2
+  (myposition[0] + myposition[1]) % 2 == (base_loc[0] + base_loc[1]) % 2) {
+    switch(lattice_angle) {
+      case 1: return (myposition[0]-base_loc[0]) >= (2 * Math.abs(myposition[1]-base_loc[1]));
+      case 2: return (myposition[1]-base_loc[1]) <= (-2 * Math.abs(myposition[0]-base_loc[0]));
+      case 3: return (myposition[0]-base_loc[0]) <= (-2 * Math.abs(myposition[1]-base_loc[1]));
+      case 4: return (myposition[1]-base_loc[1]) >= (2 * Math.abs(myposition[0]-base_loc[0]));
+      default: return true;
+    }
+  }
+  return false;
 }
 
 function is_nonResource(self, myposition, base_loc){
@@ -31,15 +40,15 @@ function is_available(self, myposition, base_loc){
   dist(myposition,base_loc) > 2
 }
 
-function find_lattice_point(self, base_loc, lattice_point){
-  let closest_lattice_point = lattice_point !== null && is_lattice(self, lattice_point, base_loc) ? lattice_point : null
+function find_lattice_point(self, base_loc, lattice_point, lattice_angle){
+  let closest_lattice_point = lattice_point !== null && is_lattice(self, lattice_point, base_loc, lattice_angle) ? lattice_point : null
   let mypos = [self.me.x, self.me.y]
-  if (is_lattice(self, mypos, base_loc) && (closest_lattice_point === null || dist(mypos, base_loc) < dist(closest_lattice_point,base_loc))){
+  if (is_lattice(self, mypos, base_loc, lattice_angle) && (closest_lattice_point === null || dist(mypos, base_loc) < dist(closest_lattice_point,base_loc))){
     closest_lattice_point = [mypos[0], mypos[1]]
   }
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
-    if (is_lattice(self, current, base_loc)) {
+    if (is_lattice(self, current, base_loc, lattice_angle)) {
       if (closest_lattice_point === null || dist(current, base_loc) < dist(base_loc,closest_lattice_point)){
         closest_lattice_point = [current[0],current[1]]
       }
@@ -47,7 +56,7 @@ function find_lattice_point(self, base_loc, lattice_point){
   }
   // if (self.me.x == 31 && self.me.y == 18){
   //   self.log("first " + closest_lattice_point)
-  //   self.log(is_lattice(self, closest_lattice_point[0],closest_lattice_point[1]))
+  //   self.log(is_lattice(self, closest_lattice_point[0],closest_lattice_point[1], lattice_angle))
   // }
   return closest_lattice_point
 }
@@ -436,7 +445,7 @@ export class CrusaderManager {
     this.mode_location = null;
     this.base_location = null;
     this.lattice_point = null;
-    this.lattice_angle = null;
+    this.lattice_angle = 0;
     this.enemy_castles = []
 
     const vis_map = self.getVisibleRobotMap()
@@ -528,7 +537,7 @@ export class CrusaderManager {
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
-        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
+        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point, this.lattice_angle)
 
         //if we are already at the lattice point, then simply do nothing
         if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
@@ -560,6 +569,7 @@ export class ProphetManager {
     this.mode_location = null;
     this.base_location = null;
     this.lattice_point = null;
+      this.lattice_angle = 0;
     this.enemy_castles = []
 
     const vis_map = self.getVisibleRobotMap()
@@ -653,7 +663,7 @@ export class ProphetManager {
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
-        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
+        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point, this.lattice_angle)
         // if (self.me.x == 37 && self.me.y == 0){
         //   self.log(this.lattice_point)  
         // }
@@ -685,6 +695,7 @@ export class PreacherManager {
     this.mode_location = null;
     this.base_location = null;
     this.lattice_point = null;
+    this.lattice_angle = 0;
     this.enemy_castles = []
 
     const vis_map = self.getVisibleRobotMap()
@@ -751,7 +762,7 @@ export class PreacherManager {
       let action = lattice_behaviour(self)
       if (action == CONSTANTS.SAVE_LATTICE){
 
-        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point)
+        this.lattice_point = find_lattice_point(self, this.base_location, this.lattice_point, this.lattice_angle)
 
         //if we are already at the lattice point, then simply do nothing
         if (this.lattice_point !== null && self.me.x == this.lattice_point[0] && self.me.y == this.lattice_point[1]){
