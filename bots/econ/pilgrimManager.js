@@ -338,8 +338,6 @@ export class PilgrimManager {
           return self.give(this.base_loc[0]-self.me.x, this.base_loc[1]-self.me.y, self.me.karbonite, self.me.fuel);
         } else {
           if (this.base_loc == this.church_loc){ // our base has disappeared :( go to castle
-            self.log("OUR BASE HAS BEEN DESTROYED")
-            self.log("PLEASE CHECK THAT THIS WORKS")
             this.strict_state = true;
             this.state = CONSTANTS.BUILD;
             this.base_loc = this.castle_loc;
