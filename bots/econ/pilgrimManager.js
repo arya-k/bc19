@@ -321,7 +321,7 @@ export class PilgrimManager {
     var enemies = [];
     var max_ally = 0;
     for (const r of self.getVisibleRobots()){
-      if (r.x === null)
+      if (!self.isVisible(r))
         continue;
       let d = dist([self.me.x, self.me.y], [r.x, r.y]);
       if (r.team !== null && r.team != self.me.team){

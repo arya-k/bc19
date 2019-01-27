@@ -328,8 +328,8 @@ export class CastleManager {
           if (agro_lattice.loc[0] == self.me.x && agro_lattice.loc[1] == self.me.y) {
             if (this.lattice_dir === undefined) // determine which way the lattice should point.
               this.lattice_dir = calculate_lattice_dir(this.horiSym, this.attack_plan, self.map.length);
-            this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
-            this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(this.lattice_dir)]);
+            this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
+            this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(this.lattice_dir)]);
           }
         } else if (getToBuildNonEssential(this.all_lattices, self) && 
                    self.fuel > NONESSENTIAL_LATTICE_THRESHOLD) { // just generically expand the lattice
