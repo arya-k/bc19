@@ -17,7 +17,7 @@ function unclog(self, base_loc) {
 
   // Generate the visited set:
   let visited = new Set()
-  let queue = [new Point(base_loc[0], base_loc[1])]
+  let queue = [new Point(self.me.x, self.me.y)]
 
   while (queue.length > 0) {
     let current = queue.shift()
@@ -29,16 +29,17 @@ function unclog(self, base_loc) {
       if (current.parent !== null) {
         while (current.parent.parent !== null)
           current = current.parent;
+        return [current.x - self.me.x, current.y - self.me.y];
       }
-      return [current.x - self.me.x, current.y - self.me.y];
+      else
+        return null;
     }
-    
     for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].SPEED]){ // add nbrs
       if ((current.x + dir[0]) >= 0 && (current.x + dir[0]) < pass_map[0].length) {
         if ((current.y + dir[1]) >= 0 && (current.y + dir[1]) < pass_map.length) { // in map range
           if (pass_map[current.y + dir[1]][current.x + dir[0]]) { // can go here
             if (self.getVisibleRobotMap()[current.y + dir[1]][current.x + dir[0]] <= 0) {
-              queue.push(new Point(current.x + dir[0], current.y + dir[1]));
+              queue.push(new Point(current.x + dir[0], current.y + dir[1], current));
             }
           }
         }
@@ -229,11 +230,17 @@ export class PilgrimManager {
       self.castleTalk(COMM8.IM_ALIVE); // default alive
 
     if (this.mine_loc === null) {
-      let move = unclog(self, this.base_loc);
-      if (move !== null)
-        return self.move(...move);
-      else
-        return null; // there's nothing to do.
+      if (self.me.karbonite == 0 && self.me.fuel == 0) {
+        let move = unclog(self, this.base_loc);
+        if (move !== null) {
+          return self.move(...move);
+        }
+        else
+          return null; // there's nothing to do.
+      }
+      else {
+        self.stage = CONSTANTS.DEPOSIT;
+      }
     }
 
     if (self.getVisibleRobotMap()[this.church_loc[1]][this.church_loc[0]] > 0){ // if you see a church where your church should be, it is built.
