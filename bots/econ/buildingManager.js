@@ -177,13 +177,14 @@ export class CastleManager {
         this.attack_plan = this.attack_plan.filter(function (ap) {
           return dist(ap.me, obj.all_lattices[r.id].loc) > 0; // remove it from the attack plan.
         });
-        self.log("KILLED THE ENEMY")
       }
 
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER) {
         if (this.castle_talk_queue.length == 0 ||
-            this.castle_talk_queue[this.castle_talk_queue.length - 1 ] !== COMM8.NOT_AGGRO)
+            this.castle_talk_queue[this.castle_talk_queue.length - 1 ] !== COMM8.NOT_AGGRO) {
           this.castle_talk_queue.unshift(COMM8.NOT_AGGRO);
+          self.log("KILLED ENEMY @ " + COMM16.DECODE_ENEMYDEAD(r.signal))
+        }
       }
     }
 
@@ -216,9 +217,6 @@ export class CastleManager {
               l.aggro = true;
           }
     }
-
-    if (this.attack_plan.length !== this.castle_locations.length)
-      self.log(this.attack_plan)
 
     // Count up units, build_locations, etc.
     let building_locations = getClearLocations(self, 2);
