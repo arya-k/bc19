@@ -369,17 +369,18 @@ export class CastleManager {
               self.log("THIS IS WHERE I WORK TOWARDS A HORDE FOR: ")
               self.log(relevantPlan)
               if (this.all_lattices[self.me.id].built < HORDE_SIZE) {
-                self.log("EXPANDING LATTICE TO MATCH HORDE SIZE")
-                if (myRobots.prophet.length < totalLatticeCount * LATTICE_RATIO.prophet)
+                self.log("BUILDING HORDE UNITS (" + this.all_lattices[self.me.id].built + "/" + HORDE_SIZE + ")")
+                if (myRobots.prophet.length < totalLatticeCount * HORDE_RATIO.prophet)
                   latticeUnit = SPECS.PROPHET;
-                else if (myRobots.preacher.length < totalLatticeCount * LATTICE_RATIO.preacher)
+                else if (myRobots.preacher.length < totalLatticeCount * HORDE_RATIO.preacher)
                   latticeUnit = SPECS.PREACHER;
-                else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
+                else if (myRobots.crusader.length < totalLatticeCount * HORDE_RATIO.crusader)
                   latticeUnit = SPECS.CRUSADER;
                 this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
                 this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(0)]);
-              } else {
-                self.log("OK THE HORDE IS BIG ENOUGH.")
+              } else if (self.fuel > SEND_HORDE_FUEL_THRESHOLD){
+                self.log("OK THE HORDE IS BIG ENOUGH. SENDING IT NOW...")
+                self.signal(COMM16.ENCODE_ENEMYCASTLE(relevantPlan.enemy[0], relevantPlan.enemy[1]), 100) // TODO: CHANGE THIS
               }
             }
           }
