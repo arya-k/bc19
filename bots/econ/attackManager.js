@@ -358,7 +358,7 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
   if (targets.length != 0){
     let escape = false;
     for (const r of enemies){
-      let unsafe = true;
+      let unsafe = r.unit !== SPECS.PROPHET; // don't run away from prophets
       for (const c of help){
         if (dist(c,[r.x,r.y])<dist([r.x,r.y,self.me.x,self.me.y])){
           unsafe = false;
