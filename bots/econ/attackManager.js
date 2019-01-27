@@ -249,7 +249,7 @@ function attack_behaviour_passive(self, mode_location, base_location){
   }
 }
 
-function defensive_behaviour_aggressive(self, mode_location, base_location) {
+function defensive_behaviour_aggressive(self, mode_location, base_location, pursuing=false) {
   //If the robot sees an enemy, it will chase it, kill it, and come back to base
 
   let receiver = null; //surrounding unit that can receive resource
@@ -269,10 +269,12 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
     }
-    if (self.me.karbonite > 0 || self.me.fuel > 0){
-      if (self.isVisible(r) && r.team == self.me.team && dist(rpos,mypos) <= 2 && dist(rpos,base_location) < dist(mypos,base_location)){
-        if (r.karbonite < SPECS.UNITS[r.unit].KARBONITE_CAPACITY || r.fuel < SPECS.UNITS[r.unit].FUEL_CAPACITY){
-          receiver = [r.x,r.y]
+    if (!pursuing){
+      if (self.me.karbonite > 0 || self.me.fuel > 0){
+        if (self.isVisible(r) && r.team == self.me.team && dist(rpos,mypos) <= 2 && dist(rpos,base_location) < dist(mypos,base_location)){
+          if (r.karbonite < SPECS.UNITS[r.unit].KARBONITE_CAPACITY || r.fuel < SPECS.UNITS[r.unit].FUEL_CAPACITY){
+            receiver = [r.x,r.y]
+          }
         }
       }
     }
@@ -296,6 +298,20 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     }
   } 
 
+  if (pursuing){
+    if (dist([self.me.x,self.me.y],base_location) > 25) {
+      let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+      if (move !== null) {
+        return self.move(move.x - self.me.x, move.y - self.me.y);
+      }
+      else{
+        return null;
+      }
+    }
+    else{
+      return CONSTANTS.BASE_PURSUED
+    }
+  }
   //move back to base; give resources if you have them; Otherwise, move away if you're sitting on resources or waffle
   else {
 
@@ -325,7 +341,7 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
   }
 }
 
-function defensive_behaviour_passive(self, mode_location, base_location) {
+function defensive_behaviour_passive(self, mode_location, base_location, pursuing=false) {
   //If the robot sees an enemy, wait for the enemy to come so the enemy will get hit first. Never leave base
   // self.log("here1")
 
@@ -384,6 +400,20 @@ function defensive_behaviour_passive(self, mode_location, base_location) {
     }
   }
 
+  if (pursuing){
+    if (dist([self.me.x,self.me.y],base_location) > 25) {
+      let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+      if (move !== null) {
+        return self.move(move.x - self.me.x, move.y - self.me.y);
+      }
+      else{
+        return null;
+      }
+    }
+    else{
+      return CONSTANTS.BASE_PURSUED
+    }
+  }
   // //go back to base if possible
   // // self.log('here2')
   if (self.me.karbonite > 0 || self.me.fuel > 0) {
@@ -469,10 +499,6 @@ export class CrusaderManager {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
-      if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
-        this.mode = CONSTANTS.PURSUING_BASE
-        this.base_location = COMM16.DECODE_BASELOC(r.signal)
-      }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
@@ -490,20 +516,6 @@ export class CrusaderManager {
     }
     signalDeadCastle(self, this.enemy_castles, this.base_location)
     let needLattice = false;
-    if (this.mode == CONSTANTS.PURSUING_BASE){
-      if (dist([self.me.x,self.me.y],this.base_location) > 25) {
-        let move = move_to(self, [self.me.x, self.me.y], [this.base_location[0],this.base_location[1]])
-        if (move !== null) {
-          return self.move(move.x - self.me.x, move.y - self.me.y);
-        }
-        else{
-          return null;
-        }
-      }
-      else{
-        this.mode = CONSTANTS.DEFENSE
-      } 
-    }
 
     if (this.mode == CONSTANTS.DEFENSE) {
       let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
@@ -620,18 +632,14 @@ export class ProphetManager {
     }
     signalDeadCastle(self, this.enemy_castles, this.base_location)
     let needLattice = false;
+
     if (this.mode == CONSTANTS.PURSUING_BASE){
-      if (dist([self.me.x,self.me.y],this.base_location) > 25) {
-        let move = move_to(self, [self.me.x, self.me.y], [this.base_location[0],this.base_location[1]])
-        if (move !== null) {
-          return self.move(move.x - self.me.x, move.y - self.me.y);
-        }
-        else{
-          return null;
-        }
+      let action = defensive_behaviour_passive(self, this.mode_location, this.base_location, true)
+      if (action == CONSTANTS.BASE_PURSUED){
+        this.mode = CONSTANTS.DEFENSE
       }
       else{
-        this.mode = CONSTANTS.DEFENSE
+        return action
       } 
     }
 
@@ -730,10 +738,6 @@ export class PreacherManager {
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
-      }
-      if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
-        this.mode = CONSTANTS.DEFENSE
-        this.base_location = COMM16.DECODE_BASELOC(r.signal)
       }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
         this.mode = CONSTANTS.ATTACK
