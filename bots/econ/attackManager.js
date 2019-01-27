@@ -448,6 +448,7 @@ export class CrusaderManager {
     this.enemy_castles = []
     this.toSignal = true;
 
+    this.base_is_castle = false
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
       if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
@@ -455,6 +456,7 @@ export class CrusaderManager {
           let r = self.getRobot(vis_map[self.me.y + dir[1]][self.me.x + dir[0]]);
           if (r.team == self.me.team && SPECS.UNITS[r.unit].SPEED == 0) { // castle or church
             this.base_location = [r.x, r.y];
+            this.base_is_castle = (r.unit == SPECS.CASTLE)
             break;
           }
         }
@@ -488,7 +490,8 @@ export class CrusaderManager {
       }
     }
     // self.log("here1")
-    signalDeadCastle(self, this.toSignal, this.base_location)
+    if (this.base_is_castle)
+      signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
 
     if (this.mode == CONSTANTS.DEFENSE) {
@@ -565,6 +568,7 @@ export class ProphetManager {
     this.enemy_castles = []
     this.toSignal = true;
 
+    this.base_is_castle = false
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
       if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
@@ -572,6 +576,7 @@ export class ProphetManager {
           let r = self.getRobot(vis_map[self.me.y + dir[1]][self.me.x + dir[0]]);
           if (r.team == self.me.team && SPECS.UNITS[r.unit].SPEED == 0) { // castle or church
             this.base_location = [r.x, r.y];
+            this.base_is_castle = (r.unit == SPECS.CASTLE)
             break;
           }
         }
@@ -608,7 +613,8 @@ export class ProphetManager {
           this.toSignal = false;
       }
     }
-    signalDeadCastle(self, this.toSignal, this.base_location)
+    if (this.base_is_castle)
+      signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
 
     if (this.mode == CONSTANTS.PURSUING_BASE){
@@ -695,6 +701,7 @@ export class PreacherManager {
     this.enemy_castles = []
     this.toSignal = true;
 
+    this.base_is_castle = false
     const vis_map = self.getVisibleRobotMap()
     for (const dir of CIRCLES[2]) {
       if (self.map[self.me.y + dir[1]] && self.map[self.me.y + dir[1]][self.me.x + dir[0]]) {
@@ -702,6 +709,7 @@ export class PreacherManager {
           let r = self.getRobot(vis_map[self.me.y + dir[1]][self.me.x + dir[0]]);
           if (r.team == self.me.team && SPECS.UNITS[r.unit].SPEED == 0) { // castle or church
             this.base_location = [r.x, r.y];
+            this.base_is_castle = (r.unit == SPECS.CASTLE)
             break;
           }
         }
@@ -734,7 +742,8 @@ export class PreacherManager {
           this.toSignal = false;
       }
     }
-    signalDeadCastle(self, this.toSignal, this.base_location)
+    if (this.base_is_castle)
+      signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
 
     if (this.mode == CONSTANTS.DEFENSE) {
