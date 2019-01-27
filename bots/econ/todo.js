@@ -18,12 +18,14 @@ back and forth while it's not cost effective to build a church.
 10. tune those lattices to face the enemy if relevant.
 
 11. use econ to decide which round it makes sense to spawn crusaders at, and then do that.
+
+15. respond to enemy castle dead to turn on/off aggro
+
+6. track the economy more carefully, then tune this so you can do it efficiently.
                      --- I AM HERE ---
 13. keep track of which resource spots we need to attack (esp. center spots)
 
 14. add hording back in to go back and attack those resource spots
-
-15. respond to enemy castle dead to turn on/off aggro
 
 16. add scouts to those hordes when necessary
 
@@ -34,8 +36,6 @@ back and forth while it's not cost effective to build a church.
 /* MAYBE DO LATER
 
 5. spawn pilgrims from churches for other clusters, as opposed to from one cluster
-
-6. track the economy more carefully, then tune this so you can do it efficiently.
 
 12. redo enemy attack order based on scouts
 

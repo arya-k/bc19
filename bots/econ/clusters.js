@@ -166,6 +166,16 @@ export function get_best_cluster_castle(self, x, y, castle_locations) {
 }
 
 export function determine_cluster_plan(clusters_in, attack_plan, horiSym, maplen, self) {
+  // get the mean location of all our castles:
+  let mean_x = 0;
+  let mean_y = 0;
+  for (const ap of attack_plan){
+    mean_x += ap.me[0];
+    mean_y += ap.me[1];
+  }
+  mean_x = Math.floor(mean_x / attack_plan.length);
+  mean_y = Math.floor(mean_y / attack_plan.length);
+
   // clusters at castles are not considered:
   let valid_clusters = clusters_in.filter(function (cl) {
     for (const ap of attack_plan) {
@@ -197,14 +207,6 @@ export function determine_cluster_plan(clusters_in, attack_plan, horiSym, maplen
     }
   }
 
-  let mean_x = 0, mean_y = 0;
-  for (const ap of attack_plan){
-    mean_x += ap.me[0];
-    mean_y += ap.me[1];
-  }
-  mean_x = Math.floor(mean_x / attack_plan.length);
-  mean_y = Math.floor(mean_y / attack_plan.length);
-
   // sort the array:
   clusters_on_our_side.sort(function(a, b) {
     if (a.defend && !b.defend) {
@@ -224,6 +226,24 @@ export function determine_cluster_plan(clusters_in, attack_plan, horiSym, maplen
     }
   })
 
+  // now we add on the enemy clusters:
+  let enemy_clusters = valid_clusters.filter(function (cl) {
+    if (horiSym && attack_plan[0].me[1] <= (Math.ceil(maplen / 2) + 1)) // top
+      return cl.y > (Math.ceil(maplen / 2) + 1);
+    else if (horiSym && attack_plan[0].me[1] >= (Math.ceil(maplen / 2) - 1)) // bottom
+      return cl.y < (Math.ceil(maplen / 2) - 1);
+    else if (!horiSym && attack_plan[0].me[0] <= (Math.ceil(maplen / 2) + 1)) // left
+      return cl.x > (Math.ceil(maplen / 2) + 1);
+    else if (!horiSym && attack_plan[0].me[0] >= (Math.ceil(maplen / 2) - 1)) // right
+      return cl.x < (Math.ceil(maplen / 2) - 1);
+  })
+
+  // all enemy clusters will have to be defended.
+  for (let cl of enemy_clusters)
+    cl.defend = true;
+
+  enemy_clusters.sort((a,b) => dist([a.x, a.y], [mean_x, mean_y]) - dist([b.x, b.y], [mean_x, mean_y])); // closest first.
+
   // then return the clusters:
-  return clusters_on_our_side;
+  return enemy_clusters.concat(clusters_on_our_side);
 }
