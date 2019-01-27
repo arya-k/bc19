@@ -129,8 +129,6 @@ export class CastleManager {
     this.partial_points = [];
 
     this.church_locations = [];
-    this.castle_ids = [];
-    this.church_ids = [];
 
     this.all_lattices = {};
 
@@ -144,6 +142,9 @@ export class CastleManager {
 
     this.pioneer_pilgrims = {};
     this.pioneer_ids = [];
+
+    this.cluster_plan = [];
+    this.attack_plan = [];
   }
 
   turn(step, self) {
@@ -153,11 +154,9 @@ export class CastleManager {
         this.partial_points[r.id] = COMM8.DECODE_X(r.castle_talk);
       } else if (COMM8.type(r.castle_talk) == COMM8.Y_HEADER) {
         if (step <= 2) {
-          this.castle_ids.push(r.id)
           this.castle_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
           this.all_lattices[r.id] = {built:0, needed:5, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
         } else {
-          this.church_ids.push(r.id)
           this.church_locations.push([this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)])
           this.all_lattices[r.id] = {built:0, needed:10, aggro:false, loc:[this.partial_points[r.id], COMM8.DECODE_Y(r.castle_talk)]}
           let obj = this;
@@ -172,6 +171,19 @@ export class CastleManager {
       } else if (self.isVisible(r) && r.castle_talk == COMM8.NEW_PILGRIM) {
         this.pioneer_pilgrims[r.id] = this.last_cluster;
         this.pioneer_ids.push(r.id);
+      } else if (r.castle_talk == COMM8.NOT_AGGRO) {
+        this.all_lattices[r.id].aggro = false;
+        let obj = this;
+        this.attack_plan = this.attack_plan.filter(function (ap) {
+          return dist(ap.me, obj.all_lattices[r.id].loc) > 0; // remove it from the attack plan.
+        });
+        self.log("KILLED THE ENEMY")
+      }
+
+      if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER) {
+        if (this.castle_talk_queue.length == 0 ||
+            this.castle_talk_queue[this.castle_talk_queue.length - 1 ] !== COMM8.NOT_AGGRO)
+          this.castle_talk_queue.unshift(COMM8.NOT_AGGRO);
       }
     }
 
@@ -204,6 +216,9 @@ export class CastleManager {
               l.aggro = true;
           }
     }
+
+    if (this.attack_plan.length !== this.castle_locations.length)
+      self.log(this.attack_plan)
 
     // Count up units, build_locations, etc.
     let building_locations = getClearLocations(self, 2);

@@ -5,7 +5,8 @@ const MASK16 = 0b0010000001101000
 export const COMM8 = {
     ENEMY_DEAD: 10,
     ENEMY_CASTLE_DEAD: 11,
-    SWITCH_ENEMY_TARGET: 12,
+
+    NOT_AGGRO: 12,
     ADDED_LATTICE: 13,
     REMOVED_LATTICE: 14,
 
@@ -39,7 +40,7 @@ export const COMM16 = {
     ENEMYDEAD_HEADER: 0b1101<<12,
 
     // check header:
-    type: function(s) { return (s^MASK16) & (0b1111<<12); },
+    type: function(s) { return s === -1 ? 0 : (s^MASK16) & (0b1111<<12); },
 
     // encode and decodes:
     ENCODE_BASELOC: function(x, y) { return ((0b1000<<12) + (y<<6) + x) ^ MASK16; }, // new base location for our units
