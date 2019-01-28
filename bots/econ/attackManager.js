@@ -1,6 +1,6 @@
 import {SPECS} from 'battlecode';
 import {CONSTANTS, CIRCLES} from './constants.js'
-import {move_towards, move_to, no_swarm, move_away} from './path.js'
+import {move_towards, move_to, move_away} from './path.js'
 import {COMM8,COMM16} from './comm.js'
 import {getAttackOrder, dist, is_valid, is_passable, isHorizontalSymmetry} from './utils.js'
 
@@ -155,7 +155,7 @@ function attack_behaviour_aggressive(self, mode_location){
   //pursue visible enemies without swarming
   for (const r of self.getVisibleRobots()) {
     if (self.isVisible(r) && r.unit !== null && r.team != self.me.team) {
-      let move = no_swarm(self,[self.me.x,self.me.y],[r.x,r.y])
+      let move = move_towards(self,[self.me.x,self.me.y],[r.x,r.y])
       if (move !== null) {
         return self.move(move.x - self.me.x, move.y - self.me.y);
       }
@@ -196,7 +196,7 @@ function attack_behaviour_passive(self, mode_location){
     //since this method is called by prophets, it must be certain that they are protected by crusaders
     for (const p of self.getVisibleRobots()){
       let ppos = [p.x,p.y]
-      if (self.isVisible(p) && (p.unit == SPECS.UNITS[SPECS.PREACHER] || p.unit == SPECS.UNITS[SPECS.CRUSADER])){
+      if (self.isVisible(p) && p.team == self.me.team && (p.unit == SPECS.UNITS[SPECS.PREACHER] || p.unit == SPECS.UNITS[SPECS.CRUSADER])){
         crusaders.push([p.x,p.y])
       }
       if (self.isVisible(p) && p.team != self.me.team && p.unit > 2 && dist(mypos,ppos) < SPECS.UNITS[p.unit].VISION_RADIUS){
@@ -233,7 +233,7 @@ function attack_behaviour_passive(self, mode_location){
 
   //Pursue the enemy without swarming
   if (vis_map[mode_location[1]][mode_location[0]]!=0){
-    let move = no_swarm(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
+    let move = move_towards(self,[self.me.x,self.me.y],[mode_location[0],mode_location[1]])
     // let move = null;
     if (move !== null) {
       return self.move(move.x - self.me.x, move.y - self.me.y);
@@ -246,7 +246,7 @@ function attack_behaviour_passive(self, mode_location){
   }
 }
 
-function defensive_behaviour_aggressive(self, mode_location, base_location) {
+function defensive_behaviour_aggressive(self, mode_location, base_location, pursuing=false) {
   //If the robot sees an enemy, it will chase it, kill it, and come back to base
 
   let receiver = null; //surrounding unit that can receive resource
@@ -268,6 +268,20 @@ function defensive_behaviour_aggressive(self, mode_location, base_location) {
     }
   }
 
+  if (pursuing){
+    if (dist([self.me.x,self.me.y],base_location) > 25) {
+      let move = move_to(self, [self.me.x, self.me.y], [base_location[0],base_location[1]])
+      if (move !== null) {
+        return self.move(move.x - self.me.x, move.y - self.me.y);
+      }
+      else{
+        return null;
+      }
+    }
+    else{
+      return CONSTANTS.BASE_PURSUED
+    }
+  }
   //Pursue mode_location 
   if (mode_location !== null) {
     // self.log(self.getVisibleRobotMap()[mode_location[1]][mode_location[0]])
@@ -471,6 +485,11 @@ export class CrusaderManager {
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
       }
+      if (COMM16.type(r.signal) == COMM16.HORDE_HEADER) {
+        this.mode = CONSTANTS.PURSUING_BASE
+        this.base_location = COMM16.DECODE_HORDE(r.signal)
+        this.mode_location = null
+      }
       if (COMM16.type(r.signal) == COMM16.ENEMYSIGHTING_HEADER){
         this.mode = CONSTANTS.ATTACK
         this.mode_location = COMM16.DECODE_ENEMYSIGHTING(r.signal)
@@ -493,7 +512,15 @@ export class CrusaderManager {
     if (this.base_is_castle)
       signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
-
+    if (this.mode == CONSTANTS.PURSUING_BASE){
+      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location, true)
+      if (action == CONSTANTS.BASE_PURSUED){
+        this.mode = CONSTANTS.DEFENSE
+      }
+      else{
+        return action
+      } 
+    }
     if (this.mode == CONSTANTS.DEFENSE) {
       // self.log("here2")
       let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
@@ -588,8 +615,9 @@ export class ProphetManager {
     for (const r of self.getVisibleRobots()) {
       this.enemy_castles = addCastle(self, r,this.enemy_castles)
       if (COMM16.type(r.signal) == COMM16.ENEMYCASTLE_HEADER) {
-        this.mode = CONSTANTS.ATTACK
+        this.mode = CONSTANTS.DEFENSE
         this.mode_location = COMM16.DECODE_ENEMYCASTLE(r.signal)
+        self.log(this.mode_location)
       }
       else if (COMM16.type(r.signal) == COMM16.BASELOC_HEADER){
         this.base_is_castle = false
@@ -599,6 +627,15 @@ export class ProphetManager {
           this.mode = CONSTANTS.PURSUING_BASE;
         }
         this.base_location = COMM16.DECODE_BASELOC(r.signal)
+      }
+      else if (COMM16.type(r.signal) == COMM16.HORDE_HEADER) {
+        this.base_is_castle = false
+        this.mode = CONSTANTS.DEFENSE
+        let tmpBaseloc = COMM16.DECODE_HORDE(r.signal);
+        if (tmpBaseloc[0] != this.base_location[0] || tmpBaseloc[1] != this.base_location[1]){
+          this.mode = CONSTANTS.PURSUING_BASE;
+        }
+        this.base_location = COMM16.DECODE_HORDE(r.signal)
       }
       else if (COMM16.type(r.signal) == COMM16.LATTICE_HEADER){
         this.mode = CONSTANTS.LATTICE
@@ -733,6 +770,14 @@ export class PreacherManager {
         this.mode = CONSTANTS.LATTICE
         this.lattice_angle = COMM16.DECODE_LATTICE(r.signal)
       }
+      if (COMM16.type(r.signal) == COMM16.HORDE_HEADER){
+        this.mode = CONSTANTS.DEFENSE
+        let tmpBaseloc = COMM16.DECODE_HORDE(r.signal);
+        if (tmpBaseloc[0] != this.base_location[0] || tmpBaseloc[1] != this.base_location[1]){
+          this.mode = CONSTANTS.PURSUING_BASE;
+        }
+        this.base_location = COMM16.DECODE_HORDE(r.signal)
+      }
       if (COMM16.type(r.signal) == COMM16.ENEMYDEAD_HEADER){
         this.mode = CONSTANTS.LATTICE
         let tmp_loc = COMM16.DECODE_ENEMYDEAD(r.signal)
@@ -746,7 +791,15 @@ export class PreacherManager {
     if (this.base_is_castle)
       signalDeadCastle(self, this.toSignal, this.base_location)
     let needLattice = false;
-
+    if (this.mode == CONSTANTS.PURSUING_BASE){
+      let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location, true)
+      if (action == CONSTANTS.BASE_PURSUED){
+        this.mode = CONSTANTS.DEFENSE
+      }
+      else{
+        return action
+      } 
+    }
     if (this.mode == CONSTANTS.DEFENSE) {
       // self.log("here2")
       let action = defensive_behaviour_aggressive(self, this.mode_location, this.base_location)
