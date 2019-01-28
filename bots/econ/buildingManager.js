@@ -181,6 +181,8 @@ export class CastleManager {
         this.all_lattices[r.id].built++;
       } else if (r.castle_talk == COMM8.REMOVED_LATTICE) {
         this.all_lattices[r.id].built--;
+      } else if (r.castle_talk == COMM8.SENT_HORDE) {
+        this.all_lattices[r.id].built = 0;
       } else if (self.isVisible(r) && r.castle_talk == COMM8.NEW_PILGRIM) {
         this.pioneer_pilgrims[r.id] = this.last_cluster;
         this.pioneer_ids.push(r.id);
@@ -366,8 +368,6 @@ export class CastleManager {
               this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
               this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(this.lattice_dir)]);
             } else if (relevantPlan.cluster) {
-              self.log("THIS IS WHERE I WORK TOWARDS A HORDE FOR: ")
-              self.log(relevantPlan)
               if (this.all_lattices[self.me.id].built < HORDE_SIZE) {
                 self.log("BUILDING HORDE UNITS (" + this.all_lattices[self.me.id].built + "/" + HORDE_SIZE + ")")
                 if (myRobots.prophet.length < totalLatticeCount * HORDE_RATIO.prophet)
@@ -380,7 +380,10 @@ export class CastleManager {
                 this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(0)]);
               } else if (self.fuel > SEND_HORDE_FUEL_THRESHOLD){
                 self.log("OK THE HORDE IS BIG ENOUGH. SENDING IT NOW...")
-                self.signal(COMM16.ENCODE_ENEMYCASTLE(relevantPlan.enemy[0], relevantPlan.enemy[1]), 100) // TODO: CHANGE THIS
+                this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(relevantPlan.enemy[0], relevantPlan.enemy[1])])
+                this.castle_talk_queue.unshift(COMM8.SENT_HORDE)
+
+                return self.signal(COMM16.ENCODE_ENEMYCASTLE(relevantPlan.enemy[0], relevantPlan.enemy[1]), 64)
               }
             }
           }

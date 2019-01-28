@@ -10,10 +10,11 @@ export const COMM8 = {
     AGGRO: 13,
     ADDED_LATTICE: 14,
     REMOVED_LATTICE: 15,
+    SENT_HORDE: 16,
 
-    NEW_PILGRIM: 16,
-    IM_ALIVE: 17,
-    HINDERED: 18,
+    NEW_PILGRIM: 17,
+    IM_ALIVE: 18,
+    HINDERED: 19,
 
     // message type declarations
     X_HEADER: 0b10<<6,
