@@ -327,6 +327,7 @@ export class PilgrimManager {
     var closest_enemy = [1<<14, null]; // get our closest enemy, and the distance to our nearest ally.
     var enemies = [];
     var max_ally = 0;
+    let distress = false;
     for (const r of self.getVisibleRobots()){
       if (!self.isVisible(r))
         continue;
@@ -334,16 +335,21 @@ export class PilgrimManager {
       if (r.team !== null && r.team != self.me.team){
         if (d < closest_enemy[0])
           closest_enemy = [d, r];
-        if (r.unit !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE > 0)
+        if (SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && SPECS.UNITS[r.unit].ATTACK_DAMAGE > 0)
           enemies.push(r);
-      } else if (r.unit !== null && r.team !== null && r.team == self.me.team && SPECS.UNITS[r.unit].SPEED > 0 && 
-                  SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null> max_ally){
-        max_ally = d;
+      } 
+      if (r.team !== null && r.team == self.me.team && SPECS.UNITS[r.unit].SPEED > 0 && 
+                  SPECS.UNITS[r.unit].ATTACK_DAMAGE !== null && d > max_ally){
+        if (d <= 25)
+          distress = true;
+        if (d > max_ally)
+          max_ally = d;
       }
     }
 
-    if (closest_enemy[1] !== null && closest_enemy[0] <= 25){
-      self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
+    if (closest_enemy[1] !== null){
+      if (distress)
+        self.signal(COMM16.ENCODE_ENEMYSIGHTING(closest_enemy[1].x, closest_enemy[1].y), max_ally);
       if (enemies.length != 0){
         const move = move_away(self, enemies);
         if (move !== null){
