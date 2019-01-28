@@ -379,7 +379,7 @@ export class CastleManager {
                 this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
                 this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(0)]);
               } else if (self.fuel > SEND_HORDE_FUEL_THRESHOLD){
-                self.log("OK THE HORDE IS BIG ENOUGH. SENDING IT NOW...")
+                self.log("SENDING HORDE TO " + relevantPlan.enemy)
                 this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(relevantPlan.enemy[0], relevantPlan.enemy[1])])
                 this.castle_talk_queue.unshift(COMM8.SENT_HORDE)
 
