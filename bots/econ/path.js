@@ -546,7 +546,6 @@ export function sneak(self, a, b) { // bascially move_towards but not moving int
             SPECS.UNITS[self.me.unit].ATTACK_DAMAGE !== null){
           for (let dir of CIRCLES[SPECS.UNITS[r.unit].VISION_RADIUS]){
             let p = [x + dir[0], y + dir[1]];
-            //self.log("iswall1")
             if (graph.grid[p[1]] && graph.grid[p[1]][p[0]]){
               graph.grid[p[1]][p[0]].isWall = true;
             }
