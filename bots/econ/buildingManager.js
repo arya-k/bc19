@@ -382,7 +382,7 @@ export class CastleManager {
                 self.log("SENDING HORDE TO " + relevantPlan.enemy)
                 this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(relevantPlan.enemy[0], relevantPlan.enemy[1])])
                 this.castle_talk_queue.unshift(COMM8.SENT_HORDE)
-                return self.signal(COMM16.ENCODE_BASELOC(relevantPlan.enemy[0], relevantPlan.enemy[1]), 64) // that way it doesnt build pilgrim till the next turn
+                return self.signal(COMM16.ENCODE_HORDE(relevantPlan.enemy[0], relevantPlan.enemy[1]), 64) // that way it doesnt build pilgrim till the next turn
               }
             }
           }
