@@ -539,9 +539,8 @@ export function sneak(self, a, b) { // bascially move_towards but not moving int
   var graph = new Graph(pass_map, vis_map, speed);
   for (var y = 0; y < pass_map.length; y++) {
     for (var x = 0; x < pass_map.length; x++) {
-      let id = vis_map[y][x];
-      if (id > 0){
-        let r = self.getRobot(id);
+      if (vis_map[y][x] > 0){
+        let r = self.getRobot(vis_map[y][x]);
         if (r.team !== null && r.team != self.me.team && SPECS.UNITS[self.me.unit].SPEED > 0 && 
             SPECS.UNITS[self.me.unit].ATTACK_DAMAGE !== null){
           for (let dir of CIRCLES[SPECS.UNITS[r.unit].VISION_RADIUS]){
