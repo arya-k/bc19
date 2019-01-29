@@ -2,7 +2,7 @@ import {SPECS} from 'battlecode';
 import {CONSTANTS,CIRCLES} from './constants.js'
 import {COMM8, COMM16} from './comm.js'
 import {move_towards, move_to, move_away, num_moves} from './path.js'
-import {dist, is_valid} from './utils.js'
+import {dist, is_valid, getClearLocations} from './utils.js'
 
 const CHURCH_BUILD_THRESHOLD = 500; // only build a church if we have >500 fuel.
 
@@ -201,6 +201,18 @@ export class PilgrimManager {
   }
 
   turn(step, self) {
+    /* CHURCHSPAM */
+    let building_locations = getClearLocations(self, 2);
+    for (const r of self.getVisibleRobots())
+      if (COMM16.type(r.signal) == COMM16.CHURCHSPAM_HEADER) {
+        if (self.fuel > SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL &&
+            self.karbonite > SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE &&
+            building_locations.length > 0) {
+          self.signal(COMM16.ENCODE_CHURCHSPAM, dist([self.me.x, self.me.y], building_locations[0]))
+          return self.buildUnit(SPECS.CHURCH, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+        }
+      }
+
     let signalledNew = false;
     if (this.church_loc === null) {
       for (const r of self.getVisibleRobots()) {

@@ -13,7 +13,8 @@ const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite
 const NONESSENTIAL_LATTICE_FUEL_THRESHOLD = 2000; // if we have this much fuel, we can build a lattice beyond whats necessary
 const NONESSENTIAL_LATTICE_KARB_THRESHOLD = 200; // if we have this much karb, we can build a lattice beyond whats necessary
 
-const CRUSADER_SPAM_ROUND = 850; // after this round, we spam crusaders to win on unit health.
+const CRUSADER_SPAM_ROUND = 100; // after this round, we spam crusaders to win on unit health.
+const CHURCHSPAM_ROUND = 998;
 
 const LATTICE_RATIO = { // these HAVE to add up to 1
   prophet: 7/10,
@@ -272,6 +273,15 @@ export class CastleManager {
       }
     }
 
+    /* CHURCHSPAM IS THE #1 PRIORITY */
+    if (step >= CHURCHSPAM_ROUND && building_locations.length > 0 &&
+        self.fuel >= (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_FUEL + SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_FUEL) &&
+        self.karbonite >= (SPECS.UNITS[SPECS.PILGRIM].CONSTRUCTION_KARBONITE + SPECS.UNITS[SPECS.CHURCH].CONSTRUCTION_KARBONITE)) {
+      self.log("CHURCHSPAM")
+      self.signal(COMM16.ENCODE_CHURCHSPAM, dist([self.me.x, self.me.y], building_locations[0]));
+      return self.buildUnit(SPECS.PILGRIM, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
+    }
+
     /* ACTIVE DEFENSE */
     // if we see an enemy crusader, build a preacher if possible:
     if (enemyRobots.crusader !== false && myRobots.preacher.length < 2 && 
@@ -342,17 +352,9 @@ export class CastleManager {
     }
 
     /* AFTER ROUND CRUSADER_SPAM_ROUND, we don't need to build a lattice*/
-
     if (step > CRUSADER_SPAM_ROUND && !this.have_spammed) {
-      self.log("SENDING CRUSADER SPAM SIGNAL...")
+      self.log("BEGINNING CRUSADER SPAM")
       return self.signal(COMM16.ENCODE_SPAM, 7938); // whole map
-    }
-
-    if (this.in_crusader_spam &&
-        canAfford(SPECS.CRUSADER, self) &&
-        building_locations.length > 0) {
-      self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]))
-      return self.buildUnit(SPECS.CRUSADER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
     /* LATTICE PLANNING */
@@ -366,6 +368,9 @@ export class CastleManager {
       else if (myRobots.preacher.length < totalLatticeCount * LATTICE_RATIO.preacher)
         latticeUnit = SPECS.PREACHER;
       else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
+        latticeUnit = SPECS.CRUSADER;
+
+      if (this.in_crusader_spam)
         latticeUnit = SPECS.CRUSADER;
 
       if (getToBuild(this.all_lattices, self)) {
@@ -385,30 +390,33 @@ export class CastleManager {
                 this.lattice_dir = calculate_lattice_dir(this.horiSym, this.attack_plan, self.map.length);
               this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
               this.build_signal_queue.unshift([SPECS.PROPHET, COMM16.ENCODE_LATTICE(this.lattice_dir)]);
-            } else if (relevantPlan.cluster) {
-              if (this.all_lattices[self.me.id].built < HORDE_SIZE) {
-                self.log("BUILDING HORDE UNITS (" + this.all_lattices[self.me.id].built + "/" + HORDE_SIZE + ")")
-                if (myRobots.prophet.length < totalLatticeCount * HORDE_RATIO.prophet)
-                  latticeUnit = SPECS.PROPHET;
-                else if (myRobots.preacher.length < totalLatticeCount * HORDE_RATIO.preacher)
-                  latticeUnit = SPECS.PREACHER;
-                else if (myRobots.crusader.length < totalLatticeCount * HORDE_RATIO.crusader)
-                  latticeUnit = SPECS.CRUSADER;
-                this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
-                this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0)]);
-              } else if (self.fuel > SEND_HORDE_FUEL_THRESHOLD){
-                self.log("SENDING HORDE TO " + relevantPlan.enemy)
-                this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(relevantPlan.enemy[0], relevantPlan.enemy[1])])
-                this.castle_talk_queue.unshift(COMM8.SENT_HORDE)
-                return self.signal(COMM16.ENCODE_HORDE(relevantPlan.enemy[0], relevantPlan.enemy[1]), 64) // that way it doesnt build pilgrim till the next turn
-              }
+            // } else if (relevantPlan.cluster) {
+            //   if (this.all_lattices[self.me.id].built < HORDE_SIZE) {
+            //     self.log("BUILDING HORDE UNITS (" + this.all_lattices[self.me.id].built + "/" + HORDE_SIZE + ")")
+            //     if (myRobots.prophet.length < totalLatticeCount * HORDE_RATIO.prophet)
+            //       latticeUnit = SPECS.PROPHET;
+            //     else if (myRobots.preacher.length < totalLatticeCount * HORDE_RATIO.preacher)
+            //       latticeUnit = SPECS.PREACHER;
+            //     else if (myRobots.crusader.length < totalLatticeCount * HORDE_RATIO.crusader)
+            //       latticeUnit = SPECS.CRUSADER;
+            //     this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE); // aggro lattices are prophet only.
+            //     this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0)]);
+            //   } else if (self.fuel > SEND_HORDE_FUEL_THRESHOLD){
+            //     self.log("SENDING HORDE TO " + relevantPlan.enemy)
+            //     this.build_signal_queue.unshift([SPECS.PILGRIM, COMM16.ENCODE_BASELOC(relevantPlan.enemy[0], relevantPlan.enemy[1])])
+            //     this.castle_talk_queue.unshift(COMM8.SENT_HORDE)
+            //     return self.signal(COMM16.ENCODE_HORDE(relevantPlan.enemy[0], relevantPlan.enemy[1]), 64) // that way it doesnt build pilgrim till the next turn
+            //   }
             }
           }
         } else if (getToBuildNonEssential(this.all_lattices, self) && 
                    self.fuel > NONESSENTIAL_LATTICE_FUEL_THRESHOLD &&
                    self.karbonite > NONESSENTIAL_LATTICE_KARB_THRESHOLD) { // just generically expand the lattice
           this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
-          this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0)]);
+          if (!this.in_crusader_spam)
+            this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0)]);
+          else
+            this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_CRUSADER_LATTICE])
         }
       }
 
@@ -482,10 +490,12 @@ export class ChurchManager {
   }
 
   turn(step, self) {
-
+    let churchspam = false;
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.SPAM_HEADER) {
         this.in_crusader_spam = true;
+      } else if (COMM16.type(r.signal) == COMM16.CHURCHSPAM_HEADER) {
+        churchspam = true;
       }
     }
 
@@ -517,6 +527,14 @@ export class ChurchManager {
         else if (r.unit == SPECS.PROPHET)
           enemyRobots.prophet = r;
       }
+    }
+
+    /* CHURCHSPAM IS THE PRIORITY */
+    if (canAfford(SPECS.PILGRIM, self) &&
+        building_locations.length > 0 &&
+        churchspam) {
+      self.signal(COMM16.ENCODE_CHURCHSPAM, dist([self.me.x, self.me.y], building_locations[0]))
+      return self.buildUnit(SPECS.PILGRIM, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y)
     }
 
     /* ACTIVE DEFENSE */
@@ -582,14 +600,6 @@ export class ChurchManager {
         self.karbonite > BUILD_PILGRIM_KARB_THRESHOLD)
       this.build_queue.unshift(SPECS.PILGRIM)
 
-    /* AFTER ROUND CRUSADER_SPAM_ROUND, we don't need to build a lattice*/
-    if (this.in_crusader_spam &&
-        canAfford(SPECS.CRUSADER, self) &&
-        building_locations.length > 0) {
-      self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]))
-      return self.buildUnit(SPECS.CRUSADER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
-    }
-
     /* LATTICE */
     if (self.fuel >= (LATTICE_BUILD_FUEL_THRESHOLD + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_FUEL) &&
         self.karbonite > (LATTICE_BUILD_KARB_THRESHOLD + SPECS.UNITS[SPECS.PROPHET].CONSTRUCTION_KARBONITE) &&
@@ -604,18 +614,24 @@ export class ChurchManager {
       else if (myRobots.crusader.length < totalLatticeCount * LATTICE_RATIO.crusader)
         latticeUnit = SPECS.CRUSADER;
 
-      if (step > CRUSADER_SPAM_ROUND)
+      if (this.in_crusader_spam)
         latticeUnit = SPECS.CRUSADER;
 
       if (this.lattice_built < this.lattice_needed) {
         this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
-        self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]));
+        if (!this.in_crusader_spam)
+          self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]));
+        else
+          self.signal(COMM16.ENCODE_CRUSADER_LATTICE, dist([self.me.x, self.me.y], building_locations[0]));
         this.lattice_built++;
         this.build_queue.unshift(latticeUnit);
       } else if (self.fuel > NONESSENTIAL_LATTICE_FUEL_THRESHOLD &&
                  self.karbonite > NONESSENTIAL_LATTICE_KARB_THRESHOLD) {
         this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
-        self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]));
+        if (!this.in_crusader_spam)
+          self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]));
+        else
+          self.signal(COMM16.ENCODE_CRUSADER_LATTICE, dist([self.me.x, self.me.y], building_locations[0]));
         this.lattice_built++;
         this.build_queue.unshift(latticeUnit);
       }

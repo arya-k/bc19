@@ -41,6 +41,8 @@ export const COMM16 = {
     SCOUT_HEADER: 0b1100<<12,
     ENEMYDEAD_HEADER: 0b1101<<12,
     SPAM_HEADER: 0b1111<<12,
+    CHURCHSPAM_HEADER: 0b0111<<12,
+    CRUSADER_LATTICE_HEADER: 0b0011<<12,
 
     // check header:
     type: function(s) { return s === -1 ? 0 : (s^MASK16) & (0b1111<<12); },
@@ -52,8 +54,9 @@ export const COMM16 = {
     ENCODE_LATTICE: function(region) { return ((0b1011<<12) + region) ^ MASK16; }, // this tells our units to lattice between a theta 1 and 2. If both are set to 0, then generic lattice,
     ENCODE_SCOUT: function(x, y) { return ((0b1100<<12) + (y<<6) + x) ^ MASK16; }, // tells pilgrims to act as scouts and provides an enemy location
     ENCODE_ENEMYDEAD: function(x, y) { return ((0b1101<<12) + (y<<6) + x) ^ MASK16; }, // this is signalled whenever an enemy is killed
-    ENCODE_SPAM: (0b1111000000000000 ^ MASK16),
-
+    ENCODE_SPAM: (0b1111<<12) ^ MASK16,
+    ENCODE_CHURCHSPAM: (0b0111<<12) ^ MASK16,
+    ENCODE_CRUSADER_LATTICE: (0b0011<<12) ^ MASK16,
 
     DECODE_BASELOC: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
     DECODE_ENEMYSIGHTING: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
