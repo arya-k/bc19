@@ -13,7 +13,7 @@ const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite
 const NONESSENTIAL_LATTICE_FUEL_THRESHOLD = 2000; // if we have this much fuel, we can build a lattice beyond whats necessary
 const NONESSENTIAL_LATTICE_KARB_THRESHOLD = 200; // if we have this much karb, we can build a lattice beyond whats necessary
 
-const CRUSADER_SPAM_ROUND = 850; // after this round, we spam crusaders to win on unit health.
+const CRUSADER_SPAM_ROUND = 100; // after this round, we spam crusaders to win on unit health.
 const CHURCHSPAM_ROUND = 998;
 
 const LATTICE_RATIO = { // these HAVE to add up to 1
@@ -233,7 +233,8 @@ export class CastleManager {
         }
       } else if (COMM16.type(r.signal) == COMM16.SPAM_HEADER) {
         this.have_spammed = true;
-        this.in_crusader_spam = true;
+        this.in_crusader_spam = COMM16.DECODE_SPAM(r.signal);
+        self.log("IT LOOKS LIKE WE ARE SPAMMING IN DIRECTION: " + this.in_crusader_spam)
       }
     }
 
@@ -336,7 +337,7 @@ export class CastleManager {
       return self.attack(attackableEnemy[0].x - self.me.x, attackableEnemy[0].y - self.me.y)
     }
 
-    if (step == 2 && this.castle_locations.length == 1) {
+    if (step == 2 && this.castle_locations.length == 1 && this.preacher_rushing) {
       self.log("PREACHER RUSHING...")
       this.build_signal_queue.unshift([SPECS.PREACHER, COMM16.ENCODE_HORDE(...this.enemy_pos)])
       this.build_signal_queue.unshift([SPECS.PREACHER, COMM16.ENCODE_HORDE(...this.enemy_pos)])
@@ -382,7 +383,8 @@ export class CastleManager {
     /* AFTER ROUND CRUSADER_SPAM_ROUND, we don't need to build a lattice*/
     if (step > CRUSADER_SPAM_ROUND && !this.have_spammed) {
       self.log("BEGINNING CRUSADER SPAM")
-      return self.signal(COMM16.ENCODE_SPAM, 7938); // whole map
+      let dir = calculate_crusader_dir(this.horiSym, this.attack_plan, self.map.length);
+      return self.signal(COMM16.ENCODE_SPAM(dir), 7938); // whole map
     }
 
     /* LATTICE PLANNING */
@@ -441,7 +443,7 @@ export class CastleManager {
                    self.fuel > NONESSENTIAL_LATTICE_FUEL_THRESHOLD &&
                    self.karbonite > NONESSENTIAL_LATTICE_KARB_THRESHOLD) { // just generically expand the lattice
           this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
-          if (!this.in_crusader_spam)
+          if (this.in_crusader_spam == false)
             this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0)]);
           else
             this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_CRUSADER_LATTICE])
@@ -521,7 +523,7 @@ export class ChurchManager {
     let churchspam = false;
     for (const r of self.getVisibleRobots()) {
       if (COMM16.type(r.signal) == COMM16.SPAM_HEADER) {
-        this.in_crusader_spam = true;
+        this.in_crusader_spam = COMM16.DECODE_SPAM(r.signal);
       } else if (COMM16.type(r.signal) == COMM16.CHURCHSPAM_HEADER) {
         churchspam = true;
       }
@@ -646,19 +648,19 @@ export class ChurchManager {
 
       if (this.lattice_built < this.lattice_needed) {
         this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
-        if (!this.in_crusader_spam)
+        if (this.in_crusader_spam == false)
           self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]));
         else
-          self.signal(COMM16.ENCODE_CRUSADER_LATTICE, dist([self.me.x, self.me.y], building_locations[0]));
+          self.signal(COMM16.ENCODE_CRUSADER_LATTICE(this.in_crusader_spam), dist([self.me.x, self.me.y], building_locations[0]));
         this.lattice_built++;
         this.build_queue.unshift(latticeUnit);
       } else if (self.fuel > NONESSENTIAL_LATTICE_FUEL_THRESHOLD &&
                  self.karbonite > NONESSENTIAL_LATTICE_KARB_THRESHOLD) {
         this.castle_talk_queue.unshift(COMM8.ADDED_LATTICE);
-        if (!this.in_crusader_spam)
+        if (this.in_crusader_spam == false)
           self.signal(COMM16.ENCODE_LATTICE(0), dist([self.me.x, self.me.y], building_locations[0]));
         else
-          self.signal(COMM16.ENCODE_CRUSADER_LATTICE, dist([self.me.x, self.me.y], building_locations[0]));
+          self.signal(COMM16.ENCODE_CRUSADER_LATTICE(this.in_crusader_spam), dist([self.me.x, self.me.y], building_locations[0]));
         this.lattice_built++;
         this.build_queue.unshift(latticeUnit);
       }
