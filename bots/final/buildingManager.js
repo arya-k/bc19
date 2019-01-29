@@ -159,6 +159,15 @@ export class CastleManager {
 
     this.have_spammed = false;
     this.in_crusader_spam = false;
+
+    // preacher rush:
+    if (isHorizontalSymmetry(self.map, self.fuel_map, self.karbonite_map))
+      this.enemy_pos = [self.me.x, self.map.length - self.me.y - 1];
+    else
+      this.enemy_pos = [self.map.length - self.me.x - 1, self.me.y];
+
+    // if we are close to the enemy, then we could consider a preacher rush:
+    this.preacher_rushing = num_moves(self.map, self.getVisibleRobotMap(), 4, [self.me.x, self.me.y], this.enemy_pos) <= 9;
   }
 
   turn(step, self) {
@@ -316,9 +325,17 @@ export class CastleManager {
       return self.attack(attackableEnemy[0].x - self.me.x, attackableEnemy[0].y - self.me.y)
     }
 
+    if (step == 2 && this.castle_locations.length == 1) {
+      self.log("PREACHER RUSHING...")
+      this.build_signal_queue.unshift([SPECS.PREACHER, COMM16.ENCODE_HORDE(...this.enemy_pos)])
+      this.build_signal_queue.unshift([SPECS.PREACHER, COMM16.ENCODE_HORDE(...this.enemy_pos)])
+      this.build_signal_queue.unshift([SPECS.PREACHER, COMM16.ENCODE_HORDE(...this.enemy_pos)])
+    }
+
     /* BUILDING PILGRIMS FOR THINGS */
     if (canAfford(SPECS.PILGRIM, self) && self.fuel > CASTLE_BUILD_PILGRIM_THRESHOLD &&
-        self.karbonite > BUILD_PILGRIM_KARB_THRESHOLD && this.build_signal_queue.length == 0) {
+        self.karbonite > BUILD_PILGRIM_KARB_THRESHOLD && this.build_signal_queue.length == 0 &&
+        (step >= 2 || !this.preacher_rushing)) {
       let pilgrimCount = 0;
       for (const r of myRobots.pilgrim)
         if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50)
