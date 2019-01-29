@@ -56,7 +56,7 @@ export const COMM16 = {
     ENCODE_ENEMYDEAD: function(x, y) { return ((0b1101<<12) + (y<<6) + x) ^ MASK16; }, // this is signalled whenever an enemy is killed
     ENCODE_SPAM: (0b1111<<12) ^ MASK16,
     ENCODE_CHURCHSPAM: (0b0111<<12) ^ MASK16,
-    ENCODE_CRUSADER_LATTICE: (0b0011<<12) ^ MASK16,
+    ENCODE_CRUSADER_LATTICE: function(region) { return ((0b0011<<12) + region) ^ MASK16; },
 
     DECODE_BASELOC: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
     DECODE_ENEMYSIGHTING: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
@@ -64,4 +64,5 @@ export const COMM16 = {
     DECODE_LATTICE: function(s) { return (s^MASK16)&4095; },
     DECODE_SCOUT: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
     DECODE_ENEMYDEAD: function(s) { return [(s^MASK16)&63,((s^MASK16)&4032)>>6]; },
+    DECODE_CRUSADER_LATTICE: function(s) { return (s^MASK16)&4095; },
 }
