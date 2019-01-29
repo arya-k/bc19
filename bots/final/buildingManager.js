@@ -446,7 +446,7 @@ export class CastleManager {
           if (this.in_crusader_spam == false)
             this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_LATTICE(0)]);
           else
-            this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_CRUSADER_LATTICE])
+            this.build_signal_queue.unshift([latticeUnit, COMM16.ENCODE_CRUSADER_LATTICE(this.in_crusader_spam)])
         }
       }
 
