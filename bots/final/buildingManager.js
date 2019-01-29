@@ -13,7 +13,7 @@ const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite
 const NONESSENTIAL_LATTICE_FUEL_THRESHOLD = 2000; // if we have this much fuel, we can build a lattice beyond whats necessary
 const NONESSENTIAL_LATTICE_KARB_THRESHOLD = 200; // if we have this much karb, we can build a lattice beyond whats necessary
 
-const CRUSADER_SPAM_ROUND = 100; // after this round, we spam crusaders to win on unit health.
+const CRUSADER_SPAM_ROUND = 850; // after this round, we spam crusaders to win on unit health.
 const CHURCHSPAM_ROUND = 998;
 
 const LATTICE_RATIO = { // these HAVE to add up to 1
@@ -292,12 +292,6 @@ export class CastleManager {
       return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
-    // otherwise if they're close enough to whack, then whack them.
-    let attackableEnemy = getAttackOrder(self);
-    if (attackableEnemy.length > 0) {
-      return self.attack(attackableEnemy[0].x - self.me.x, attackableEnemy[0].y - self.me.y)
-    }
-
     // otherwise if we see an enemy prophet, build a crusader
     if (enemyRobots.prophet !== false && myRobots.crusader.length < 3 && 
         canAfford(SPECS.CRUSADER, self) && building_locations.length > 0) {
@@ -307,13 +301,19 @@ export class CastleManager {
       return self.buildUnit(SPECS.CRUSADER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
     }
 
-    // otherwise if we see an enemy preacher, build a prophet:
-    if (enemyRobots.preacher !== false && myRobots.prophet.length < 3 && 
-        canAfford(SPECS.PROPHET, self) && building_locations.length > 0) {
+    // otherwise if we see an enemy preacher, build a preacher:
+    if (enemyRobots.preacher !== false && myRobots.preacher.length < 2 && 
+        canAfford(SPECS.PREACHER, self) && building_locations.length > 0) {
       self.signal(COMM16.ENCODE_ENEMYSIGHTING(enemyRobots.preacher.x, enemyRobots.preacher.y),
                   dist([self.me.x, self.me.y], building_locations[0]))
       self.castleTalk(COMM8.ADDED_LATTICE);
-      return self.buildUnit(SPECS.PROPHET, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
+      return self.buildUnit(SPECS.PREACHER, building_locations[0][0] - self.me.x, building_locations[0][1] - self.me.y);
+    }
+
+    // otherwise if they're close enough to whack, then whack them.
+    let attackableEnemy = getAttackOrder(self);
+    if (attackableEnemy.length > 0) {
+      return self.attack(attackableEnemy[0].x - self.me.x, attackableEnemy[0].y - self.me.y)
     }
 
     /* BUILDING PILGRIMS FOR THINGS */
@@ -498,7 +498,6 @@ export class ChurchManager {
         churchspam = true;
       }
     }
-
 
     let building_locations = getClearLocations(self, 2);
     let myRobots = {preacher:[], prophet:[], crusader:[], pilgrim:[]};
