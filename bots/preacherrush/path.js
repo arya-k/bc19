@@ -195,6 +195,15 @@ export function move_towards(self, a, b) {
   const speed = SPECS.UNITS[self.me.unit].SPEED;
   let attack_radius_min = null;
   let attack_radius_max = null;
+  const nearby_preachers = [];
+  
+  if (self.me.unit == SPECS.PREACHER) {
+    for (const r of self.getVisibleRobots()) {
+      if (r.team !== null && r.team == self.me.team && r.unit == SPECS.PREACHER) {
+        nearby_preachers.push(r);
+      }
+    }
+  }
 
   if (self.me.unit == SPECS.PILGRIM) {
     attack_radius_max = 2;
@@ -203,7 +212,6 @@ export function move_towards(self, a, b) {
     attack_radius_min = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[0];
     attack_radius_max = SPECS.UNITS[self.me.unit].ATTACK_RADIUS[1];
   }
-
 
   var graph = new Graph(pass_map, vis_map, speed);
   var openHeap = getHeap();
@@ -219,9 +227,9 @@ export function move_towards(self, a, b) {
   while (openHeap.size() > 0) {
     var currentNode = openHeap.pop();
 
-    var dist = (currentNode.x-end.x)**2 + (currentNode.y-end.y)**2
+    var d = (currentNode.x-end.x)**2 + (currentNode.y-end.y)**2
 
-    if (dist >= attack_radius_min && dist <= attack_radius_max) {
+    if (d >= attack_radius_min && d <= attack_radius_max) {
       let path = pathTo(currentNode);
       if (path.length > 0) {
         return path[path.length - 1]; // the first step along the way
@@ -236,6 +244,15 @@ export function move_towards(self, a, b) {
     for (var i = 0; i < neighbors.length; i++) {
       var neighbor = neighbors[i];
       if (neighbor.closed || neighbor.isWall) { continue; }
+
+      if (self.me.unit == SPECS.PREACHER) {
+        for (const preacher of nearby_preachers) {
+          if (dist([neighbor.x, neighbor.y], [self.me.x, self.me.y]) <= 2) {
+            neighbor.isWall = true;
+            continue;
+          }
+        }
+      }
 
       var gScore = currentNode.g + neighbor.getCost(currentNode);
       var beenVisited = neighbor.visited;
