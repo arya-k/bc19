@@ -130,6 +130,17 @@ function calculate_lattice_dir(horiSym, attack_plan, maplen) {
     return 3; // attack the left
 }
 
+function calculate_crusader_dir(horiSym, attack_plan, maplen) {
+  if (horiSym && attack_plan[0].me[1] <= (Math.ceil(maplen / 2) + 1)) // top
+    return 2; // hide on top
+  else if (horiSym && attack_plan[0].me[1] >= (Math.ceil(maplen / 2) - 1)) // bottom
+    return 4; // hide on bottom
+  else if (!horiSym && attack_plan[0].me[0] <= (Math.ceil(maplen / 2) + 1)) // left
+    return 3; // hide on left
+  else if (!horiSym && attack_plan[0].me[0] >= (Math.ceil(maplen / 2) - 1)) // right
+    return 1; // hide on right
+}
+
 export class CastleManager {
   constructor(self) {
     self.log("CASTLE @ " + [self.me.x, self.me.y])
