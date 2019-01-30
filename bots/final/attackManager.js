@@ -73,7 +73,7 @@ function optimize(self, pos, lattice_angle){
 }
 
 function crusader_back(self, lattice_angle){
-  let best = null
+  let best = [self.me.x, self.me.y]
 
   if (optimize(self, [self.me.x, self.me.y], lattice_angle) == 0)
     return null;
