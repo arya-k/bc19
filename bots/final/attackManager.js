@@ -65,10 +65,10 @@ function find_lattice_point(self, base_loc, lattice_point, lattice_angle){
 function optimize(self, pos, lattice_angle){
   //trying to make this as small as possible
   switch(lattice_angle) {
-    case 1: return self.map.length - pos[0]
+    case 1: return self.map.length - pos[0] - 1
     case 2: return pos[1]
     case 3: return pos[0]
-    case 4: return self.map.length - pos[1]
+    case 4: return self.map.length - pos[1] - 1
   }
 }
 
