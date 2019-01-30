@@ -534,15 +534,16 @@ export class CrusaderManager {
       }
     }
     if (this.crusaderspam){
-      
-      if (dist(lattice_point, mypos) > myspeed){
-        let move = move_to(self, mypos, lattice_point)
+      let mypos = [self.me.x, self.me.y]
+      let place = crusader_back(self, this.lattice_angle)
+      if (dist(place, mypos) > SPECS.UNITS[self.me.unit].SPEED){
+        let move = move_to(self, mypos, place)
         if (move !== null){
-          return [move.x, move.y]
+          return self.move(move.x - self.me.x, move.y - self.me.y)
         }
       }
       else{
-        return lattice_point
+        return self.move(place[0]-self.me.x, place[1]-self.me.y)
       }
     }
     // self.log("here1")
