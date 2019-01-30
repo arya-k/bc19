@@ -59,17 +59,17 @@ function find_lattice_point(self, base_loc, lattice_point, lattice_angle){
 function optimize(self, pos,lattice_angle){
   //trying to make this as small as possible
   switch(lattice_angle){
-    case 1: return self.map.length - pos[0]
-    case 2: return pos[1]
-    case 3: return pos[0]
-    case 4: return self.map.length - pos[1]
+    case 1: return pos[0]
+    case 2: return self.map.length - pos[1]
+    case 3: return self.map.length - pos[0]
+    case 4: return pos[1]
   }
 }
 function crusader_back(self, lattice_angle){
   let best = null
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
-    if (best === null || optimize(current,lattice_angle) < optimize(best,lattice_angle)) {
+    if (best === null || optimize(self, current,lattice_angle) < optimize(self, best,lattice_angle)) {
       best = [current[0],current[1]]
     }
   }
@@ -536,14 +536,19 @@ export class CrusaderManager {
     if (this.crusaderspam){
       let mypos = [self.me.x, self.me.y]
       let place = crusader_back(self, this.lattice_angle)
-      if (dist(place, mypos) > SPECS.UNITS[self.me.unit].SPEED){
-        let move = move_to(self, mypos, place)
-        if (move !== null){
-          return self.move(move.x - self.me.x, move.y - self.me.y)
+      if (place !== null){
+        if (dist(place, mypos) > SPECS.UNITS[self.me.unit].SPEED){
+          let move = move_to(self, mypos, place)
+          if (move !== null){
+            return self.move(move.x - self.me.x, move.y - self.me.y)
+          }
+        }
+        else{
+          return self.move(place[0]-self.me.x, place[1]-self.me.y)
         }
       }
       else{
-        return self.move(place[0]-self.me.x, place[1]-self.me.y)
+        return null
       }
     }
     // self.log("here1")
