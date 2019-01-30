@@ -13,7 +13,7 @@ const LATTICE_BUILD_KARB_THRESHOLD = 100; // we have to have this much karbonite
 const NONESSENTIAL_LATTICE_FUEL_THRESHOLD = 2000; // if we have this much fuel, we can build a lattice beyond whats necessary
 const NONESSENTIAL_LATTICE_KARB_THRESHOLD = 200; // if we have this much karb, we can build a lattice beyond whats necessary
 
-const CRUSADER_SPAM_ROUND = 100; // after this round, we spam crusaders to win on unit health.
+const CRUSADER_SPAM_ROUND = 750; // after this round, we spam crusaders to win on unit health.
 const CHURCHSPAM_ROUND = 998;
 
 const LATTICE_RATIO = { // these HAVE to add up to 1
