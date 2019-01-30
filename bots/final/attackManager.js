@@ -73,20 +73,36 @@ function optimize(self, pos, lattice_angle){
 }
 
 function crusader_back(self, lattice_angle){
-  let best = [self.me.x, self.me.y]
+  let visited = new Set()
+  let queue = [(self.me.y<<6)|self.me.x];
+  let current, cx, cy;
 
-  if (optimize(self, [self.me.x, self.me.y], lattice_angle) == 0)
-    return null;
+  let best = [self.me.x, self.me.y];
 
-  for (const dir of CIRCLES[4]){
-    let current = [self.me.x + dir[0], self.me.y + dir[1]]
-    if (is_available2(self,current)){
-      if (optimize(self, current,lattice_angle) < optimize(self, best,lattice_angle)) {
-        best = [current[0],current[1]]
+  while (queue.length > 0) {
+    current = queue.shift();
+    cx = current&63
+    cy = (current&4032)>>6
+
+    if (visited.has(current)){ continue; }
+
+    if (cx !== self.me.x || cy !== self.me.y)
+        if (self.getVisibleRobotMap()[cy][cx] !== 0 || !self.map[cy][cx] || 
+            self.fuel_map[cy][cx] || self.karbonite_map[cy][cx])
+          continue; // invalid spot
+
+    if (optimize(self, [cx, cy], lattice_angle) < optimize(self, best, lattice_angle))
+        best = [cx, cy];
+
+    visited.add(current);
+
+    for (const dir of CIRCLES[SPECS.UNITS[SPECS.CRUSADER].SPEED]) {
+      if (is_valid(cx+dir[0], cy+dir[1], self.map.length)) {
+        queue.push(((cy+dir[1])<<6)|(cx+dir[0]));
       }
     }
   }
-  return best
+  return best;
 }
 
 function lattice_movement(self, base_loc, lattice_point, lattice_angle) {
@@ -549,22 +565,19 @@ export class CrusaderManager {
     if (this.crusaderspam){
       let mypos = [self.me.x, self.me.y]
       let place = crusader_back(self, this.lattice_angle)
-      if (place !== null && (dist(place, [self.me.x, self.me.y]) > 0)){
-        if (dist(place, mypos) > SPECS.UNITS[self.me.unit].SPEED){
-          // self.log(place)
+      if (place !== null && (dist(place, [self.me.x, self.me.y]) > 0)) {
+        if (dist(place, mypos) > SPECS.UNITS[self.me.unit].SPEED) {
           let move = move_to(self, mypos, place)
-          if (move !== null){
+          if (move !== null) {
             return self.move(move.x - self.me.x, move.y - self.me.y)
-          }
-          else{
+          } else{
             return null
           }
         }
         else{
           return self.move(place[0]-self.me.x, place[1]-self.me.y)
         }
-      }
-      else{
+      } else{
         return null
       }
     }
