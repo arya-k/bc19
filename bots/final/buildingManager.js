@@ -345,9 +345,18 @@ export class CastleManager {
     }
 
     /* BUILDING PILGRIMS FOR THINGS */
-    if (canAfford(SPECS.PILGRIM, self) && self.fuel > CASTLE_BUILD_PILGRIM_THRESHOLD &&
-        self.karbonite > BUILD_PILGRIM_KARB_THRESHOLD && this.build_signal_queue.length == 0 &&
-        (step >= 2 || !this.preacher_rushing)) {
+    let building_pilgrims = false;
+    if (canAfford(SPECS.PILGRIM, self) && (step >= 2 || !this.preacher_rushing)) {
+      if (self.fuel > CASTLE_BUILD_PILGRIM_THRESHOLD &&
+        self.karbonite > BUILD_PILGRIM_KARB_THRESHOLD &&
+        this.build_signal_queue.length == 0)
+        building_pilgrims = true;
+      if (this.preacher_rushing && step < 20 && this.build_signal_queue.length == 0) {
+        building_pilgrims = true;
+      }
+    }
+
+    if (building_pilgrims) {
       let pilgrimCount = 0;
       for (const r of myRobots.pilgrim)
         if (dist([r.x, r.y], [self.me.x, self.me.y]) <= 50)
@@ -464,8 +473,8 @@ export class CastleManager {
 
     if (this.build_signal_queue.length > 0) {
       if (building_locations.length > 0) {
-        if (self.karbonite > SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_KARBONITE &&
-            self.fuel > (SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_FUEL + 2)) {
+        if (self.karbonite >= SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_KARBONITE &&
+            self.fuel >= (SPECS.UNITS[this.build_signal_queue[this.build_signal_queue.length - 1][0]].CONSTRUCTION_FUEL + 2)) {
           let bs = this.build_signal_queue.pop();
 
           if (bs[1] !== null && COMM16.type(bs[1]) == COMM16.BASELOC_HEADER) { // pick the closest building spot you can.
@@ -681,8 +690,8 @@ export class ChurchManager {
 
     if (this.build_queue.length > 0) {
       if (building_locations.length > 0 && 
-          self.karbonite > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_KARBONITE &&
-          self.fuel > SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_FUEL) {
+          self.karbonite >= SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_KARBONITE &&
+          self.fuel >= SPECS.UNITS[this.build_queue[this.build_queue.length - 1]].CONSTRUCTION_FUEL) {
 
         if (this.build_queue[this.build_queue.length - 1] == SPECS.PILGRIM) // try to build a pilgrim on a resource spot
           for (const bl of building_locations)
