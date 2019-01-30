@@ -74,6 +74,10 @@ function optimize(self, pos, lattice_angle){
 
 function crusader_back(self, lattice_angle){
   let best = null
+
+  if (optimize(self, [self.me.x, self.me.y], lattice_angle) == 0)
+    return null;
+
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
     if (is_available2(self,current)){
