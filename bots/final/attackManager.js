@@ -546,7 +546,7 @@ export class CrusaderManager {
       let place = crusader_back(self, this.lattice_angle)
       if (place !== null){
         if (dist(place, mypos) > SPECS.UNITS[self.me.unit].SPEED){
-          self.log(place)
+          // self.log(place)
           let move = move_to(self, mypos, place)
           if (move !== null){
             return self.move(move.x - self.me.x, move.y - self.me.y)
