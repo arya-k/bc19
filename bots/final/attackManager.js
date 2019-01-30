@@ -56,6 +56,26 @@ function find_lattice_point(self, base_loc, lattice_point, lattice_angle){
   return closest_lattice_point
 }
 
+function optimize(self, pos,lattice_angle){
+  //trying to make this as small as possible
+  switch(lattice_angle){
+    case 1: return self.map.length - pos[0]
+    case 2: return pos[1]
+    case 3: return pos[0]
+    case 4: return self.map.length - pos[1]
+  }
+}
+function crusader_back(self, lattice_angle){
+  let best = null
+  for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
+    let current = [self.me.x + dir[0], self.me.y + dir[1]]
+    if (best === null || optimize(current,lattice_angle) < optimize(best,lattice_angle)) {
+      best = [current[0],current[1]]
+    }
+  }
+  return best
+}
+
 function lattice_movement(self, base_loc, lattice_point, lattice_angle) {
   // Since preachers have low vision, they can't reliably lattice
   // This will be a less ambitious version of nonNuisance
@@ -461,6 +481,7 @@ export class CrusaderManager {
     this.lattice_angle = 0;
     this.enemy_castles = []
     this.toSignal = true;
+    this.crusaderspam = false;
 
     this.base_is_castle = false
     const vis_map = self.getVisibleRobotMap()
@@ -506,6 +527,22 @@ export class CrusaderManager {
         let enemyBaseLoc = horiSym ? [this.base_location[0], N - this.base_location[1] - 1] : [N - this.base_location[0] - 1, this.base_location[1]]
         if (dist(enemyBaseLoc, tmp_loc) == 0)
           this.toSignal = false;
+      }
+      if (COMM16.type(r.signal) == COMM16.CRUSADER_LATTICE_HEADER){
+        this.crusaderspam = true;
+        this.lattice_angle = COMM16.DECODE_CRUSADER_LATTICE(r.signal)
+      }
+    }
+    if (this.crusaderspam){
+      
+      if (dist(lattice_point, mypos) > myspeed){
+        let move = move_to(self, mypos, lattice_point)
+        if (move !== null){
+          return [move.x, move.y]
+        }
+      }
+      else{
+        return lattice_point
       }
     }
     // self.log("here1")
