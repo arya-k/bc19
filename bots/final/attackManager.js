@@ -39,6 +39,12 @@ function is_available(self, myposition, base_loc){
   dist(myposition,base_loc) > 2
 }
 
+function is_available2(self, myposition){
+  return is_valid(myposition[0], myposition[1], self.map.length) && 
+  self.map[myposition[1]][myposition[0]] && 
+  is_passable(self,myposition[0],myposition[1])
+}
+
 function find_lattice_point(self, base_loc, lattice_point, lattice_angle){
   let closest_lattice_point = lattice_point !== null && is_lattice(self, lattice_point, base_loc, lattice_angle) ? lattice_point : null
   let mypos = [self.me.x, self.me.y]
@@ -69,8 +75,10 @@ function crusader_back(self, lattice_angle){
   let best = null
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
     let current = [self.me.x + dir[0], self.me.y + dir[1]]
-    if (best === null || optimize(self, current,lattice_angle) < optimize(self, best,lattice_angle)) {
-      best = [current[0],current[1]]
+    if (is_available2(self,current)){
+      if (best === null || optimize(self, current,lattice_angle) < optimize(self, best,lattice_angle)) {
+        best = [current[0],current[1]]
+      }
     }
   }
   return best
@@ -538,9 +546,13 @@ export class CrusaderManager {
       let place = crusader_back(self, this.lattice_angle)
       if (place !== null){
         if (dist(place, mypos) > SPECS.UNITS[self.me.unit].SPEED){
+          self.log(place)
           let move = move_to(self, mypos, place)
           if (move !== null){
             return self.move(move.x - self.me.x, move.y - self.me.y)
+          }
+          else{
+            return null
           }
         }
         else{
