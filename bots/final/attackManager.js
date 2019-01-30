@@ -62,15 +62,16 @@ function find_lattice_point(self, base_loc, lattice_point, lattice_angle){
   return closest_lattice_point
 }
 
-function optimize(self, pos,lattice_angle){
+function optimize(self, pos, lattice_angle){
   //trying to make this as small as possible
-  switch(lattice_angle){
-    case 1: return pos[0]
-    case 2: return self.map.length - pos[1]
-    case 3: return self.map.length - pos[0]
-    case 4: return pos[1]
+  switch(lattice_angle) {
+    case 1: return self.map.length - pos[0]
+    case 2: return pos[1]
+    case 3: return pos[0]
+    case 4: return self.map.length - pos[1]
   }
 }
+
 function crusader_back(self, lattice_angle){
   let best = null
   for (const dir of CIRCLES[SPECS.UNITS[self.me.unit].VISION_RADIUS]){
