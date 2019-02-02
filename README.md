@@ -3,7 +3,10 @@ Battlecode 2019 Submission
 This is the github repo for team _plzgoeasy_. Bots are found in the bots folder. Out final submission is in the `final` folder.
 
 To run:
+
 `npm install -g bc19`
+
+`cd bc19/bots`
 
 `bc19run -b <blue team folder> -r <red team folder>`
 
