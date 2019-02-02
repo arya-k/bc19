@@ -4,6 +4,7 @@ This is the github repo for team _plzgoeasy_. Bots are found in the bots folder.
 
 To run:
 `npm install -g bc19`
+
 `bc19run -b <blue team folder> -r <red team folder>`
 
 Games can be viewed on the [official viewer](https://battlecode.org/dash/replay) or through the incredible third-party viewer, [Clairvoyance](https://github.com/hgarrereyn/Clairvoyance)
