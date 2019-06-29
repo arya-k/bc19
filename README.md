@@ -12,4 +12,4 @@ To run:
 
 Games can be viewed on the [official viewer](https://battlecode.org/dash/replay) or through the incredible third-party viewer, [Clairvoyance](https://github.com/hgarrereyn/Clairvoyance)
 
-We've written about our experiences with Battlecode19. You can find Arya's Post Mortem report [here](https://write.as/arya-k/battlecode-2019-post-mortem-plzgoeasy-y3kx).
+We've written about our experiences with Battlecode19. You can find Arya's Post Mortem report [here](https://arya-k.netlify.com/Battlecode.html).
